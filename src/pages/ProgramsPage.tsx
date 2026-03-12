@@ -34,7 +34,7 @@ const ProgramsPage = () => {
                 <span className="font-bold text-foreground">${program.price}</span>
               )}
               {program.price === 0 && (
-                <span className="text-green-400 font-semibold">Free</span>
+                <span className="text-accent font-semibold">Free</span>
               )}
             </div>
             {program.is_purchased ? (
