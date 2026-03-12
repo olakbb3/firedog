@@ -13,7 +13,7 @@ const ProgramsPage = () => {
             <div className="flex items-start justify-between mb-2">
               <h2 className="font-bold font-display text-lg">{program.title}</h2>
               {program.is_purchased ? (
-                <span className="flex items-center gap-1 text-xs text-green-400 bg-green-400/10 px-2 py-1 rounded-full">
+                <span className="flex items-center gap-1 text-xs text-accent bg-accent/10 px-2 py-1 rounded-full">
                   <CheckCircle2 className="h-3 w-3" />
                   Unlocked
                 </span>
