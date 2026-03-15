@@ -2,17 +2,31 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 import firedogLogo from '@/assets/firedogworks-logo.png';
 
 const SignupPage = () => {
   const navigate = useNavigate();
+  const { signUp } = useAuth();
+  const { toast } = useToast();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSignup = (e: React.FormEvent) => {
+  const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    navigate('/');
+    setLoading(true);
+    const { error } = await signUp(email, password, name);
+    setLoading(false);
+
+    if (error) {
+      toast({ title: 'Signup failed', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: 'Account created!', description: 'Check your email to confirm your account.' });
+      navigate('/login');
+    }
   };
 
   return (
@@ -22,11 +36,15 @@ const SignupPage = () => {
       <p className="text-muted-foreground text-sm mb-8">Start your training today.</p>
 
       <form onSubmit={handleSignup} className="w-full max-w-sm space-y-4">
-        <Input placeholder="Full Name" value={name} onChange={(e) => setName(e.target.value)} className="bg-secondary border-border" />
-        <Input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} className="bg-secondary border-border" />
-        <Input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} className="bg-secondary border-border" />
-        <Button type="submit" className="w-full gradient-fire text-primary-foreground font-display text-lg tracking-wide shadow-fire">
-          CREATE ACCOUNT
+        <Input placeholder="Full Name" value={name} onChange={(e) => setName(e.target.value)} className="bg-secondary border-border" required />
+        <Input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} className="bg-secondary border-border" required />
+        <Input type="password" placeholder="Password (min 6 chars)" value={password} onChange={(e) => setPassword(e.target.value)} className="bg-secondary border-border" minLength={6} required />
+        <Button
+          type="submit"
+          disabled={loading}
+          className="w-full gradient-fire text-primary-foreground font-display text-lg tracking-wide shadow-fire"
+        >
+          {loading ? 'CREATING...' : 'CREATE ACCOUNT'}
         </Button>
       </form>
 
