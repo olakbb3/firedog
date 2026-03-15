@@ -9,7 +9,6 @@ import firedogLogo from '@/assets/firedogworks-logo.png';
 const SignupPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { toast } = useToast();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
