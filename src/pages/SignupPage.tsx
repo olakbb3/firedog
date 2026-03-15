@@ -18,14 +18,26 @@ const SignupPage = () => {
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const { error } = await signUp(email, password, name);
-    setLoading(false);
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { full_name: name },
+          emailRedirectTo: window.location.origin,
+        },
+      });
 
-    if (error) {
-      toast({ title: 'Signup failed', description: error.message, variant: 'destructive' });
-    } else {
-      toast({ title: 'Account created!', description: 'Check your email to confirm your account.' });
-      navigate('/login');
+      if (error) {
+        toast({ title: 'Signup failed', description: error.message, variant: 'destructive' });
+      } else {
+        toast({ title: 'Account created!', description: 'Check your email to confirm your account.' });
+        navigate('/login');
+      }
+    } catch (err: any) {
+      toast({ title: 'Unexpected error', description: err.message || String(err), variant: 'destructive' });
+    } finally {
+      setLoading(false);
     }
   };
 
