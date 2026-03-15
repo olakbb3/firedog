@@ -2,13 +2,12 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/lib/supabaseClient';
 import { useToast } from '@/hooks/use-toast';
 import firedogLogo from '@/assets/firedogworks-logo.png';
 
 const SignupPage = () => {
   const navigate = useNavigate();
-  const { signUp } = useAuth();
   const { toast } = useToast();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -18,14 +17,26 @@ const SignupPage = () => {
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const { error } = await signUp(email, password, name);
-    setLoading(false);
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { full_name: name },
+          emailRedirectTo: window.location.origin,
+        },
+      });
 
-    if (error) {
-      toast({ title: 'Signup failed', description: error.message, variant: 'destructive' });
-    } else {
-      toast({ title: 'Account created!', description: 'Check your email to confirm your account.' });
-      navigate('/login');
+      if (error) {
+        toast({ title: 'Signup failed', description: error.message, variant: 'destructive' });
+      } else {
+        toast({ title: 'Account created!', description: 'Check your email to confirm your account.' });
+        navigate('/login');
+      }
+    } catch (err: any) {
+      toast({ title: 'Unexpected error', description: err.message || String(err), variant: 'destructive' });
+    } finally {
+      setLoading(false);
     }
   };
 
