@@ -2,13 +2,12 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/lib/supabaseClient';
 import { useToast } from '@/hooks/use-toast';
 import firedogLogo from '@/assets/firedogworks-logo.png';
 
 const LoginPage = () => {
   const navigate = useNavigate();
-  const { signIn } = useAuth();
   const { toast } = useToast();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -17,13 +16,22 @@ const LoginPage = () => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const { error } = await signIn(email, password);
-    setLoading(false);
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-    if (error) {
-      toast({ title: 'Login failed', description: error.message, variant: 'destructive' });
-    } else {
-      navigate('/');
+      if (error) {
+        toast({ title: 'Login failed', description: error.message, variant: 'destructive' });
+      } else {
+        toast({ title: 'Welcome back!' });
+        navigate('/');
+      }
+    } catch (err: any) {
+      toast({ title: 'Unexpected error', description: err.message || String(err), variant: 'destructive' });
+    } finally {
+      setLoading(false);
     }
   };
 

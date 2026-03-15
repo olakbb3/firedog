@@ -1,12 +1,19 @@
 import { useNavigate } from 'react-router-dom';
 import { Flame, Dumbbell, Trophy, BookOpen, Settings, LogOut, Shield, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/contexts/AuthContext';
 import { mockUser, mockPrograms } from '@/data/mockData';
 import firedogLogo from '@/assets/firedogworks-logo.png';
 
 const ProfilePage = () => {
   const navigate = useNavigate();
+  const { signOut } = useAuth();
   const purchasedPrograms = mockPrograms.filter(p => p.is_purchased);
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate('/login');
+  };
 
   return (
     <div className="px-4 pt-6 pb-4 max-w-lg mx-auto">
@@ -70,7 +77,7 @@ const ProfilePage = () => {
         </button>
       </div>
 
-      <Button variant="outline" className="w-full border-border text-muted-foreground hover:text-foreground font-display" onClick={() => navigate('/login')}>
+      <Button variant="outline" className="w-full border-border text-muted-foreground hover:text-foreground font-display" onClick={handleLogout}>
         <LogOut className="h-4 w-4 mr-2" />
         SIGN OUT
       </Button>
