@@ -30,20 +30,22 @@ const App = () => {
         <Sonner />
         {showSplash && <SplashScreen onComplete={() => setShowSplash(false)} />}
         <BrowserRouter>
-          <AppLayout>
-            <Routes>
-              <Route path="/" element={<HomePage />} />
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/signup" element={<SignupPage />} />
-              <Route path="/workout/:id" element={<WorkoutPage />} />
-              <Route path="/progress" element={<ProgressPage />} />
-              <Route path="/leaderboard" element={<LeaderboardPage />} />
-              <Route path="/programs" element={<ProgramsPage />} />
-              <Route path="/profile" element={<ProfilePage />} />
-              <Route path="/admin" element={<AdminDashboard />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </AppLayout>
+          <AuthProvider>
+            <AppLayout>
+              <Routes>
+                <Route path="/" element={<HomePage />} />
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/signup" element={<SignupPage />} />
+                <Route path="/workout/:id" element={<WorkoutPage />} />
+                <Route path="/progress" element={<ProgressPage />} />
+                <Route path="/leaderboard" element={<LeaderboardPage />} />
+                <Route path="/programs" element={<ProgramsPage />} />
+                <Route path="/profile" element={<ProfilePage />} />
+                <Route path="/admin" element={<AdminDashboard />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </AppLayout>
+          </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>
