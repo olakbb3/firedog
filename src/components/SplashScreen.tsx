@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import firedogLogo from '@/assets/firedogworks-logo.png';
+import firedogLogo from '@/assets/firedog-logo.png';
 
 const SplashScreen = ({ onComplete }: { onComplete: () => void }) => {
   const [fadeOut, setFadeOut] = useState(false);
@@ -11,7 +11,7 @@ const SplashScreen = ({ onComplete }: { onComplete: () => void }) => {
   }, [onComplete]);
 
   return (
-    <div className={`fixed inset-0 z-50 flex flex-col items-center justify-center bg-background transition-opacity duration-500 ${fadeOut ? 'opacity-0' : 'opacity-100'}`}>
+    <div className={`fixed inset-0 z-50 flex flex-col items-center justify-center bg-background transition-opacity duration-500 ${fadeOut ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
       <div className="animate-pulse">
         <img src={firedogLogo} alt="FiredogWorks" className="w-40 h-40 object-contain" />
       </div>

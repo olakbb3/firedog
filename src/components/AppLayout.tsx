@@ -15,7 +15,7 @@ const AppLayout = ({ children }: { children: ReactNode }) => {
   const navigate = useNavigate();
 
   // Hide nav on auth/splash/admin pages
-  const hideNav = ['/login', '/signup'].includes(location.pathname) || location.pathname.startsWith('/admin');
+  const hideNav = ['/login', '/signup', '/onboarding'].includes(location.pathname) || location.pathname.startsWith('/admin');
 
   return (
     <div className="min-h-screen bg-background">

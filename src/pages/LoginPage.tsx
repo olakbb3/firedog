@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/lib/supabaseClient';
 import { useToast } from '@/hooks/use-toast';
-import firedogLogo from '@/assets/firedogworks-logo.png';
+import firedogLogo from '@/assets/firedog-logo.png';
 
 const LoginPage = () => {
   const navigate = useNavigate();
