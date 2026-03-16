@@ -4,11 +4,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/lib/supabaseClient';
 import { useToast } from '@/hooks/use-toast';
-import firedogLogo from '@/assets/firedogworks-logo.png';
+import { useOnboarding } from '@/contexts/OnboardingContext';
+import firedogLogo from '@/assets/firedog-logo.png';
 
 const SignupPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { data: onboardingData, reset: resetOnboarding } = useOnboarding();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -29,10 +31,30 @@ const SignupPage = () => {
 
       if (error) {
         toast({ title: 'Signup failed', description: error.message, variant: 'destructive' });
-      } else {
-        toast({ title: 'Account created!', description: 'Check your email to confirm your account.' });
-        navigate('/login');
+        return;
       }
+
+      // Update profile with onboarding data
+      if (data.user) {
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .update({
+            full_name: name,
+            training_level: onboardingData.training_level || null,
+            fitness_goal: onboardingData.fitness_goal || null,
+            training_frequency: onboardingData.training_frequency || null,
+            onboarding_completed: true,
+          })
+          .eq('id', data.user.id);
+
+        if (profileError) {
+          console.warn('Profile update failed:', profileError.message);
+        }
+      }
+
+      resetOnboarding();
+      toast({ title: 'Account created!', description: 'Welcome to FiredogWorks.' });
+      navigate('/');
     } catch (err: any) {
       toast({ title: 'Unexpected error', description: err.message || String(err), variant: 'destructive' });
     } finally {
@@ -45,6 +67,14 @@ const SignupPage = () => {
       <img src={firedogLogo} alt="FiredogWorks" className="w-24 h-24 mb-4 object-contain" />
       <h1 className="text-2xl font-bold mb-1">JOIN THE CREW</h1>
       <p className="text-muted-foreground text-sm mb-8">Start your training today.</p>
+
+      {/* Show selected onboarding preferences */}
+      {onboardingData.training_level && (
+        <div className="w-full max-w-sm mb-6 rounded-xl bg-secondary border border-border p-3 space-y-1">
+          <p className="text-xs text-muted-foreground">Your profile:</p>
+          <p className="text-xs"><span className="text-primary font-semibold">{onboardingData.training_level}</span> · {onboardingData.fitness_goal} · {onboardingData.training_frequency}</p>
+        </div>
+      )}
 
       <form onSubmit={handleSignup} className="w-full max-w-sm space-y-4">
         <Input placeholder="Full Name" value={name} onChange={(e) => setName(e.target.value)} className="bg-secondary border-border" required />

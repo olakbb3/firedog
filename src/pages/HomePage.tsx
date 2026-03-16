@@ -1,12 +1,70 @@
 import { useNavigate } from 'react-router-dom';
-import { Flame, ChevronRight, Trophy, Zap, ShoppingBag } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Flame, Trophy, Zap, ShoppingBag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { mockWorkouts, mockPrograms, mockHomeContent, mockChallenges, mockUser } from '@/data/mockData';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/lib/supabaseClient';
+
+interface WorkoutRow {
+  id: string;
+  title: string;
+  description: string;
+  exercises: any[];
+  coach_notes: string | null;
+  date: string;
+}
+
+interface ProgramRow {
+  id: string;
+  title: string;
+  description: string;
+  price: number;
+  duration_weeks: number;
+}
+
+interface ChallengeRow {
+  id: string;
+  title: string;
+  description: string;
+  start_date: string;
+  end_date: string;
+  participants: number;
+}
+
+interface ProfileRow {
+  full_name: string | null;
+  points: number;
+}
 
 const HomePage = () => {
   const navigate = useNavigate();
-  const todayWorkout = mockWorkouts[0];
-  const featuredProgram = mockPrograms.find(p => p.id === mockHomeContent.featured_program_id);
+  const { user } = useAuth();
+  const [profile, setProfile] = useState<ProfileRow | null>(null);
+  const [todayWorkout, setTodayWorkout] = useState<WorkoutRow | null>(null);
+  const [featuredProgram, setFeaturedProgram] = useState<ProgramRow | null>(null);
+  const [challenges, setChallenges] = useState<ChallengeRow[]>([]);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const fetchData = async () => {
+      const [profileRes, workoutRes, programRes, challengeRes] = await Promise.all([
+        supabase.from('profiles').select('full_name, points').eq('id', user.id).maybeSingle(),
+        supabase.from('workouts').select('*').order('date', { ascending: false }).limit(1).maybeSingle(),
+        supabase.from('programs').select('*').order('price', { ascending: false }).limit(1).maybeSingle(),
+        supabase.from('challenges').select('*'),
+      ]);
+
+      if (profileRes.data) setProfile(profileRes.data);
+      if (workoutRes.data) setTodayWorkout(workoutRes.data);
+      if (programRes.data) setFeaturedProgram(programRes.data);
+      if (challengeRes.data) setChallenges(challengeRes.data);
+    };
+
+    fetchData();
+  }, [user]);
+
+  const displayName = profile?.full_name?.split(' ')[0] || user?.user_metadata?.full_name?.split(' ')[0] || 'Athlete';
 
   return (
     <div className="px-4 pt-6 pb-4 max-w-lg mx-auto">
@@ -14,7 +72,7 @@ const HomePage = () => {
       <div className="flex items-center justify-between mb-6">
         <div>
           <p className="text-sm text-muted-foreground">Welcome back,</p>
-          <h1 className="text-xl font-bold">{mockUser.name.split(' ')[0]}</h1>
+          <h1 className="text-xl font-bold">{displayName}</h1>
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -25,48 +83,43 @@ const HomePage = () => {
           </button>
           <div className="flex items-center gap-1 rounded-full bg-secondary px-3 py-1.5">
             <Flame className="h-4 w-4 text-primary" />
-            <span className="text-sm font-semibold">{mockUser.points}</span>
+            <span className="text-sm font-semibold">{profile?.points ?? 0}</span>
           </div>
         </div>
       </div>
 
-      {/* Motivational Quote */}
-      {mockHomeContent.motivational_quote && (
-        <div className="mb-6 rounded-xl bg-secondary p-4 border border-border">
-          <p className="text-sm italic text-muted-foreground">{mockHomeContent.motivational_quote}</p>
-        </div>
-      )}
-
       {/* Banner */}
       <div className="mb-6 rounded-xl gradient-fire p-6 shadow-fire">
-        <h2 className="text-2xl font-bold text-primary-foreground">{mockHomeContent.banner_text}</h2>
+        <h2 className="text-2xl font-bold text-primary-foreground">FORGE YOUR FIRE</h2>
         <p className="mt-1 text-sm text-primary-foreground/80">Your daily training awaits.</p>
       </div>
 
       {/* WOD */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-bold flex items-center gap-2">
-            <Zap className="h-5 w-5 text-primary" />
-            WORKOUT OF THE DAY
-          </h2>
+      {todayWorkout && (
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-lg font-bold flex items-center gap-2">
+              <Zap className="h-5 w-5 text-primary" />
+              WORKOUT OF THE DAY
+            </h2>
+          </div>
+          <button
+            onClick={() => navigate(`/workout/${todayWorkout.id}`)}
+            className="w-full rounded-xl bg-card border border-border p-5 text-left shadow-card hover:border-primary/50 transition-colors"
+          >
+            <h3 className="text-lg font-bold font-display">{todayWorkout.title}</h3>
+            <p className="text-sm text-muted-foreground mt-1">{todayWorkout.description}</p>
+            <div className="mt-3 flex items-center gap-4 text-xs text-muted-foreground">
+              <span>{todayWorkout.exercises?.length ?? 0} exercises</span>
+              <span>•</span>
+              <span>{(todayWorkout.exercises || []).reduce((a: number, e: any) => a + (e.sets || 0), 0)} total sets</span>
+            </div>
+            <div className="mt-3">
+              <span className="text-xs text-primary font-semibold">START WORKOUT →</span>
+            </div>
+          </button>
         </div>
-        <button
-          onClick={() => navigate(`/workout/${todayWorkout.id}`)}
-          className="w-full rounded-xl bg-card border border-border p-5 text-left shadow-card hover:border-primary/50 transition-colors"
-        >
-          <h3 className="text-lg font-bold font-display">{todayWorkout.title}</h3>
-          <p className="text-sm text-muted-foreground mt-1">{todayWorkout.description}</p>
-          <div className="mt-3 flex items-center gap-4 text-xs text-muted-foreground">
-            <span>{todayWorkout.exercises.length} exercises</span>
-            <span>•</span>
-            <span>{todayWorkout.exercises.reduce((a, e) => a + (e.sets || 0), 0)} total sets</span>
-          </div>
-          <div className="mt-3 flex items-center justify-between">
-            <span className="text-xs text-primary font-semibold">START WORKOUT →</span>
-          </div>
-        </button>
-      </div>
+      )}
 
       {/* Featured Program */}
       {featuredProgram && (
@@ -93,23 +146,25 @@ const HomePage = () => {
       )}
 
       {/* Active Challenges */}
-      <div className="mb-6">
-        <h2 className="text-lg font-bold mb-3">🔥 ACTIVE CHALLENGES</h2>
-        <div className="space-y-3">
-          {mockChallenges.map((ch) => (
-            <div key={ch.id} className="rounded-xl bg-card border border-border p-4 shadow-card">
-              <h3 className="font-bold font-display text-sm">{ch.title}</h3>
-              <p className="text-xs text-muted-foreground mt-1">{ch.description}</p>
-              <div className="mt-2 flex items-center justify-between">
-                <span className="text-xs text-muted-foreground">{ch.participants} athletes joined</span>
-                <Button size="sm" variant="outline" className="text-xs h-7 border-primary text-primary hover:bg-primary hover:text-primary-foreground">
-                  Join
-                </Button>
+      {challenges.length > 0 && (
+        <div className="mb-6">
+          <h2 className="text-lg font-bold mb-3">🔥 ACTIVE CHALLENGES</h2>
+          <div className="space-y-3">
+            {challenges.map((ch) => (
+              <div key={ch.id} className="rounded-xl bg-card border border-border p-4 shadow-card">
+                <h3 className="font-bold font-display text-sm">{ch.title}</h3>
+                <p className="text-xs text-muted-foreground mt-1">{ch.description}</p>
+                <div className="mt-2 flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground">{ch.participants} athletes joined</span>
+                  <Button size="sm" variant="outline" className="text-xs h-7 border-primary text-primary hover:bg-primary hover:text-primary-foreground">
+                    Join
+                  </Button>
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
