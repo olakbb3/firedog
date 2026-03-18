@@ -1,6 +1,7 @@
 import { ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Home, Dumbbell, Trophy, BookOpen, User, ShoppingBag } from 'lucide-react';
+import { Home, Dumbbell, Trophy, BookOpen, User } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 const navItems = [
   { path: '/', icon: Home, label: 'Home' },
@@ -13,9 +14,14 @@ const navItems = [
 const AppLayout = ({ children }: { children: ReactNode }) => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { user } = useAuth();
 
-  // Hide nav on auth/splash/admin pages
+  // Hide nav on auth/splash/admin/onboarding pages
   const hideNav = ['/login', '/signup', '/onboarding'].includes(location.pathname) || location.pathname.startsWith('/admin');
+
+  // For guests, show a simpler nav (Home, Programs only)
+  const guestNavItems = navItems.filter(n => ['/', '/programs'].includes(n.path));
+  const displayNavItems = user ? navItems : guestNavItems;
 
   return (
     <div className="min-h-screen bg-background">
@@ -25,7 +31,7 @@ const AppLayout = ({ children }: { children: ReactNode }) => {
       {!hideNav && (
         <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-border bg-card/95 backdrop-blur-lg safe-bottom">
           <div className="mx-auto flex max-w-lg items-center justify-around py-2">
-            {navItems.map(({ path, icon: Icon, label }) => {
+            {displayNavItems.map(({ path, icon: Icon, label }) => {
               const active = location.pathname === path;
               return (
                 <button

@@ -1,23 +1,94 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Clock, Dumbbell, MessageSquare, Play, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Clock, Dumbbell, Play, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { mockWorkouts } from '@/data/mockData';
+import { useAuth } from '@/contexts/AuthContext';
+import { useAuthGate } from '@/hooks/useAuthGate';
+import { supabase } from '@/lib/supabaseClient';
+
+interface ExerciseRow {
+  id: string;
+  exercise_name: string;
+  sets: number | null;
+  reps: number | null;
+  duration: string | null;
+  notes: string | null;
+}
+
+interface WorkoutData {
+  id: string;
+  title: string;
+  description: string;
+  exercises: any[];
+  coach_notes: string | null;
+  video_url: string | null;
+  date: string;
+}
 
 const WorkoutPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const workout = mockWorkouts.find(w => w.id === id) || mockWorkouts[0];
+  const { user } = useAuth();
+  const { requireAuth } = useAuthGate();
+  const [workout, setWorkout] = useState<WorkoutData | null>(null);
+  const [exercises, setExercises] = useState<ExerciseRow[]>([]);
   const [showLog, setShowLog] = useState(false);
   const [completed, setCompleted] = useState(false);
   const [logData, setLogData] = useState({ reps: '', weight: '', time: '', notes: '' });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!id) return;
+    const fetchWorkout = async () => {
+      setLoading(true);
+      const [workoutRes, exercisesRes] = await Promise.all([
+        supabase.from('workouts').select('*').eq('id', id).maybeSingle(),
+        supabase.from('exercises').select('*').eq('workout_id', id).order('id'),
+      ]);
+      if (workoutRes.data) setWorkout(workoutRes.data);
+      if (exercisesRes.data && exercisesRes.data.length > 0) {
+        setExercises(exercisesRes.data);
+      }
+      setLoading(false);
+    };
+    fetchWorkout();
+  }, [id]);
+
+  // Fall back to JSON exercises column if no exercises table rows
+  const displayExercises: { name: string; sets?: number; reps?: number; duration?: string; notes?: string }[] =
+    exercises.length > 0
+      ? exercises.map(e => ({ name: e.exercise_name, sets: e.sets ?? undefined, reps: e.reps ?? undefined, duration: e.duration ?? undefined, notes: e.notes ?? undefined }))
+      : (workout?.exercises || []);
+
+  const handleStartWorkout = () => {
+    if (!requireAuth('Start Workout')) return;
+    setShowLog(true);
+  };
 
   const handleComplete = () => {
+    if (!requireAuth('Save Result')) return;
     setCompleted(true);
     setShowLog(false);
   };
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    );
+  }
+
+  if (!workout) {
+    return (
+      <div className="px-4 pt-6 text-center">
+        <p className="text-muted-foreground">Workout not found.</p>
+        <Button variant="outline" onClick={() => navigate('/')} className="mt-4">Go Home</Button>
+      </div>
+    );
+  }
 
   return (
     <div className="px-4 pt-4 pb-4 max-w-lg mx-auto">
@@ -32,9 +103,9 @@ const WorkoutPage = () => {
         <p className="text-muted-foreground mt-1">{workout.description}</p>
       </div>
 
-      {/* Exercise List */}
+      {/* Exercise List with per-exercise coaching notes */}
       <div className="space-y-3 mb-6">
-        {workout.exercises.map((ex, i) => (
+        {displayExercises.map((ex, i) => (
           <div key={i} className="rounded-xl bg-card border border-border p-4 shadow-card">
             <div className="flex items-start justify-between">
               <div>
@@ -62,22 +133,14 @@ const WorkoutPage = () => {
               )}
             </div>
             {ex.notes && (
-              <p className="mt-2 text-xs text-muted-foreground italic border-t border-border pt-2">{ex.notes}</p>
+              <div className="mt-2 border-t border-border pt-2">
+                <p className="text-xs text-primary font-semibold mb-0.5">COACH NOTE</p>
+                <p className="text-xs text-muted-foreground italic">{ex.notes}</p>
+              </div>
             )}
           </div>
         ))}
       </div>
-
-      {/* Coach Notes */}
-      {workout.coach_notes && (
-        <div className="mb-6 rounded-xl bg-secondary border border-border p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <MessageSquare className="h-4 w-4 text-primary" />
-            <span className="text-sm font-bold font-display">COACH NOTES</span>
-          </div>
-          <p className="text-sm text-muted-foreground">{workout.coach_notes}</p>
-        </div>
-      )}
 
       {/* Completed State */}
       {completed ? (
@@ -88,7 +151,6 @@ const WorkoutPage = () => {
         </div>
       ) : (
         <>
-          {/* Log Form */}
           {showLog ? (
             <div className="rounded-xl bg-card border border-border p-5 mb-4 shadow-card">
               <h3 className="font-bold font-display mb-4">LOG YOUR RESULTS</h3>
@@ -118,8 +180,8 @@ const WorkoutPage = () => {
               </Button>
             </div>
           ) : (
-            <Button onClick={() => setShowLog(true)} className="w-full gradient-fire text-primary-foreground font-display text-lg shadow-fire py-6">
-              MARK WORKOUT COMPLETED
+            <Button onClick={handleStartWorkout} className="w-full gradient-fire text-primary-foreground font-display text-lg shadow-fire py-6">
+              {user ? 'MARK WORKOUT COMPLETED' : 'START WORKOUT'}
             </Button>
           )}
         </>

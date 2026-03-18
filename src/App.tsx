@@ -9,6 +9,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import SplashScreen from "@/components/SplashScreen";
 import AppLayout from "@/components/AppLayout";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import AdminRoute from "@/components/AdminRoute";
 import HomePage from "@/pages/HomePage";
 import LoginPage from "@/pages/LoginPage";
 import SignupPage from "@/pages/SignupPage";
@@ -39,16 +40,24 @@ const App = () => {
             <OnboardingProvider>
               <AppLayout>
                 <Routes>
+                  {/* Public routes */}
                   <Route path="/login" element={<LoginPage />} />
                   <Route path="/signup" element={<SignupPage />} />
                   <Route path="/onboarding" element={<OnboardingPage />} />
-                  <Route path="/" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
-                  <Route path="/workout/:id" element={<ProtectedRoute><WorkoutPage /></ProtectedRoute>} />
+
+                  {/* Guest-accessible routes */}
+                  <Route path="/" element={<HomePage />} />
+                  <Route path="/workout/:id" element={<WorkoutPage />} />
+                  <Route path="/programs" element={<ProgramsPage />} />
+
+                  {/* Auth-required routes */}
                   <Route path="/progress" element={<ProtectedRoute><ProgressPage /></ProtectedRoute>} />
                   <Route path="/leaderboard" element={<ProtectedRoute><LeaderboardPage /></ProtectedRoute>} />
-                  <Route path="/programs" element={<ProtectedRoute><ProgramsPage /></ProtectedRoute>} />
                   <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
-                  <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
+
+                  {/* Admin-only route */}
+                  <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </AppLayout>
