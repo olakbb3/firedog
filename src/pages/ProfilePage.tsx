@@ -19,7 +19,7 @@ interface ProgramRow {
 
 const ProfilePage = () => {
   const navigate = useNavigate();
-  const { user, signOut } = useAuth();
+  const { user, role, signOut } = useAuth();
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [programs, setPrograms] = useState<ProgramRow[]>([]);
 
@@ -93,17 +93,19 @@ const ProfilePage = () => {
         </div>
       )}
 
-      {/* Menu */}
-      <div className="space-y-2 mb-6">
-        <button
-          onClick={() => navigate('/admin')}
-          className="w-full rounded-xl bg-card border border-border p-4 flex items-center gap-3 shadow-card hover:border-primary/50 transition-colors"
-        >
-          <Shield className="h-4 w-4 text-primary" />
-          <span className="font-semibold text-sm">Admin Dashboard</span>
-          <ChevronRight className="h-4 w-4 text-muted-foreground ml-auto" />
-        </button>
-      </div>
+      {/* Admin button - only visible to admins */}
+      {role === 'admin' && (
+        <div className="space-y-2 mb-6">
+          <button
+            onClick={() => navigate('/admin')}
+            className="w-full rounded-xl bg-card border border-border p-4 flex items-center gap-3 shadow-card hover:border-primary/50 transition-colors"
+          >
+            <Shield className="h-4 w-4 text-primary" />
+            <span className="font-semibold text-sm">Admin Dashboard</span>
+            <ChevronRight className="h-4 w-4 text-muted-foreground ml-auto" />
+          </button>
+        </div>
+      )}
 
       <Button variant="outline" className="w-full border-border text-muted-foreground hover:text-foreground font-display" onClick={handleLogout}>
         <LogOut className="h-4 w-4 mr-2" />

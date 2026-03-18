@@ -10,7 +10,7 @@ import firedogLogo from '@/assets/firedog-logo.png';
 const SignupPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { data: onboardingData, reset: resetOnboarding } = useOnboarding();
+  const { data: onboardingData, reset: resetOnboarding, returnPath } = useOnboarding();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -52,9 +52,10 @@ const SignupPage = () => {
         }
       }
 
+      const redirectTo = returnPath || '/';
       resetOnboarding();
       toast({ title: 'Account created!', description: 'Welcome to FiredogWorks.' });
-      navigate('/');
+      navigate(redirectTo);
     } catch (err: any) {
       toast({ title: 'Unexpected error', description: err.message || String(err), variant: 'destructive' });
     } finally {

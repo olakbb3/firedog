@@ -9,23 +9,23 @@ const steps = [
   {
     question: 'What is your current training level?',
     field: 'training_level' as const,
-    options: ['Beginner', 'Intermediate', 'Advanced', 'Firefighter/Tactical'],
+    options: ['Beginner', 'Intermediate', 'Advanced'],
   },
   {
     question: 'What are you training for?',
     field: 'fitness_goal' as const,
-    options: ['Strength', 'Conditioning', 'Firefighter readiness', 'Weight loss', 'General fitness'],
+    options: ['Strength', 'Conditioning', 'Performance'],
   },
   {
     question: 'How many days per week do you train?',
     field: 'training_frequency' as const,
-    options: ['2–3 days', '3–4 days', '5+ days'],
+    options: ['3 days', '4 days', '5+ days'],
   },
 ];
 
 const OnboardingPage = () => {
   const navigate = useNavigate();
-  const { data, setField } = useOnboarding();
+  const { data, setField, pendingAction } = useOnboarding();
   const [step, setStep] = useState(0);
   const current = steps[step];
   const selectedValue = data[current.field];
@@ -41,6 +41,15 @@ const OnboardingPage = () => {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center px-6">
       <img src={firedogLogo} alt="FiredogWorks" className="w-16 h-16 mb-6 object-contain" />
+
+      {/* Pending action context */}
+      {pendingAction && (
+        <div className="mb-4 rounded-lg bg-primary/10 border border-primary/20 px-4 py-2">
+          <p className="text-xs text-primary font-semibold text-center">
+            Sign up to {pendingAction.toLowerCase()}
+          </p>
+        </div>
+      )}
 
       {/* Progress dots */}
       <div className="flex gap-2 mb-8">

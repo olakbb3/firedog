@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { Flame, Trophy, Zap, ShoppingBag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAuthGate } from '@/hooks/useAuthGate';
 import { supabase } from '@/lib/supabaseClient';
 
 interface WorkoutRow {
@@ -39,26 +40,35 @@ interface ProfileRow {
 const HomePage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { requireAuth, isGuest } = useAuthGate();
   const [profile, setProfile] = useState<ProfileRow | null>(null);
   const [todayWorkout, setTodayWorkout] = useState<WorkoutRow | null>(null);
   const [featuredProgram, setFeaturedProgram] = useState<ProgramRow | null>(null);
   const [challenges, setChallenges] = useState<ChallengeRow[]>([]);
 
   useEffect(() => {
-    if (!user) return;
-
     const fetchData = async () => {
-      const [profileRes, workoutRes, programRes, challengeRes] = await Promise.all([
-        supabase.from('profiles').select('full_name, points').eq('id', user.id).maybeSingle(),
-        supabase.from('workouts').select('*').order('date', { ascending: false }).limit(1).maybeSingle(),
-        supabase.from('programs').select('*').order('price', { ascending: false }).limit(1).maybeSingle(),
-        supabase.from('challenges').select('*'),
-      ]);
-
-      if (profileRes.data) setProfile(profileRes.data);
-      if (workoutRes.data) setTodayWorkout(workoutRes.data);
-      if (programRes.data) setFeaturedProgram(programRes.data);
-      if (challengeRes.data) setChallenges(challengeRes.data);
+      if (user) {
+        const [profileRes, workoutRes, programRes, challengeRes] = await Promise.all([
+          supabase.from('profiles').select('full_name, points').eq('id', user.id).maybeSingle(),
+          supabase.from('workouts').select('*').order('date', { ascending: false }).limit(1).maybeSingle(),
+          supabase.from('programs').select('*').order('price', { ascending: false }).limit(1).maybeSingle(),
+          supabase.from('challenges').select('*'),
+        ]);
+        if (profileRes.data) setProfile(profileRes.data);
+        if (workoutRes.data) setTodayWorkout(workoutRes.data);
+        if (programRes.data) setFeaturedProgram(programRes.data);
+        if (challengeRes.data) setChallenges(challengeRes.data);
+      } else {
+        const [workoutRes, programRes, challengeRes] = await Promise.all([
+          supabase.from('workouts').select('*').order('date', { ascending: false }).limit(1).maybeSingle(),
+          supabase.from('programs').select('*').order('price', { ascending: false }).limit(1).maybeSingle(),
+          supabase.from('challenges').select('*'),
+        ]);
+        if (workoutRes.data) setTodayWorkout(workoutRes.data);
+        if (programRes.data) setFeaturedProgram(programRes.data);
+        if (challengeRes.data) setChallenges(challengeRes.data);
+      }
     };
 
     fetchData();
@@ -66,13 +76,25 @@ const HomePage = () => {
 
   const displayName = profile?.full_name?.split(' ')[0] || user?.user_metadata?.full_name?.split(' ')[0] || 'Athlete';
 
+  const handleStartWorkout = (workoutId: string) => {
+    if (requireAuth('Start Workout')) {
+      navigate(`/workout/${workoutId}`);
+    }
+  };
+
+  const handleJoinChallenge = () => {
+    requireAuth('Join Challenge');
+  };
+
   return (
     <div className="px-4 pt-6 pb-4 max-w-lg mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <p className="text-sm text-muted-foreground">Welcome back,</p>
-          <h1 className="text-xl font-bold">{displayName}</h1>
+          <p className="text-sm text-muted-foreground">
+            {isGuest ? 'Welcome to' : 'Welcome back,'}
+          </p>
+          <h1 className="text-xl font-bold">{isGuest ? 'FiredogWorks' : displayName}</h1>
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -81,12 +103,25 @@ const HomePage = () => {
           >
             <ShoppingBag className="h-5 w-5" />
           </button>
-          <div className="flex items-center gap-1 rounded-full bg-secondary px-3 py-1.5">
-            <Flame className="h-4 w-4 text-primary" />
-            <span className="text-sm font-semibold">{profile?.points ?? 0}</span>
-          </div>
+          {!isGuest && (
+            <div className="flex items-center gap-1 rounded-full bg-secondary px-3 py-1.5">
+              <Flame className="h-4 w-4 text-primary" />
+              <span className="text-sm font-semibold">{profile?.points ?? 0}</span>
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Guest CTA Banner */}
+      {isGuest && (
+        <button
+          onClick={() => navigate('/onboarding')}
+          className="w-full mb-6 rounded-xl border border-primary/30 bg-primary/5 p-4 text-left hover:bg-primary/10 transition-colors"
+        >
+          <p className="text-sm font-bold text-primary font-display">CREATE YOUR FREE ACCOUNT</p>
+          <p className="text-xs text-muted-foreground mt-1">Save workouts, track progress, and join challenges.</p>
+        </button>
+      )}
 
       {/* Banner */}
       <div className="mb-6 rounded-xl gradient-fire p-6 shadow-fire">
@@ -115,7 +150,7 @@ const HomePage = () => {
               <span>{(todayWorkout.exercises || []).reduce((a: number, e: any) => a + (e.sets || 0), 0)} total sets</span>
             </div>
             <div className="mt-3">
-              <span className="text-xs text-primary font-semibold">START WORKOUT →</span>
+              <span className="text-xs text-primary font-semibold">VIEW WORKOUT →</span>
             </div>
           </button>
         </div>
@@ -156,7 +191,12 @@ const HomePage = () => {
                 <p className="text-xs text-muted-foreground mt-1">{ch.description}</p>
                 <div className="mt-2 flex items-center justify-between">
                   <span className="text-xs text-muted-foreground">{ch.participants} athletes joined</span>
-                  <Button size="sm" variant="outline" className="text-xs h-7 border-primary text-primary hover:bg-primary hover:text-primary-foreground">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-xs h-7 border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+                    onClick={handleJoinChallenge}
+                  >
                     Join
                   </Button>
                 </div>
