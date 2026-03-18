@@ -48,23 +48,23 @@ const HomePage = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-      const queries: Promise<any>[] = [
-        supabase.from('workouts').select('*').order('date', { ascending: false }).limit(1).maybeSingle(),
-        supabase.from('programs').select('*').order('price', { ascending: false }).limit(1).maybeSingle(),
-        supabase.from('challenges').select('*'),
-      ];
-
       if (user) {
-        queries.unshift(
-          supabase.from('profiles').select('full_name, points').eq('id', user.id).maybeSingle()
-        );
-        const [profileRes, workoutRes, programRes, challengeRes] = await Promise.all(queries);
+        const [profileRes, workoutRes, programRes, challengeRes] = await Promise.all([
+          supabase.from('profiles').select('full_name, points').eq('id', user.id).maybeSingle(),
+          supabase.from('workouts').select('*').order('date', { ascending: false }).limit(1).maybeSingle(),
+          supabase.from('programs').select('*').order('price', { ascending: false }).limit(1).maybeSingle(),
+          supabase.from('challenges').select('*'),
+        ]);
         if (profileRes.data) setProfile(profileRes.data);
         if (workoutRes.data) setTodayWorkout(workoutRes.data);
         if (programRes.data) setFeaturedProgram(programRes.data);
         if (challengeRes.data) setChallenges(challengeRes.data);
       } else {
-        const [workoutRes, programRes, challengeRes] = await Promise.all(queries);
+        const [workoutRes, programRes, challengeRes] = await Promise.all([
+          supabase.from('workouts').select('*').order('date', { ascending: false }).limit(1).maybeSingle(),
+          supabase.from('programs').select('*').order('price', { ascending: false }).limit(1).maybeSingle(),
+          supabase.from('challenges').select('*'),
+        ]);
         if (workoutRes.data) setTodayWorkout(workoutRes.data);
         if (programRes.data) setFeaturedProgram(programRes.data);
         if (challengeRes.data) setChallenges(challengeRes.data);

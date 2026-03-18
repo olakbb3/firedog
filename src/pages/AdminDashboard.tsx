@@ -284,14 +284,19 @@ const MediaTab = () => (
 );
 
 const HomeTab = () => {
-  const [workouts, setWorkouts] = useState<WorkoutRow[]>([]);
-  const [programs, setPrograms] = useState<ProgramRow[]>([]);
+  const [workouts, setWorkouts] = useState<{ id: string; title: string }[]>([]);
+  const [programs, setPrograms] = useState<{ id: string; title: string }[]>([]);
 
   useEffect(() => {
-    Promise.all([
-      supabase.from('workouts').select('id, title').then(r => r.data || []),
-      supabase.from('programs').select('id, title').then(r => r.data || []),
-    ]).then(([w, p]) => { setWorkouts(w); setPrograms(p); });
+    const fetch = async () => {
+      const [w, p] = await Promise.all([
+        supabase.from('workouts').select('id, title'),
+        supabase.from('programs').select('id, title'),
+      ]);
+      if (w.data) setWorkouts(w.data);
+      if (p.data) setPrograms(p.data);
+    };
+    fetch();
   }, []);
 
   return (
