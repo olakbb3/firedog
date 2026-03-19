@@ -7,15 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAuthGate } from '@/hooks/useAuthGate';
 import { supabase } from '@/lib/supabaseClient';
-
-interface ExerciseRow {
-  id: string;
-  exercise_name: string;
-  sets: number | null;
-  reps: number | null;
-  duration: string | null;
-  notes: string | null;
-}
+import type { WorkoutSection, ExerciseRow } from '@/types/index';
 
 interface WorkoutData {
   id: string;
@@ -25,6 +17,7 @@ interface WorkoutData {
   coach_notes: string | null;
   video_url: string | null;
   date: string;
+  workout_date: string | null;
 }
 
 const WorkoutPage = () => {
@@ -33,6 +26,7 @@ const WorkoutPage = () => {
   const { user } = useAuth();
   const { requireAuth } = useAuthGate();
   const [workout, setWorkout] = useState<WorkoutData | null>(null);
+  const [sections, setSections] = useState<WorkoutSection[]>([]);
   const [exercises, setExercises] = useState<ExerciseRow[]>([]);
   const [showLog, setShowLog] = useState(false);
   const [completed, setCompleted] = useState(false);
@@ -43,24 +37,72 @@ const WorkoutPage = () => {
     if (!id) return;
     const fetchWorkout = async () => {
       setLoading(true);
-      const [workoutRes, exercisesRes] = await Promise.all([
+      const [workoutRes, sectionsRes, exercisesRes] = await Promise.all([
         supabase.from('workouts').select('*').eq('id', id).maybeSingle(),
-        supabase.from('exercises').select('*').eq('workout_id', id).order('id'),
+        supabase.from('workout_sections').select('*').eq('workout_id', id).order('order_index'),
+        supabase.from('exercises').select('*').eq('workout_id', id).order('order_index'),
       ]);
       if (workoutRes.data) setWorkout(workoutRes.data);
-      if (exercisesRes.data && exercisesRes.data.length > 0) {
-        setExercises(exercisesRes.data);
-      }
+      if (sectionsRes.data) setSections(sectionsRes.data);
+      if (exercisesRes.data) setExercises(exercisesRes.data);
       setLoading(false);
     };
     fetchWorkout();
   }, [id]);
 
-  // Fall back to JSON exercises column if no exercises table rows
-  const displayExercises: { name: string; sets?: number; reps?: number; duration?: string; notes?: string }[] =
-    exercises.length > 0
-      ? exercises.map(e => ({ name: e.exercise_name, sets: e.sets ?? undefined, reps: e.reps ?? undefined, duration: e.duration ?? undefined, notes: e.notes ?? undefined }))
-      : (workout?.exercises || []);
+  // Group exercises by section. Legacy exercises (no section_id) go under "Workout"
+  const groupedSections = (() => {
+    if (sections.length > 0) {
+      const groups = sections.map(s => ({
+        ...s,
+        exercises: exercises.filter(e => e.section_id === s.id).sort((a, b) => a.order_index - b.order_index),
+      }));
+      // Add unsectioned exercises under a default group
+      const unsectioned = exercises.filter(e => !e.section_id);
+      if (unsectioned.length > 0) {
+        groups.push({
+          id: 'legacy',
+          workout_id: id || '',
+          section_name: 'Workout',
+          order_index: -1,
+          exercises: unsectioned,
+        });
+        groups.sort((a, b) => (a.order_index === -1 ? -1 : a.order_index) - (b.order_index === -1 ? -1 : b.order_index));
+      }
+      return groups.filter(g => g.exercises.length > 0);
+    }
+    // No sections at all — use exercises or JSON fallback
+    if (exercises.length > 0) {
+      return [{
+        id: 'default',
+        workout_id: id || '',
+        section_name: 'Workout',
+        order_index: 0,
+        exercises: exercises,
+      }];
+    }
+    // JSON fallback from old workouts.exercises column
+    if (workout?.exercises?.length) {
+      return [{
+        id: 'json-fallback',
+        workout_id: id || '',
+        section_name: 'Workout',
+        order_index: 0,
+        exercises: workout.exercises.map((e: any, i: number) => ({
+          id: `json-${i}`,
+          workout_id: id || '',
+          section_id: null,
+          exercise_name: e.name || e.exercise_name || '',
+          sets: e.sets ?? null,
+          reps: e.reps ?? null,
+          duration: e.duration ?? null,
+          notes: e.notes ?? null,
+          order_index: i,
+        })),
+      }];
+    }
+    return [];
+  })();
 
   const handleStartWorkout = () => {
     if (!requireAuth('Start Workout')) return;
@@ -101,43 +143,57 @@ const WorkoutPage = () => {
       <div className="mb-6">
         <h1 className="text-2xl font-bold">{workout.title}</h1>
         <p className="text-muted-foreground mt-1">{workout.description}</p>
+        {workout.workout_date && (
+          <p className="text-xs text-muted-foreground mt-1">{workout.workout_date}</p>
+        )}
       </div>
 
-      {/* Exercise List with per-exercise coaching notes */}
-      <div className="space-y-3 mb-6">
-        {displayExercises.map((ex, i) => (
-          <div key={i} className="rounded-xl bg-card border border-border p-4 shadow-card">
-            <div className="flex items-start justify-between">
-              <div>
-                <h3 className="font-bold font-display">{ex.name}</h3>
-                <div className="mt-1 flex flex-wrap gap-3 text-sm text-muted-foreground">
-                  {ex.sets && (
-                    <span className="flex items-center gap-1">
-                      <Dumbbell className="h-3.5 w-3.5" />
-                      {ex.sets} sets
-                    </span>
-                  )}
-                  {ex.reps && <span>{ex.reps} reps</span>}
-                  {ex.duration && (
-                    <span className="flex items-center gap-1">
-                      <Clock className="h-3.5 w-3.5" />
-                      {ex.duration}
-                    </span>
+      {/* Sectioned Exercise List */}
+      <div className="space-y-6 mb-6">
+        {groupedSections.map((section) => (
+          <div key={section.id}>
+            <div className="flex items-center gap-2 mb-3">
+              <div className="h-px flex-1 bg-border" />
+              <span className="text-xs font-bold font-display text-primary tracking-wider">{section.section_name.toUpperCase()}</span>
+              <div className="h-px flex-1 bg-border" />
+            </div>
+            <div className="space-y-3">
+              {section.exercises.map((ex) => (
+                <div key={ex.id} className="rounded-xl bg-card border border-border p-4 shadow-card">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h3 className="font-bold font-display">{ex.exercise_name}</h3>
+                      <div className="mt-1 flex flex-wrap gap-3 text-sm text-muted-foreground">
+                        {ex.sets && (
+                          <span className="flex items-center gap-1">
+                            <Dumbbell className="h-3.5 w-3.5" />
+                            {ex.sets} sets
+                          </span>
+                        )}
+                        {ex.reps && <span>{ex.reps} reps</span>}
+                        {ex.duration && (
+                          <span className="flex items-center gap-1">
+                            <Clock className="h-3.5 w-3.5" />
+                            {ex.duration}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    {workout.video_url && (
+                      <button className="rounded-lg bg-secondary p-2 text-muted-foreground hover:text-foreground">
+                        <Play className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
+                  {ex.notes && (
+                    <div className="mt-2 border-t border-border pt-2">
+                      <p className="text-xs text-primary font-semibold mb-0.5">COACH NOTE</p>
+                      <p className="text-xs text-muted-foreground italic">{ex.notes}</p>
+                    </div>
                   )}
                 </div>
-              </div>
-              {workout.video_url && (
-                <button className="rounded-lg bg-secondary p-2 text-muted-foreground hover:text-foreground">
-                  <Play className="h-4 w-4" />
-                </button>
-              )}
+              ))}
             </div>
-            {ex.notes && (
-              <div className="mt-2 border-t border-border pt-2">
-                <p className="text-xs text-primary font-semibold mb-0.5">COACH NOTE</p>
-                <p className="text-xs text-muted-foreground italic">{ex.notes}</p>
-              </div>
-            )}
           </div>
         ))}
       </div>
