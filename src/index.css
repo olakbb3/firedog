@@ -118,3 +118,12 @@
   background: hsl(0 0% 25%);
   border-radius: 4px;
 }
+
+/* Hide scrollbar for date strip */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
