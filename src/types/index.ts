@@ -16,6 +16,26 @@ export interface Exercise {
   notes?: string;
 }
 
+export interface WorkoutSection {
+  id: string;
+  workout_id: string;
+  section_name: string;
+  order_index: number;
+  created_at?: string;
+}
+
+export interface ExerciseRow {
+  id: string;
+  workout_id: string;
+  section_id: string | null;
+  exercise_name: string;
+  sets: number | null;
+  reps: number | null;
+  duration: string | null;
+  notes: string | null;
+  order_index: number;
+}
+
 export interface Workout {
   id: string;
   title: string;
@@ -24,6 +44,7 @@ export interface Workout {
   coach_notes?: string;
   video_url?: string;
   date: string;
+  workout_date?: string;
   program_id?: string;
 }
 
