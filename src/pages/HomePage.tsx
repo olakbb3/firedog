@@ -7,6 +7,7 @@ import { useAuthGate } from '@/hooks/useAuthGate';
 import { supabase } from '@/lib/supabaseClient';
 import WeeklyDateStrip from '@/components/WeeklyDateStrip';
 import { format, isSameDay } from 'date-fns';
+import firedogLogo from '@/assets/firedog-logo.png';
 
 interface WorkoutRow {
   id: string;
