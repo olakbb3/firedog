@@ -65,7 +65,7 @@ const SignupPage = () => {
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center px-6">
-      <img src={firedogLogo} alt="FiredogWorks" className="w-24 h-24 mb-4 object-contain" />
+      <img src={firedogLogo} alt="FiredogWorks" className="w-32 h-32 mb-4 object-contain" />
       <h1 className="text-2xl font-bold mb-1">JOIN THE CREW</h1>
       <p className="text-muted-foreground text-sm mb-8">Start your training today.</p>
 
