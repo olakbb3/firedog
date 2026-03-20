@@ -105,11 +105,14 @@ const HomePage = () => {
     <div className="px-4 pt-6 pb-4 max-w-lg mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <div>
-          <p className="text-sm text-muted-foreground">
-            {isGuest ? 'Welcome to' : 'Welcome back,'}
-          </p>
-          <h1 className="text-xl font-bold">{isGuest ? 'FiredogWorks' : displayName}</h1>
+        <div className="flex items-center gap-3">
+          <img src={firedogLogo} alt="FiredogWorks" className="w-9 h-9 object-contain" />
+          <div>
+            <p className="text-sm text-muted-foreground">
+              {isGuest ? 'Welcome to' : 'Welcome back,'}
+            </p>
+            <h1 className="text-xl font-bold">{isGuest ? 'FiredogWorks' : displayName}</h1>
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <button

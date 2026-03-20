@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import firedogLogo from '@/assets/firedogworks-logo.jpg';
+import firedogLogo from '@/assets/firedog-logo.png';
 
 const SplashScreen = ({ onComplete }: { onComplete: () => void }) => {
   const [fadeOut, setFadeOut] = useState(false);

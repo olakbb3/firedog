@@ -112,9 +112,13 @@ const ProfilePage = () => {
         SIGN OUT
       </Button>
 
-      <div className="mt-8 flex flex-col items-center opacity-40">
-        <img src={firedogLogo} alt="FiredogWorks" className="w-8 h-8 object-contain" />
-        <p className="text-[10px] text-muted-foreground mt-1">FiredogWorks</p>
+      <div className="mt-8 flex flex-col items-center opacity-40 space-y-1">
+        <img src={firedogLogo} alt="FiredogWorks" className="w-10 h-10 object-contain" />
+        <p className="text-[10px] text-muted-foreground">© FiredogWorks</p>
+        <div className="flex gap-3">
+          <button className="text-[10px] text-muted-foreground hover:text-foreground transition-colors">Privacy Policy</button>
+          <button className="text-[10px] text-muted-foreground hover:text-foreground transition-colors">Terms of Service</button>
+        </div>
       </div>
     </div>
   );
