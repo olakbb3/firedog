@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Edit, Trash2, Dumbbell, BookOpen, Image, Home, Trophy, X, Save, GripVertical, CalendarIcon } from 'lucide-react';
+import { ArrowLeft, Plus, Edit, Trash2, Dumbbell, BookOpen, Image, Home, Trophy, X, Save, CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabaseClient';
 import { useToast } from '@/hooks/use-toast';
@@ -95,6 +96,7 @@ const WorkoutsTab = () => {
   const { toast } = useToast();
   const [workouts, setWorkouts] = useState<WorkoutRow[]>([]);
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [formTitle, setFormTitle] = useState('');
   const [formDesc, setFormDesc] = useState('');
   const [formDate, setFormDate] = useState<Date | undefined>(new Date());
@@ -102,11 +104,20 @@ const WorkoutsTab = () => {
     DEFAULT_SECTIONS.map(name => ({ section_name: name, exercises: [emptyExercise()] }))
   );
 
-  useEffect(() => {
-    supabase.from('workouts').select('*').order('workout_date', { ascending: false, nullsFirst: false }).then(({ data }) => {
-      if (data) setWorkouts(data);
-    });
-  }, []);
+  const fetchWorkouts = async () => {
+    const { data } = await supabase.from('workouts').select('*').order('workout_date', { ascending: false, nullsFirst: false });
+    if (data) setWorkouts(data);
+  };
+
+  useEffect(() => { fetchWorkouts(); }, []);
+
+  const resetForm = () => {
+    setFormTitle('');
+    setFormDesc('');
+    setFormDate(new Date());
+    setEditingId(null);
+    setSections(DEFAULT_SECTIONS.map(name => ({ section_name: name, exercises: [emptyExercise()] })));
+  };
 
   const addSection = () => {
     setSections(prev => [...prev, { section_name: '', exercises: [emptyExercise()] }]);
@@ -146,32 +157,124 @@ const WorkoutsTab = () => {
     ));
   };
 
+  const handleEdit = async (workoutId: string) => {
+    const w = workouts.find(x => x.id === workoutId);
+    if (!w) return;
+
+    setFormTitle(w.title);
+    setFormDesc(w.description);
+    setFormDate(w.workout_date ? new Date(w.workout_date + 'T00:00:00') : new Date(w.date));
+    setEditingId(workoutId);
+
+    // Fetch sections and exercises for this workout
+    const [sectionsRes, exercisesRes] = await Promise.all([
+      supabase.from('workout_sections').select('*').eq('workout_id', workoutId).order('order_index'),
+      supabase.from('exercises').select('*').eq('workout_id', workoutId).order('order_index'),
+    ]);
+
+    const dbSections = sectionsRes.data || [];
+    const dbExercises = exercisesRes.data || [];
+
+    if (dbSections.length > 0) {
+      setSections(dbSections.map(s => ({
+        section_name: s.section_name,
+        exercises: dbExercises
+          .filter((e: any) => e.section_id === s.id)
+          .map((e: any) => ({
+            exercise_name: e.exercise_name || '',
+            sets: e.sets?.toString() || '',
+            reps: e.reps?.toString() || '',
+            duration: e.duration || '',
+            notes: e.notes || '',
+          })),
+      })).map(s => s.exercises.length === 0 ? { ...s, exercises: [emptyExercise()] } : s));
+    } else {
+      // Fallback: use JSON exercises column
+      const jsonExercises = w.exercises || [];
+      if (jsonExercises.length > 0) {
+        setSections([{
+          section_name: 'Workout',
+          exercises: jsonExercises.map((e: any) => ({
+            exercise_name: e.name || e.exercise_name || '',
+            sets: e.sets?.toString() || '',
+            reps: e.reps?.toString() || '',
+            duration: e.duration || '',
+            notes: e.notes || '',
+          })),
+        }]);
+      } else {
+        setSections(DEFAULT_SECTIONS.map(name => ({ section_name: name, exercises: [emptyExercise()] })));
+      }
+    }
+
+    setShowForm(true);
+  };
+
+  const handleDelete = async (workoutId: string) => {
+    // Delete exercises and sections first, then workout
+    await Promise.all([
+      supabase.from('exercises').delete().eq('workout_id', workoutId),
+      supabase.from('workout_sections').delete().eq('workout_id', workoutId),
+    ]);
+    const { error } = await supabase.from('workouts').delete().eq('id', workoutId);
+    if (error) {
+      toast({ title: 'Error deleting workout', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: 'Workout deleted' });
+      fetchWorkouts();
+    }
+  };
+
   const handleSave = async () => {
     if (!formTitle.trim()) return;
     const workoutDate = formDate ? format(formDate, 'yyyy-MM-dd') : null;
 
-    const { data: workout, error } = await supabase
-      .from('workouts')
-      .insert({
+    let workoutId = editingId;
+
+    if (editingId) {
+      // Update existing workout
+      const { error } = await supabase.from('workouts').update({
         title: formTitle,
         description: formDesc,
-        exercises: [],
-        date: new Date().toISOString().split('T')[0],
         workout_date: workoutDate,
-      })
-      .select()
-      .single();
+      }).eq('id', editingId);
 
-    if (error || !workout) {
-      toast({ title: 'Error creating workout', description: error?.message, variant: 'destructive' });
-      return;
+      if (error) {
+        toast({ title: 'Error updating workout', description: error.message, variant: 'destructive' });
+        return;
+      }
+
+      // Clear old sections & exercises
+      await Promise.all([
+        supabase.from('exercises').delete().eq('workout_id', editingId),
+        supabase.from('workout_sections').delete().eq('workout_id', editingId),
+      ]);
+    } else {
+      // Create new workout
+      const { data: workout, error } = await supabase
+        .from('workouts')
+        .insert({
+          title: formTitle,
+          description: formDesc,
+          exercises: [],
+          date: new Date().toISOString().split('T')[0],
+          workout_date: workoutDate,
+        })
+        .select()
+        .single();
+
+      if (error || !workout) {
+        toast({ title: 'Error creating workout', description: error?.message, variant: 'destructive' });
+        return;
+      }
+      workoutId = workout.id;
     }
 
     // Insert sections
     const sectionRows = sections
       .filter(s => s.section_name.trim())
       .map((s, i) => ({
-        workout_id: workout.id,
+        workout_id: workoutId,
         section_name: s.section_name,
         order_index: i,
       }));
@@ -202,7 +305,7 @@ const WorkoutsTab = () => {
         .filter(ex => ex.exercise_name.trim())
         .forEach((ex, ei) => {
           exerciseRows.push({
-            workout_id: workout.id,
+            workout_id: workoutId,
             section_id: sectionMap[si] || null,
             exercise_name: ex.exercise_name,
             sets: ex.sets ? parseInt(ex.sets) : null,
@@ -218,21 +321,19 @@ const WorkoutsTab = () => {
       await supabase.from('exercises').insert(exerciseRows);
     }
 
-    toast({ title: 'Workout created!' });
+    toast({ title: editingId ? 'Workout updated!' : 'Workout created!' });
     setShowForm(false);
-    setFormTitle('');
-    setFormDesc('');
-    setFormDate(new Date());
-    setSections(DEFAULT_SECTIONS.map(name => ({ section_name: name, exercises: [emptyExercise()] })));
-    const { data } = await supabase.from('workouts').select('*').order('workout_date', { ascending: false, nullsFirst: false });
-    if (data) setWorkouts(data);
+    resetForm();
+    fetchWorkouts();
   };
 
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
         <h2 className="font-bold font-display">MANAGE WORKOUTS</h2>
-        <Button size="sm" className="gradient-fire text-primary-foreground shadow-fire" onClick={() => setShowForm(!showForm)}>
+        <Button size="sm" className="gradient-fire text-primary-foreground shadow-fire" onClick={() => {
+          if (showForm) { setShowForm(false); resetForm(); } else { resetForm(); setShowForm(true); }
+        }}>
           {showForm ? <><X className="h-4 w-4 mr-1" /> Cancel</> : <><Plus className="h-4 w-4 mr-1" /> Add Workout</>}
         </Button>
       </div>
@@ -305,7 +406,7 @@ const WorkoutsTab = () => {
           </div>
 
           <Button onClick={handleSave} className="w-full gradient-fire text-primary-foreground shadow-fire">
-            <Save className="h-4 w-4 mr-2" /> SAVE WORKOUT
+            <Save className="h-4 w-4 mr-2" /> {editingId ? 'UPDATE WORKOUT' : 'SAVE WORKOUT'}
           </Button>
         </div>
       )}
@@ -318,12 +419,26 @@ const WorkoutsTab = () => {
               <p className="text-xs text-muted-foreground">{w.workout_date || w.date}</p>
             </div>
             <div className="flex items-center gap-2">
-              <button className="p-2 rounded-lg bg-secondary text-muted-foreground hover:text-foreground">
+              <button onClick={() => handleEdit(w.id)} className="p-2 rounded-lg bg-secondary text-muted-foreground hover:text-foreground">
                 <Edit className="h-4 w-4" />
               </button>
-              <button className="p-2 rounded-lg bg-secondary text-destructive hover:bg-destructive/10">
-                <Trash2 className="h-4 w-4" />
-              </button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <button className="p-2 rounded-lg bg-secondary text-destructive hover:bg-destructive/10">
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete "{w.title}"?</AlertDialogTitle>
+                    <AlertDialogDescription>This will permanently delete the workout, its sections, and all exercises. This action cannot be undone.</AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={() => handleDelete(w.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </div>
           </div>
         ))}
