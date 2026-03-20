@@ -1,15 +1,17 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Flame, Dumbbell, Trophy, BookOpen, LogOut, Shield, ChevronRight } from 'lucide-react';
+import { Flame, Dumbbell, Trophy, BookOpen, LogOut, Shield, ChevronRight, Camera } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabaseClient';
+import { toast } from '@/hooks/use-toast';
 import firedogLogo from '@/assets/firedog-logo.png';
 
 interface ProfileData {
   full_name: string | null;
   points: number;
   completed_workouts: number;
+  avatar_url: string | null;
 }
 
 interface ProgramRow {
@@ -22,13 +24,15 @@ const ProfilePage = () => {
   const { user, role, signOut } = useAuth();
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [programs, setPrograms] = useState<ProgramRow[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!user) return;
 
     const fetchProfile = async () => {
       const [profileRes, programsRes] = await Promise.all([
-        supabase.from('profiles').select('full_name, points, completed_workouts').eq('id', user.id).maybeSingle(),
+        supabase.from('profiles').select('full_name, points, completed_workouts, avatar_url').eq('id', user.id).maybeSingle(),
         supabase.from('programs').select('id, title').limit(10),
       ]);
       if (profileRes.data) setProfile(profileRes.data);
@@ -37,6 +41,46 @@ const ProfilePage = () => {
 
     fetchProfile();
   }, [user]);
+
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+
+    setUploading(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const filePath = `${user.id}/avatar.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: publicUrl })
+        .eq('id', user.id);
+
+      if (updateError) throw updateError;
+
+      setProfile(prev => prev ? { ...prev, avatar_url: publicUrl } : prev);
+      toast({ title: 'Avatar updated!' });
+    } catch (err: any) {
+      toast({ title: 'Upload failed', description: err.message, variant: 'destructive' });
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
 
   const handleLogout = async () => {
     await signOut();
@@ -47,11 +91,31 @@ const ProfilePage = () => {
 
   return (
     <div className="px-4 pt-6 pb-4 max-w-lg mx-auto">
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleAvatarUpload}
+      />
+
       {/* Profile Header */}
       <div className="flex flex-col items-center mb-8">
-        <div className="w-20 h-20 rounded-full gradient-fire flex items-center justify-center text-primary-foreground font-display text-2xl font-bold shadow-fire mb-3">
-          {displayName.charAt(0)}
-        </div>
+        <button
+          onClick={handleAvatarClick}
+          disabled={uploading}
+          className="relative w-20 h-20 rounded-full gradient-fire flex items-center justify-center text-primary-foreground font-display text-2xl font-bold shadow-fire mb-3 overflow-hidden group cursor-pointer disabled:opacity-60"
+        >
+          {profile?.avatar_url ? (
+            <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+          ) : (
+            displayName.charAt(0)
+          )}
+          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+            <Camera className="h-5 w-5 text-white" />
+          </div>
+        </button>
         <h1 className="text-xl font-bold">{displayName}</h1>
         <p className="text-sm text-muted-foreground">{user?.email}</p>
       </div>
