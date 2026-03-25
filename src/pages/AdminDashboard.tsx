@@ -16,7 +16,7 @@ import { cn } from '@/lib/utils';
 type Tab = 'workouts' | 'programs' | 'challenges' | 'media' | 'home';
 
 interface WorkoutRow { id: string; title: string; description: string; exercises: any[]; date: string; workout_date: string | null; }
-interface ProgramRow { id: string; title: string; description: string; price: number; duration_weeks: number; }
+interface ProgramRow { id: string; title: string; description: string; sku: string; store_link: string | null; image_url: string | null; is_free: boolean; }
 interface ChallengeRow { id: string; title: string; description: string; participants: number; }
 
 const DEFAULT_SECTIONS = ['Morning Meeting', 'Dispatch', 'First-In', 'Overhaul', 'Rehab'];
