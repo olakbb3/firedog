@@ -82,45 +82,7 @@ export const mockLeaderboard: LeaderboardEntry[] = [
   { user_id: '16', user_name: 'Bri Martinez', avatar: '', total_points: 1500, workouts_completed: 55 },
 ];
 
-export const mockPrograms: Program[] = [
-  {
-    id: 'prog-1',
-    title: 'FIREHOUSE FUNDAMENTALS',
-    description: '8-week foundational strength and conditioning program designed for firefighter fitness standards.',
-    price: 0,
-    duration_weeks: 8,
-    workouts: mockWorkouts,
-    is_purchased: true,
-  },
-  {
-    id: 'prog-2',
-    title: 'BLAZE PROTOCOL',
-    description: '12-week advanced program. High-intensity conditioning, heavy lifting, and mental toughness.',
-    price: 49.99,
-    duration_weeks: 12,
-    workouts: [],
-    is_purchased: false,
-  },
-  {
-    id: 'prog-3',
-    title: 'IRON SHIELD',
-    description: '6-week pure strength program. Powerlifting focus with firefighter functional movements.',
-    price: 39.99,
-    duration_weeks: 6,
-    workouts: [],
-    is_purchased: false,
-  },
-  {
-    id: 'prog-4',
-    title: 'SMOKE ENDURANCE',
-    description: '10-week cardio and endurance program. Built for long shift stamina.',
-    price: 44.99,
-    duration_weeks: 10,
-    workouts: [],
-    is_purchased: true,
-  },
-];
-
+export const mockPrograms: Program[] = [];
 export const mockChallenges: Challenge[] = [
   { id: 'ch-1', title: '30-DAY CONDITIONING CHALLENGE', description: 'Complete a workout every day for 30 days. No excuses.', start_date: '2026-03-01', end_date: '2026-03-31', participants: 47 },
   { id: 'ch-2', title: 'STRENGTH TEST WEEK', description: 'Test your 1RM on all major lifts. Post your numbers.', start_date: '2026-03-15', end_date: '2026-03-22', participants: 32 },
