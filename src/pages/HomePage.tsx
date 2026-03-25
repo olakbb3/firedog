@@ -61,7 +61,7 @@ const HomePage = () => {
     const fetchData = async () => {
       const [workoutsRes, programRes, challengeRes] = await Promise.all([
         supabase.from('workouts').select('*').order('workout_date', { ascending: false }),
-        supabase.from('programs').select('*').order('price', { ascending: false }).limit(1).maybeSingle(),
+        supabase.from('programs').select('id, title, description, sku, store_link, image_url, is_free').eq('is_free', false).limit(1).maybeSingle(),
         supabase.from('challenges').select('*'),
       ]);
 
