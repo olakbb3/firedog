@@ -23,8 +23,10 @@ interface ProgramRow {
   id: string;
   title: string;
   description: string;
-  price: number;
-  duration_weeks: number;
+  sku: string;
+  store_link: string | null;
+  image_url: string | null;
+  is_free: boolean;
 }
 
 interface ChallengeRow {
@@ -59,7 +61,7 @@ const HomePage = () => {
     const fetchData = async () => {
       const [workoutsRes, programRes, challengeRes] = await Promise.all([
         supabase.from('workouts').select('*').order('workout_date', { ascending: false }),
-        supabase.from('programs').select('*').order('price', { ascending: false }).limit(1).maybeSingle(),
+        supabase.from('programs').select('id, title, description, sku, store_link, image_url, is_free').eq('is_free', false).limit(1).maybeSingle(),
         supabase.from('challenges').select('*'),
       ]);
 
@@ -192,7 +194,7 @@ const HomePage = () => {
       )}
 
       {/* Featured Program */}
-      {featuredProgram && (
+      {featuredProgram && !featuredProgram.is_free && (
         <div className="mb-6">
           <h2 className="text-lg font-bold mb-3 flex items-center gap-2">
             <Trophy className="h-5 w-5 text-accent" />
@@ -200,15 +202,15 @@ const HomePage = () => {
           </h2>
           <button
             onClick={() => navigate('/programs')}
-            className="w-full rounded-xl bg-card border border-border p-5 text-left shadow-card hover:border-accent/50 transition-colors"
+            className="w-full rounded-xl bg-card border border-border overflow-hidden text-left shadow-card hover:border-accent/50 transition-colors"
           >
-            <div className="flex items-center justify-between">
+            {featuredProgram.image_url && (
+              <img src={featuredProgram.image_url} alt={featuredProgram.title} className="w-full h-32 object-cover" />
+            )}
+            <div className="p-5 flex items-center justify-between">
               <div>
                 <h3 className="font-bold font-display">{featuredProgram.title}</h3>
-                <p className="text-sm text-muted-foreground mt-1">{featuredProgram.duration_weeks} weeks</p>
-              </div>
-              <div className="rounded-lg gradient-fire px-3 py-1.5">
-                <span className="text-sm font-bold text-primary-foreground">${featuredProgram.price}</span>
+                <p className="text-sm text-muted-foreground mt-1">{featuredProgram.description}</p>
               </div>
             </div>
           </button>

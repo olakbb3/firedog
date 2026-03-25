@@ -16,7 +16,7 @@ import { cn } from '@/lib/utils';
 type Tab = 'workouts' | 'programs' | 'challenges' | 'media' | 'home';
 
 interface WorkoutRow { id: string; title: string; description: string; exercises: any[]; date: string; workout_date: string | null; }
-interface ProgramRow { id: string; title: string; description: string; price: number; duration_weeks: number; }
+interface ProgramRow { id: string; title: string; description: string; sku: string; store_link: string | null; image_url: string | null; is_free: boolean; }
 interface ChallengeRow { id: string; title: string; description: string; participants: number; }
 
 const DEFAULT_SECTIONS = ['Morning Meeting', 'Dispatch', 'First-In', 'Overhaul', 'Rehab'];
@@ -448,33 +448,97 @@ const WorkoutsTab = () => {
 };
 
 const ProgramsTab = () => {
+  const { toast } = useToast();
   const [programs, setPrograms] = useState<ProgramRow[]>([]);
-  useEffect(() => {
-    supabase.from('programs').select('*').then(({ data }) => { if (data) setPrograms(data); });
-  }, []);
+
+  const fetchPrograms = async () => {
+    const { data } = await supabase.from('programs').select('id, title, description, sku, store_link, image_url, is_free').order('is_free', { ascending: false });
+    if (data) setPrograms(data);
+  };
+
+  useEffect(() => { fetchPrograms(); }, []);
+
+  const handleImageUpload = async (programId: string, file: File) => {
+    const ext = file.name.split('.').pop();
+    const path = `programs/${programId}.${ext}`;
+
+    const { error: uploadError } = await supabase.storage.from('program-images').upload(path, file, { upsert: true });
+    if (uploadError) {
+      toast({ title: 'Upload failed', description: uploadError.message, variant: 'destructive' });
+      return;
+    }
+
+    const { data: urlData } = supabase.storage.from('program-images').getPublicUrl(path);
+    const imageUrl = urlData.publicUrl + '?t=' + Date.now();
+
+    const { error } = await supabase.from('programs').update({ image_url: imageUrl }).eq('id', programId);
+    if (error) {
+      toast({ title: 'Error saving URL', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: 'Image updated!' });
+      fetchPrograms();
+    }
+  };
+
+  const handleDelete = async (programId: string) => {
+    const { error } = await supabase.from('programs').delete().eq('id', programId);
+    if (error) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: 'Program deleted' });
+      fetchPrograms();
+    }
+  };
 
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
         <h2 className="font-bold font-display">MANAGE PROGRAMS</h2>
-        <Button size="sm" className="gradient-fire text-primary-foreground shadow-fire">
-          <Plus className="h-4 w-4 mr-1" /> Add Program
-        </Button>
       </div>
       <div className="space-y-3">
         {programs.map((p) => (
-          <div key={p.id} className="rounded-xl bg-card border border-border p-4 shadow-card flex items-center justify-between">
-            <div>
-              <h3 className="font-bold font-display text-sm">{p.title}</h3>
-              <p className="text-xs text-muted-foreground">{p.duration_weeks} weeks • {p.price > 0 ? `$${p.price}` : 'Free'}</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <button className="p-2 rounded-lg bg-secondary text-muted-foreground hover:text-foreground">
-                <Edit className="h-4 w-4" />
-              </button>
-              <button className="p-2 rounded-lg bg-secondary text-destructive hover:bg-destructive/10">
-                <Trash2 className="h-4 w-4" />
-              </button>
+          <div key={p.id} className="rounded-xl bg-card border border-border p-4 shadow-card">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3 flex-1 min-w-0">
+                {p.image_url ? (
+                  <img src={p.image_url} alt={p.title} className="w-12 h-12 rounded-lg object-cover shrink-0" />
+                ) : (
+                  <div className="w-12 h-12 rounded-lg bg-secondary flex items-center justify-center shrink-0">
+                    <BookOpen className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                )}
+                <div className="min-w-0">
+                  <h3 className="font-bold font-display text-sm truncate">{p.title}</h3>
+                  <p className="text-xs text-muted-foreground">{p.sku} • {p.is_free ? 'Free' : 'Premium'}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <label className="p-2 rounded-lg bg-secondary text-muted-foreground hover:text-foreground cursor-pointer">
+                  <Image className="h-4 w-4" />
+                  <input type="file" accept="image/*" className="hidden" onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleImageUpload(p.id, file);
+                    e.target.value = '';
+                  }} />
+                </label>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <button className="p-2 rounded-lg bg-secondary text-destructive hover:bg-destructive/10">
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete "{p.title}"?</AlertDialogTitle>
+                      <AlertDialogDescription>This will permanently remove this program. This action cannot be undone.</AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={() => handleDelete(p.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
             </div>
           </div>
         ))}
