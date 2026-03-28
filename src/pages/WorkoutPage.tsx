@@ -145,14 +145,41 @@ const WorkoutPage = () => {
     fetchPerformance();
   }, [id, user]);
 
-  // Group exercises by section
+  // Group exercises by section (deduplicate sections by name)
   const groupedSections = (() => {
     if (sections.length > 0) {
-      const groups = sections.map(s => ({
-        ...s,
-        exercises: exercises.filter(e => e.section_id === s.id).sort((a, b) => a.order_index - b.order_index),
-      }));
-      const unsectioned = exercises.filter(e => !e.section_id);
+      // Deduplicate sections by section_name, keeping the first occurrence
+      const uniqueSections: WorkoutSection[] = [];
+      const seenNames = new Set<string>();
+      for (const s of sections) {
+        if (!seenNames.has(s.section_name)) {
+          seenNames.add(s.section_name);
+          uniqueSections.push(s);
+        }
+      }
+
+      // Collect all section IDs that share a name so exercises from duplicates are included
+      const nameToIds = new Map<string, string[]>();
+      for (const s of sections) {
+        const ids = nameToIds.get(s.section_name) || [];
+        ids.push(s.id);
+        nameToIds.set(s.section_name, ids);
+      }
+
+      const groups = uniqueSections.map(s => {
+        const allIds = nameToIds.get(s.section_name) || [s.id];
+        return {
+          ...s,
+          exercises: exercises
+            .filter(e => allIds.includes(e.section_id || ''))
+            .sort((a, b) => a.order_index - b.order_index)
+            // Deduplicate exercises by exercise_name within a section
+            .filter((ex, idx, arr) => arr.findIndex(e => e.exercise_name === ex.exercise_name && e.order_index === ex.order_index) === idx),
+        };
+      });
+
+      const allSectionIds = sections.map(s => s.id);
+      const unsectioned = exercises.filter(e => !e.section_id || !allSectionIds.includes(e.section_id));
       if (unsectioned.length > 0) {
         groups.push({
           id: 'legacy',
