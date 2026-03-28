@@ -193,12 +193,15 @@ const WorkoutPage = () => {
       return groups.filter(g => g.exercises.length > 0);
     }
     if (exercises.length > 0) {
+      const deduped = exercises.filter((ex, idx, arr) =>
+        arr.findIndex(e => e.exercise_name === ex.exercise_name && e.order_index === ex.order_index) === idx
+      );
       return [{
         id: 'default',
         workout_id: id || '',
         section_name: 'Workout',
         order_index: 0,
-        exercises,
+        exercises: deduped,
       }];
     }
     if (workout?.exercises?.length) {
