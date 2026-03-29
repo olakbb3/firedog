@@ -14,6 +14,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import type { WorkoutSection, ExerciseRow } from '@/types/index';
+import { parseTextWithLinks } from '@/lib/urlParser';
 
 interface WorkoutData {
   id: string;
