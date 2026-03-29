@@ -252,6 +252,7 @@ const WorkoutPage = () => {
             </>
           )}
         </div>
+        <LinkButtons links={extractLinkButtons(workout.description)} />
 
         {/* === ATHLETE SNAPSHOT === */}
         {user && (snapshot.lastDate || snapshot.completedCount > 0) && (
