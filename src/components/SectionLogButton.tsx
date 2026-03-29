@@ -208,7 +208,7 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName }: 
           variant="outline"
           size="sm"
           onClick={handleOpen}
-          className="mt-2 w-full border-primary/30 text-primary hover:bg-primary/10 font-body text-xs tracking-wider"
+          className="mt-2 w-full border-primary text-primary hover:bg-primary/15 font-body text-xs tracking-wider"
         >
           LOG RESULT
         </Button>
