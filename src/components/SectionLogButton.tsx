@@ -98,6 +98,7 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName }: 
     setResultType('completed');
     setFormData({ time: '', rounds: '', reps: '', calories: '', meters: '', weight: '', notes: '' });
     setValidationError('');
+    setSubmitError('');
   };
 
   const handleOpen = () => {
