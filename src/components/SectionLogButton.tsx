@@ -146,11 +146,12 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName }: 
   };
 
   const handleSubmit = async (overrideType?: ResultType, skipValidation?: boolean) => {
-    if (!user) return;
+    if (!user || submittingRef.current) return;
     const rt = overrideType || resultType;
 
     if (!skipValidation && !validate()) return;
 
+    submittingRef.current = true;
     setSubmitting(true);
     const payload: Record<string, any> = {
       user_id: user.id,
@@ -171,7 +172,6 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName }: 
     if (rt === 'weight' && formData.weight !== '') payload.weight = Math.max(0, parseFloat(formData.weight));
     if (formData.notes) payload.notes = formData.notes;
 
-    // Optimistic: close modal and update UI immediately
     const newEntry: SectionLogEntry = {
       result_type: rt,
       is_rx: isRx,
@@ -183,11 +183,23 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName }: 
       weight: payload.weight,
       notes: payload.notes,
     };
-    setLoggedResults(prev => [newEntry, ...prev]);
-    setOpen(false);
-    setSubmitting(false);
 
-    await supabase.from('workout_logs').insert(payload);
+    try {
+      const { error } = await supabase.from('workout_logs').insert(payload);
+      if (error) throw error;
+      // Success: update UI and close
+      setLoggedResults(prev => [newEntry, ...prev]);
+      setOpen(false);
+    } catch (err: any) {
+      toast({
+        title: 'Failed to save',
+        description: 'Please check your connection and try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setSubmitting(false);
+      submittingRef.current = false;
+    }
   };
 
   const latestLog = loggedResults[0];
