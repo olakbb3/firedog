@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabaseClient';
 import type { WorkoutSection, ExerciseRow } from '@/types/index';
-import { parseTextWithLinks } from '@/lib/urlParser';
+import { parseTextWithLinks, extractLinkButtons, LinkButtons } from '@/lib/urlParser';
 import SectionLogButton from '@/components/SectionLogButton';
 
 interface WorkoutData {
@@ -252,6 +252,7 @@ const WorkoutPage = () => {
             </>
           )}
         </div>
+        <LinkButtons links={extractLinkButtons(workout.description)} />
 
         {/* === ATHLETE SNAPSHOT === */}
         {user && (snapshot.lastDate || snapshot.completedCount > 0) && (
@@ -290,6 +291,7 @@ const WorkoutPage = () => {
                     {ex.notes && (
                       <p className="text-xs text-muted-foreground italic mt-0.5 font-body">{parseTextWithLinks(ex.notes)}</p>
                     )}
+                    <LinkButtons links={extractLinkButtons(ex.notes)} />
                   </div>
                 ))}
               </div>
@@ -308,6 +310,7 @@ const WorkoutPage = () => {
           <div className="mt-5 border-t border-border pt-3">
             <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-body mb-1">Coach Notes</p>
             <p className="text-xs text-muted-foreground italic font-body leading-relaxed">{parseTextWithLinks(workout.coach_notes)}</p>
+            <LinkButtons links={extractLinkButtons(workout.coach_notes)} />
           </div>
         )}
       </div>

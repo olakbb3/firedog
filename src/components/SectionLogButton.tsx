@@ -9,13 +9,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAuthGate } from '@/hooks/useAuthGate';
 import { supabase } from '@/lib/supabaseClient';
@@ -70,15 +63,14 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName }: 
   const { user } = useAuth();
   const { requireAuth } = useAuthGate();
 
-  // Modal state
   const [step, setStep] = useState<'rx' | 'type' | 'input'>('rx');
   const [open, setOpen] = useState(false);
   const [isRx, setIsRx] = useState(true);
   const [resultType, setResultType] = useState<ResultType>('completed');
   const [formData, setFormData] = useState({ time: '', rounds: '', reps: '', calories: '', meters: '', weight: '', notes: '' });
   const [submitting, setSubmitting] = useState(false);
+  const [validationError, setValidationError] = useState('');
 
-  // Logged results for this section
   const [loggedResults, setLoggedResults] = useState<SectionLogEntry[]>([]);
 
   useEffect(() => {
@@ -102,6 +94,7 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName }: 
     setIsRx(true);
     setResultType('completed');
     setFormData({ time: '', rounds: '', reps: '', calories: '', meters: '', weight: '', notes: '' });
+    setValidationError('');
   };
 
   const handleOpen = () => {
@@ -126,14 +119,35 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName }: 
 
   const validateTimeFormat = (t: string) => /^\d{1,3}:\d{2}$/.test(t);
 
+  const validate = (): boolean => {
+    setValidationError('');
+    switch (resultType) {
+      case 'time':
+        if (!formData.time.trim()) { setValidationError('Time is required'); return false; }
+        if (!validateTimeFormat(formData.time.trim())) { setValidationError('Use MM:SS format'); return false; }
+        return true;
+      case 'rounds_reps':
+        if (formData.rounds === '' && formData.reps === '') { setValidationError('Enter rounds or reps'); return false; }
+        return true;
+      case 'calories':
+        if (formData.calories === '') { setValidationError('Enter calories'); return false; }
+        return true;
+      case 'meters':
+        if (formData.meters === '') { setValidationError('Enter meters'); return false; }
+        return true;
+      case 'weight':
+        if (formData.weight === '') { setValidationError('Enter weight'); return false; }
+        return true;
+      default:
+        return true;
+    }
+  };
+
   const handleSubmit = async (overrideType?: ResultType, skipValidation?: boolean) => {
     if (!user) return;
     const rt = overrideType || resultType;
 
-    // Validate
-    if (!skipValidation) {
-      if (rt === 'time' && formData.time && !validateTimeFormat(formData.time)) return;
-    }
+    if (!skipValidation && !validate()) return;
 
     setSubmitting(true);
     const payload: Record<string, any> = {
@@ -145,7 +159,7 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName }: 
       completion_date: new Date().toISOString(),
     };
 
-    if (rt === 'time' && formData.time) payload.time = formData.time;
+    if (rt === 'time' && formData.time) payload.time = formData.time.trim();
     if (rt === 'rounds_reps') {
       if (formData.rounds !== '') payload.rounds = Math.max(0, parseInt(formData.rounds));
       if (formData.reps !== '') payload.reps = Math.max(0, parseInt(formData.reps));
@@ -179,7 +193,6 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName }: 
 
   return (
     <>
-      {/* Logged summary or Log button */}
       {latestLog ? (
         <div className="mt-2 flex items-center justify-between">
           <div className="flex items-center gap-1.5 text-xs font-body text-primary">
@@ -202,7 +215,6 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName }: 
         </Button>
       )}
 
-      {/* Modal */}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-sm bg-card border-border">
           <DialogHeader>
@@ -252,7 +264,7 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName }: 
             </>
           )}
 
-          {/* Step 3: Input */}
+          {/* Step 3: Conditional Input */}
           {step === 'input' && (
             <>
               <p className="text-center text-sm font-bold tracking-widest mt-1">
@@ -324,7 +336,7 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName }: 
                 )}
                 {resultType === 'weight' && (
                   <div>
-                    <label className="text-[10px] text-muted-foreground mb-1 block font-body uppercase tracking-wider">Weight (lbs)</label>
+                    <label className="text-[10px] text-muted-foreground mb-1 block font-body uppercase tracking-wider">Weight</label>
                     <Input
                       type="number"
                       min="0"
@@ -336,6 +348,8 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName }: 
                     />
                   </div>
                 )}
+
+                {/* Notes - only show for scaled or always optional */}
                 <Textarea
                   value={formData.notes}
                   onChange={e => setFormData(d => ({ ...d, notes: e.target.value }))}
@@ -343,6 +357,11 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName }: 
                   className="bg-secondary"
                   rows={2}
                 />
+
+                {validationError && (
+                  <p className="text-xs text-destructive font-body text-center">{validationError}</p>
+                )}
+
                 <Button
                   onClick={() => handleSubmit()}
                   disabled={submitting}
