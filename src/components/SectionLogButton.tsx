@@ -72,6 +72,7 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName }: 
   const [formData, setFormData] = useState({ time: '', rounds: '', reps: '', calories: '', meters: '', weight: '', notes: '' });
   const [submitting, setSubmitting] = useState(false);
   const [validationError, setValidationError] = useState('');
+  const [submitError, setSubmitError] = useState('');
 
   const [loggedResults, setLoggedResults] = useState<SectionLogEntry[]>([]);
 
@@ -97,6 +98,7 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName }: 
     setResultType('completed');
     setFormData({ time: '', rounds: '', reps: '', calories: '', meters: '', weight: '', notes: '' });
     setValidationError('');
+    setSubmitError('');
   };
 
   const handleOpen = () => {
@@ -153,6 +155,7 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName }: 
 
     submittingRef.current = true;
     setSubmitting(true);
+    setSubmitError('');
     const payload: Record<string, any> = {
       user_id: user.id,
       workout_id: workoutId,
@@ -191,6 +194,7 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName }: 
       setLoggedResults(prev => [newEntry, ...prev]);
       setOpen(false);
     } catch (err: any) {
+      setSubmitError('Failed to save. Check your connection and try again.');
       toast({
         title: 'Failed to save',
         description: 'Please check your connection and try again.',
@@ -289,7 +293,7 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName }: 
                     <label className="text-[10px] text-muted-foreground mb-1 block font-body uppercase tracking-wider">Time (MM:SS)</label>
                     <Input
                       value={formData.time}
-                      onChange={e => setFormData(d => ({ ...d, time: e.target.value }))}
+                      onChange={e => { setFormData(d => ({ ...d, time: e.target.value })); setSubmitError(''); }}
                       className="bg-secondary"
                       placeholder="12:45"
                     />
@@ -303,7 +307,7 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName }: 
                         type="number"
                         min="0"
                         value={formData.rounds}
-                        onChange={e => setFormData(d => ({ ...d, rounds: e.target.value }))}
+                        onChange={e => { setFormData(d => ({ ...d, rounds: e.target.value })); setSubmitError(''); }}
                         className="bg-secondary"
                         placeholder="0"
                       />
@@ -314,7 +318,7 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName }: 
                         type="number"
                         min="0"
                         value={formData.reps}
-                        onChange={e => setFormData(d => ({ ...d, reps: e.target.value }))}
+                        onChange={e => { setFormData(d => ({ ...d, reps: e.target.value })); setSubmitError(''); }}
                         className="bg-secondary"
                         placeholder="0"
                       />
@@ -328,7 +332,7 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName }: 
                       type="number"
                       min="0"
                       value={formData.calories}
-                      onChange={e => setFormData(d => ({ ...d, calories: e.target.value }))}
+                      onChange={e => { setFormData(d => ({ ...d, calories: e.target.value })); setSubmitError(''); }}
                       className="bg-secondary"
                       placeholder="0"
                     />
@@ -341,7 +345,7 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName }: 
                       type="number"
                       min="0"
                       value={formData.meters}
-                      onChange={e => setFormData(d => ({ ...d, meters: e.target.value }))}
+                      onChange={e => { setFormData(d => ({ ...d, meters: e.target.value })); setSubmitError(''); }}
                       className="bg-secondary"
                       placeholder="0"
                     />
@@ -355,7 +359,7 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName }: 
                       min="0"
                       step="0.5"
                       value={formData.weight}
-                      onChange={e => setFormData(d => ({ ...d, weight: e.target.value }))}
+                      onChange={e => { setFormData(d => ({ ...d, weight: e.target.value })); setSubmitError(''); }}
                       className="bg-secondary"
                       placeholder="0"
                     />
@@ -365,7 +369,7 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName }: 
                 {/* Notes - only show for scaled or always optional */}
                 <Textarea
                   value={formData.notes}
-                  onChange={e => setFormData(d => ({ ...d, notes: e.target.value }))}
+                  onChange={e => { setFormData(d => ({ ...d, notes: e.target.value })); setSubmitError(''); }}
                   placeholder="Notes (optional)"
                   className="bg-secondary"
                   rows={2}
@@ -373,6 +377,10 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName }: 
 
                 {validationError && (
                   <p className="text-xs text-destructive font-body text-center">{validationError}</p>
+                )}
+
+                {submitError && (
+                  <p className="text-xs text-destructive font-body text-center font-semibold">{submitError}</p>
                 )}
 
                 <Button
