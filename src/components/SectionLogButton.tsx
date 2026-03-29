@@ -145,7 +145,7 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName }: 
       completion_date: new Date().toISOString(),
     };
 
-    if (rt === 'time' && formData.time) payload.time_logged = formData.time;
+    if (rt === 'time' && formData.time) payload.time = formData.time;
     if (rt === 'rounds_reps') {
       if (formData.rounds) payload.rounds = Math.max(0, parseInt(formData.rounds));
       if (formData.reps) payload.reps = Math.max(0, parseInt(formData.reps));
