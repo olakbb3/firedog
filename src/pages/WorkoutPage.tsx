@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabaseClient';
 import type { WorkoutSection, ExerciseRow } from '@/types/index';
 import { parseTextWithLinks, extractLinkButtons, LinkButtons } from '@/lib/urlParser';
 import SectionLogButton from '@/components/SectionLogButton';
+import { useLeaderboard } from '@/hooks/useLeaderboard';
 
 interface WorkoutData {
   id: string;
