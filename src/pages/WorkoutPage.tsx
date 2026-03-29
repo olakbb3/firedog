@@ -360,7 +360,7 @@ const WorkoutPage = () => {
         {workout.coach_notes && (
           <div className="mt-5 border-t border-border pt-3">
             <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-body mb-1">Coach Notes</p>
-            <p className="text-xs text-muted-foreground italic font-body leading-relaxed">{workout.coach_notes}</p>
+            <p className="text-xs text-muted-foreground italic font-body leading-relaxed">{parseTextWithLinks(workout.coach_notes)}</p>
           </div>
         )}
       </div>
