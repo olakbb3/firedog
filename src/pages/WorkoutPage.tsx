@@ -1,20 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Trophy, Clock, Hash, Flame } from 'lucide-react';
+import { ArrowLeft, Trophy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/contexts/AuthContext';
-import { useAuthGate } from '@/hooks/useAuthGate';
 import { supabase } from '@/lib/supabaseClient';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 import type { WorkoutSection, ExerciseRow } from '@/types/index';
 import { parseTextWithLinks } from '@/lib/urlParser';
+import SectionLogButton from '@/components/SectionLogButton';
 
 interface WorkoutData {
   id: string;
@@ -42,7 +34,6 @@ const WorkoutPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { requireAuth } = useAuthGate();
   const [workout, setWorkout] = useState<WorkoutData | null>(null);
   const [sections, setSections] = useState<WorkoutSection[]>([]);
   const [exercises, setExercises] = useState<ExerciseRow[]>([]);
@@ -51,14 +42,6 @@ const WorkoutPage = () => {
   // Performance & leaderboard
   const [snapshot, setSnapshot] = useState<PerformanceSnapshot>({ lastDate: null, bestResult: null, completedCount: 0 });
   const [crew, setCrew] = useState<CrewEntry[]>([]);
-
-  // Logging flow
-  const [rxModalOpen, setRxModalOpen] = useState(false);
-  const [isRx, setIsRx] = useState(true);
-  const [showLogForm, setShowLogForm] = useState(false);
-  const [completed, setCompleted] = useState(false);
-  const [logData, setLogData] = useState({ reps: '', weight: '', time: '', notes: '' });
-  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -81,7 +64,6 @@ const WorkoutPage = () => {
   useEffect(() => {
     if (!id) return;
     const fetchPerformance = async () => {
-      // User snapshot
       if (user) {
         const { data: logs } = await supabase
           .from('workout_logs')
@@ -106,7 +88,6 @@ const WorkoutPage = () => {
         }
       }
 
-      // Crew top 5
       const { data: crewLogs } = await supabase
         .from('workout_logs')
         .select('user_id, time, reps, completion_date')
@@ -115,16 +96,13 @@ const WorkoutPage = () => {
         .limit(20);
 
       if (crewLogs && crewLogs.length > 0) {
-        // Deduplicate by user, keep best
         const bestByUser = new Map<string, { time: string | null; reps: number | null }>();
         for (const log of crewLogs) {
-          const existing = bestByUser.get(log.user_id);
-          if (!existing) {
+          if (!bestByUser.has(log.user_id)) {
             bestByUser.set(log.user_id, { time: log.time, reps: log.reps });
           }
         }
 
-        // Fetch names
         const userIds = Array.from(bestByUser.keys());
         const { data: profiles } = await supabase
           .from('profiles')
@@ -149,7 +127,6 @@ const WorkoutPage = () => {
   // Group exercises by section (deduplicate sections by name)
   const groupedSections = (() => {
     if (sections.length > 0) {
-      // Deduplicate sections by section_name, keeping the first occurrence
       const uniqueSections: WorkoutSection[] = [];
       const seenNames = new Set<string>();
       for (const s of sections) {
@@ -159,7 +136,6 @@ const WorkoutPage = () => {
         }
       }
 
-      // Collect all section IDs that share a name so exercises from duplicates are included
       const nameToIds = new Map<string, string[]>();
       for (const s of sections) {
         const ids = nameToIds.get(s.section_name) || [];
@@ -174,7 +150,6 @@ const WorkoutPage = () => {
           exercises: exercises
             .filter(e => allIds.includes(e.section_id || ''))
             .sort((a, b) => a.order_index - b.order_index)
-            // Deduplicate exercises by exercise_name within a section
             .filter((ex, idx, arr) => arr.findIndex(e => e.exercise_name === ex.exercise_name && e.order_index === ex.order_index) === idx),
         };
       });
@@ -227,40 +202,6 @@ const WorkoutPage = () => {
     return [];
   })();
 
-  const handleLogScoreTap = () => {
-    if (!requireAuth('Log Score')) return;
-    setRxModalOpen(true);
-  };
-
-  const handleRxChoice = (rx: boolean) => {
-    setIsRx(rx);
-    setRxModalOpen(false);
-    setShowLogForm(true);
-  };
-
-  const handleSubmitLog = async () => {
-    if (!user || !id) return;
-    setSubmitting(true);
-    try {
-      const { error } = await supabase.from('workout_logs').insert({
-        user_id: user.id,
-        workout_id: id,
-        reps: logData.reps ? parseInt(logData.reps) : null,
-        weight: logData.weight ? parseInt(logData.weight) : null,
-        time: logData.time || null,
-        notes: logData.notes ? `${isRx ? '[Rx]' : '[Scaled]'} ${logData.notes}` : (isRx ? 'Rx' : 'Scaled'),
-        completion_date: new Date().toISOString(),
-      });
-      if (!error) {
-        setCompleted(true);
-        setShowLogForm(false);
-      }
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  // Format exercise line
   const formatExLine = (ex: ExerciseRow) => {
     const parts: string[] = [];
     if (ex.reps && ex.sets) parts.push(`${ex.sets} x ${ex.reps}`);
@@ -334,7 +275,7 @@ const WorkoutPage = () => {
           </div>
         )}
 
-        {/* === MOVEMENT LIST === */}
+        {/* === MOVEMENT LIST WITH PER-SECTION LOGGING === */}
         <div className="mt-5 space-y-5">
           {groupedSections.map((section) => (
             <div key={section.id}>
@@ -352,6 +293,12 @@ const WorkoutPage = () => {
                   </div>
                 ))}
               </div>
+              {/* Per-section Log Result button */}
+              <SectionLogButton
+                workoutId={workout.id}
+                sectionId={section.id}
+                sectionName={section.section_name}
+              />
             </div>
           ))}
         </div>
@@ -385,84 +332,6 @@ const WorkoutPage = () => {
           </div>
         </div>
       )}
-
-      {/* === LOG SCORE / COMPLETED STATE === */}
-      {completed ? (
-        <div className="rounded-xl gradient-fire p-5 text-center shadow-fire">
-          <Flame className="h-10 w-10 mx-auto text-primary-foreground mb-2" />
-          <h2 className="text-xl font-bold text-primary-foreground">LOGGED</h2>
-          <p className="text-sm text-primary-foreground/80 mt-1">{isRx ? 'Rx' : 'Scaled'} • +25 points</p>
-        </div>
-      ) : showLogForm ? (
-        <div className="rounded-xl border border-border bg-card p-5 mb-4">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-bold tracking-widest">LOG RESULT</h3>
-            <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${isRx ? 'bg-primary/20 text-primary' : 'bg-secondary text-muted-foreground'}`}>
-              {isRx ? 'Rx' : 'SCALED'}
-            </span>
-          </div>
-          <div className="grid grid-cols-3 gap-3 mb-3">
-            <div>
-              <label className="text-[10px] text-muted-foreground mb-1 block font-body uppercase tracking-wider">Reps</label>
-              <Input value={logData.reps} onChange={e => setLogData(d => ({...d, reps: e.target.value}))} className="bg-secondary" placeholder="0" />
-            </div>
-            <div>
-              <label className="text-[10px] text-muted-foreground mb-1 block font-body uppercase tracking-wider">Weight</label>
-              <Input value={logData.weight} onChange={e => setLogData(d => ({...d, weight: e.target.value}))} className="bg-secondary" placeholder="lbs" />
-            </div>
-            <div>
-              <label className="text-[10px] text-muted-foreground mb-1 block font-body uppercase tracking-wider">Time</label>
-              <Input value={logData.time} onChange={e => setLogData(d => ({...d, time: e.target.value}))} className="bg-secondary" placeholder="00:00" />
-            </div>
-          </div>
-          <Textarea
-            value={logData.notes}
-            onChange={e => setLogData(d => ({...d, notes: e.target.value}))}
-            placeholder="Notes (optional)"
-            className="bg-secondary mb-4"
-            rows={2}
-          />
-          <Button
-            onClick={handleSubmitLog}
-            disabled={submitting}
-            className="w-full gradient-fire text-primary-foreground font-display text-lg shadow-fire"
-          >
-            {submitting ? 'SAVING...' : 'SUBMIT'}
-          </Button>
-        </div>
-      ) : (
-        <Button
-          onClick={handleLogScoreTap}
-          className="w-full gradient-fire text-primary-foreground font-display text-lg shadow-fire py-6"
-        >
-          LOG SCORE
-        </Button>
-      )}
-
-      {/* === RX / SCALED MODAL === */}
-      <Dialog open={rxModalOpen} onOpenChange={setRxModalOpen}>
-        <DialogContent className="sm:max-w-sm bg-card border-border">
-          <DialogHeader>
-            <DialogTitle className="text-center text-lg tracking-widest">HOW DID YOU PERFORM?</DialogTitle>
-          </DialogHeader>
-          <div className="grid grid-cols-2 gap-3 mt-2">
-            <button
-              onClick={() => handleRxChoice(true)}
-              className="rounded-xl border-2 border-primary bg-primary/10 p-6 text-center hover:bg-primary/20 transition-colors"
-            >
-              <p className="text-lg font-bold text-primary">Rx</p>
-              <p className="text-xs text-muted-foreground mt-1 font-body">As Prescribed</p>
-            </button>
-            <button
-              onClick={() => handleRxChoice(false)}
-              className="rounded-xl border-2 border-border bg-secondary p-6 text-center hover:border-muted-foreground transition-colors"
-            >
-              <p className="text-lg font-bold text-foreground">Scaled</p>
-              <p className="text-xs text-muted-foreground mt-1 font-body">Modified</p>
-            </button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
