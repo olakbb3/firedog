@@ -25,7 +25,7 @@ type ResultType = 'completed' | 'time' | 'rounds_reps' | 'calories' | 'meters' |
 interface SectionLogEntry {
   result_type: ResultType;
   is_rx: boolean;
-  time_logged?: string;
+  time?: string;
   rounds?: number;
   reps?: number;
   calories?: number;
