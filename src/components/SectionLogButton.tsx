@@ -379,6 +379,10 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName }: 
                   <p className="text-xs text-destructive font-body text-center">{validationError}</p>
                 )}
 
+                {submitError && (
+                  <p className="text-xs text-destructive font-body text-center font-semibold">{submitError}</p>
+                )}
+
                 <Button
                   onClick={() => handleSubmit()}
                   disabled={submitting}
