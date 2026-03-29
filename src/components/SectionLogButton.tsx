@@ -162,7 +162,7 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName }: 
       const newEntry: SectionLogEntry = {
         result_type: rt,
         is_rx: isRx,
-        time_logged: payload.time_logged,
+        time: payload.time,
         rounds: payload.rounds,
         reps: payload.reps,
         calories: payload.calories,
