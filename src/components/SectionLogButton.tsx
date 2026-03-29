@@ -369,7 +369,7 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName }: 
                 {/* Notes - only show for scaled or always optional */}
                 <Textarea
                   value={formData.notes}
-                  onChange={e => setFormData(d => ({ ...d, notes: e.target.value }))}
+                  onChange={e => { setFormData(d => ({ ...d, notes: e.target.value })); setSubmitError(''); }}
                   placeholder="Notes (optional)"
                   className="bg-secondary"
                   rows={2}
