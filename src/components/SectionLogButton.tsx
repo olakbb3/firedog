@@ -194,6 +194,7 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName }: 
       setLoggedResults(prev => [newEntry, ...prev]);
       setOpen(false);
     } catch (err: any) {
+      setSubmitError('Failed to save. Check your connection and try again.');
       toast({
         title: 'Failed to save',
         description: 'Please check your connection and try again.',
