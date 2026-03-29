@@ -347,7 +347,7 @@ const WorkoutPage = () => {
                       {formatExLine(ex)}
                     </p>
                     {ex.notes && (
-                      <p className="text-xs text-muted-foreground italic mt-0.5 font-body">{ex.notes}</p>
+                      <p className="text-xs text-muted-foreground italic mt-0.5 font-body">{parseTextWithLinks(ex.notes)}</p>
                     )}
                   </div>
                 ))}
