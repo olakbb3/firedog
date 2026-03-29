@@ -147,12 +147,12 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName }: 
 
     if (rt === 'time' && formData.time) payload.time = formData.time;
     if (rt === 'rounds_reps') {
-      if (formData.rounds) payload.rounds = Math.max(0, parseInt(formData.rounds));
-      if (formData.reps) payload.reps = Math.max(0, parseInt(formData.reps));
+      if (formData.rounds !== '') payload.rounds = Math.max(0, parseInt(formData.rounds));
+      if (formData.reps !== '') payload.reps = Math.max(0, parseInt(formData.reps));
     }
-    if (rt === 'calories' && formData.calories) payload.calories = Math.max(0, parseInt(formData.calories));
-    if (rt === 'meters' && formData.meters) payload.meters = Math.max(0, parseInt(formData.meters));
-    if (rt === 'weight' && formData.weight) payload.weight = Math.max(0, parseFloat(formData.weight));
+    if (rt === 'calories' && formData.calories !== '') payload.calories = Math.max(0, parseInt(formData.calories));
+    if (rt === 'meters' && formData.meters !== '') payload.meters = Math.max(0, parseInt(formData.meters));
+    if (rt === 'weight' && formData.weight !== '') payload.weight = Math.max(0, parseFloat(formData.weight));
     if (formData.notes) payload.notes = formData.notes;
 
     const { error } = await supabase.from('workout_logs').insert(payload);
