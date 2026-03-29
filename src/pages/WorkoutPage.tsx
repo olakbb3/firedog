@@ -291,6 +291,7 @@ const WorkoutPage = () => {
                     {ex.notes && (
                       <p className="text-xs text-muted-foreground italic mt-0.5 font-body">{parseTextWithLinks(ex.notes)}</p>
                     )}
+                    <LinkButtons links={extractLinkButtons(ex.notes)} />
                   </div>
                 ))}
               </div>
