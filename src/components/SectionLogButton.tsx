@@ -72,6 +72,7 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName }: 
   const [formData, setFormData] = useState({ time: '', rounds: '', reps: '', calories: '', meters: '', weight: '', notes: '' });
   const [submitting, setSubmitting] = useState(false);
   const [validationError, setValidationError] = useState('');
+  const [submitError, setSubmitError] = useState('');
 
   const [loggedResults, setLoggedResults] = useState<SectionLogEntry[]>([]);
 
