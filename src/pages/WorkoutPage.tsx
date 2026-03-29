@@ -37,7 +37,7 @@ const WorkoutPage = () => {
 
   // Performance & leaderboard
   const [snapshot, setSnapshot] = useState<PerformanceSnapshot>({ lastDate: null, bestResult: null, completedCount: 0 });
-  const [crew, setCrew] = useState<CrewEntry[]>([]);
+  const { crew } = useLeaderboard(id, sections);
 
   useEffect(() => {
     if (!id) return;
