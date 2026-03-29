@@ -155,6 +155,7 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName }: 
 
     submittingRef.current = true;
     setSubmitting(true);
+    setSubmitError('');
     const payload: Record<string, any> = {
       user_id: user.id,
       workout_id: workoutId,
