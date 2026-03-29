@@ -52,7 +52,7 @@ const RESULT_TYPE_LABELS: Record<ResultType, string> = {
 function formatLogSummary(entry: SectionLogEntry): string {
   switch (entry.result_type) {
     case 'completed': return 'Completed';
-    case 'time': return entry.time_logged || 'Timed';
+    case 'time': return entry.time || 'Timed';
     case 'rounds_reps': {
       const parts: string[] = [];
       if (entry.rounds) parts.push(`${entry.rounds} Rounds`);
