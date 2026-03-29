@@ -59,9 +59,9 @@ function formatLogSummary(entry: SectionLogEntry): string {
       if (entry.reps !== null && entry.reps !== undefined) parts.push(`${entry.reps} Reps`);
       return parts.join(' + ') || 'Logged';
     }
-    case 'calories': return entry.calories ? `${entry.calories} cal` : 'Logged';
-    case 'meters': return entry.meters ? `${entry.meters} m` : 'Logged';
-    case 'weight': return entry.weight ? `${entry.weight} lbs` : 'Logged';
+    case 'calories': return (entry.calories !== null && entry.calories !== undefined) ? `${entry.calories} cal` : 'Logged';
+    case 'meters': return (entry.meters !== null && entry.meters !== undefined) ? `${entry.meters} m` : 'Logged';
+    case 'weight': return (entry.weight !== null && entry.weight !== undefined) ? `${entry.weight}` : 'Logged';
     default: return 'Logged';
   }
 }
