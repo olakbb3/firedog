@@ -55,8 +55,8 @@ function formatLogSummary(entry: SectionLogEntry): string {
     case 'time': return entry.time || 'Timed';
     case 'rounds_reps': {
       const parts: string[] = [];
-      if (entry.rounds) parts.push(`${entry.rounds} Rounds`);
-      if (entry.reps) parts.push(`${entry.reps} Reps`);
+      if (entry.rounds !== null && entry.rounds !== undefined) parts.push(`${entry.rounds} Rounds`);
+      if (entry.reps !== null && entry.reps !== undefined) parts.push(`${entry.reps} Reps`);
       return parts.join(' + ') || 'Logged';
     }
     case 'calories': return entry.calories ? `${entry.calories} cal` : 'Logged';
