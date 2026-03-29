@@ -169,24 +169,23 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName }: 
     if (rt === 'weight' && formData.weight !== '') payload.weight = Math.max(0, parseFloat(formData.weight));
     if (formData.notes) payload.notes = formData.notes;
 
-    const { error } = await supabase.from('workout_logs').insert(payload);
+    // Optimistic: close modal and update UI immediately
+    const newEntry: SectionLogEntry = {
+      result_type: rt,
+      is_rx: isRx,
+      time: payload.time,
+      rounds: payload.rounds,
+      reps: payload.reps,
+      calories: payload.calories,
+      meters: payload.meters,
+      weight: payload.weight,
+      notes: payload.notes,
+    };
+    setLoggedResults(prev => [newEntry, ...prev]);
+    setOpen(false);
     setSubmitting(false);
 
-    if (!error) {
-      const newEntry: SectionLogEntry = {
-        result_type: rt,
-        is_rx: isRx,
-        time: payload.time,
-        rounds: payload.rounds,
-        reps: payload.reps,
-        calories: payload.calories,
-        meters: payload.meters,
-        weight: payload.weight,
-        notes: payload.notes,
-      };
-      setLoggedResults(prev => [newEntry, ...prev]);
-      setOpen(false);
-    }
+    await supabase.from('workout_logs').insert(payload);
   };
 
   const latestLog = loggedResults[0];
@@ -209,7 +208,7 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName }: 
           variant="outline"
           size="sm"
           onClick={handleOpen}
-          className="mt-2 w-full border-primary/30 text-primary hover:bg-primary/10 font-body text-xs tracking-wider"
+          className="mt-2 w-full border-primary text-primary hover:bg-primary/15 font-body text-xs tracking-wider"
         >
           LOG RESULT
         </Button>
