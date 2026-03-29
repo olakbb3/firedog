@@ -14,6 +14,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import type { WorkoutSection, ExerciseRow } from '@/types/index';
+import { parseTextWithLinks } from '@/lib/urlParser';
 
 interface WorkoutData {
   id: string;
@@ -302,7 +303,7 @@ const WorkoutPage = () => {
 
         {/* Metadata row */}
         <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground font-body">
-          <span>{workout.description}</span>
+          <span>{parseTextWithLinks(workout.description)}</span>
           {workout.workout_date && (
             <>
               <span className="text-border">•</span>
@@ -346,7 +347,7 @@ const WorkoutPage = () => {
                       {formatExLine(ex)}
                     </p>
                     {ex.notes && (
-                      <p className="text-xs text-muted-foreground italic mt-0.5 font-body">{ex.notes}</p>
+                      <p className="text-xs text-muted-foreground italic mt-0.5 font-body">{parseTextWithLinks(ex.notes)}</p>
                     )}
                   </div>
                 ))}
@@ -359,7 +360,7 @@ const WorkoutPage = () => {
         {workout.coach_notes && (
           <div className="mt-5 border-t border-border pt-3">
             <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-body mb-1">Coach Notes</p>
-            <p className="text-xs text-muted-foreground italic font-body leading-relaxed">{workout.coach_notes}</p>
+            <p className="text-xs text-muted-foreground italic font-body leading-relaxed">{parseTextWithLinks(workout.coach_notes)}</p>
           </div>
         )}
       </div>
