@@ -293,7 +293,7 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName }: 
                     <label className="text-[10px] text-muted-foreground mb-1 block font-body uppercase tracking-wider">Time (MM:SS)</label>
                     <Input
                       value={formData.time}
-                      onChange={e => setFormData(d => ({ ...d, time: e.target.value }))}
+                      onChange={e => { setFormData(d => ({ ...d, time: e.target.value })); setSubmitError(''); }}
                       className="bg-secondary"
                       placeholder="12:45"
                     />
