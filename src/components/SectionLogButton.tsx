@@ -332,7 +332,7 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName }: 
                       type="number"
                       min="0"
                       value={formData.calories}
-                      onChange={e => setFormData(d => ({ ...d, calories: e.target.value }))}
+                      onChange={e => { setFormData(d => ({ ...d, calories: e.target.value })); setSubmitError(''); }}
                       className="bg-secondary"
                       placeholder="0"
                     />
