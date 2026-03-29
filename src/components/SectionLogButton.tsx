@@ -25,7 +25,7 @@ type ResultType = 'completed' | 'time' | 'rounds_reps' | 'calories' | 'meters' |
 interface SectionLogEntry {
   result_type: ResultType;
   is_rx: boolean;
-  time_logged?: string;
+  time?: string;
   rounds?: number;
   reps?: number;
   calories?: number;
@@ -52,16 +52,16 @@ const RESULT_TYPE_LABELS: Record<ResultType, string> = {
 function formatLogSummary(entry: SectionLogEntry): string {
   switch (entry.result_type) {
     case 'completed': return 'Completed';
-    case 'time': return entry.time_logged || 'Timed';
+    case 'time': return entry.time || 'Timed';
     case 'rounds_reps': {
       const parts: string[] = [];
-      if (entry.rounds) parts.push(`${entry.rounds} Rounds`);
-      if (entry.reps) parts.push(`${entry.reps} Reps`);
+      if (entry.rounds !== null && entry.rounds !== undefined) parts.push(`${entry.rounds} Rounds`);
+      if (entry.reps !== null && entry.reps !== undefined) parts.push(`${entry.reps} Reps`);
       return parts.join(' + ') || 'Logged';
     }
-    case 'calories': return entry.calories ? `${entry.calories} cal` : 'Logged';
-    case 'meters': return entry.meters ? `${entry.meters} m` : 'Logged';
-    case 'weight': return entry.weight ? `${entry.weight} lbs` : 'Logged';
+    case 'calories': return (entry.calories !== null && entry.calories !== undefined) ? `${entry.calories} cal` : 'Logged';
+    case 'meters': return (entry.meters !== null && entry.meters !== undefined) ? `${entry.meters} m` : 'Logged';
+    case 'weight': return (entry.weight !== null && entry.weight !== undefined) ? `${entry.weight}` : 'Logged';
     default: return 'Logged';
   }
 }
@@ -85,11 +85,11 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName }: 
     if (!user || !sectionId) return;
     supabase
       .from('workout_logs')
-      .select('result_type, is_rx, time_logged, rounds, reps, calories, meters, weight, notes')
+      .select('result_type, is_rx, time, rounds, reps, calories, meters, weight, notes')
       .eq('workout_id', workoutId)
       .eq('workout_section_id', sectionId)
       .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
+      .order('completion_date', { ascending: false })
       .then(({ data }) => {
         if (data && data.length > 0) {
           setLoggedResults(data as SectionLogEntry[]);
@@ -145,14 +145,14 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName }: 
       completion_date: new Date().toISOString(),
     };
 
-    if (rt === 'time' && formData.time) payload.time_logged = formData.time;
+    if (rt === 'time' && formData.time) payload.time = formData.time;
     if (rt === 'rounds_reps') {
-      if (formData.rounds) payload.rounds = Math.max(0, parseInt(formData.rounds));
-      if (formData.reps) payload.reps = Math.max(0, parseInt(formData.reps));
+      if (formData.rounds !== '') payload.rounds = Math.max(0, parseInt(formData.rounds));
+      if (formData.reps !== '') payload.reps = Math.max(0, parseInt(formData.reps));
     }
-    if (rt === 'calories' && formData.calories) payload.calories = Math.max(0, parseInt(formData.calories));
-    if (rt === 'meters' && formData.meters) payload.meters = Math.max(0, parseInt(formData.meters));
-    if (rt === 'weight' && formData.weight) payload.weight = Math.max(0, parseFloat(formData.weight));
+    if (rt === 'calories' && formData.calories !== '') payload.calories = Math.max(0, parseInt(formData.calories));
+    if (rt === 'meters' && formData.meters !== '') payload.meters = Math.max(0, parseInt(formData.meters));
+    if (rt === 'weight' && formData.weight !== '') payload.weight = Math.max(0, parseFloat(formData.weight));
     if (formData.notes) payload.notes = formData.notes;
 
     const { error } = await supabase.from('workout_logs').insert(payload);
@@ -162,7 +162,7 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName }: 
       const newEntry: SectionLogEntry = {
         result_type: rt,
         is_rx: isRx,
-        time_logged: payload.time_logged,
+        time: payload.time,
         rounds: payload.rounds,
         reps: payload.reps,
         calories: payload.calories,

@@ -165,7 +165,7 @@ const ProgressPage = () => {
                     </p>
                   </div>
                   <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                    {log.weight && <span>{log.weight} lbs</span>}
+                    {(log.weight !== null && log.weight !== undefined) && <span>{log.weight}</span>}
                     {log.time && (
                       <span className="flex items-center gap-1">
                         <Clock className="h-3 w-3" />
