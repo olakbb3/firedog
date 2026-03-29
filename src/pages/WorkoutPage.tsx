@@ -26,13 +26,6 @@ interface PerformanceSnapshot {
   completedCount: number;
 }
 
-interface CrewEntry {
-  user_name: string;
-  result: string;
-  result_type: string;
-  is_rx: boolean;
-}
-
 const WorkoutPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
