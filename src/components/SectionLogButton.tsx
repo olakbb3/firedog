@@ -64,7 +64,6 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName }: 
   const { user } = useAuth();
   const { requireAuth } = useAuthGate();
   const submittingRef = useRef(false);
-  const { requireAuth } = useAuthGate();
 
   const [step, setStep] = useState<'rx' | 'type' | 'input'>('rx');
   const [open, setOpen] = useState(false);
