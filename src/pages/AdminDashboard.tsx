@@ -21,6 +21,15 @@ interface WorkoutRow { id: string; title: string; description: string; exercises
 interface ProgramRow { id: string; title: string; description: string; sku: string; store_link: string | null; image_url: string | null; is_free: boolean; }
 interface ChallengeRow { id: string; title: string; description: string; participants: number; }
 
+const RESULT_TYPE_OPTIONS: { value: SectionResultType; label: string }[] = [
+  { value: 'completed', label: 'Just Completed' },
+  { value: 'time', label: 'Time' },
+  { value: 'rounds_reps', label: 'Rounds + Reps' },
+  { value: 'calories', label: 'Calories' },
+  { value: 'meters', label: 'Meters' },
+  { value: 'weight', label: 'Weight' },
+];
+
 const DEFAULT_SECTIONS = ['Morning Meeting', 'Dispatch', 'First-In', 'Overhaul', 'Rehab'];
 
 interface SectionInput {
