@@ -13,11 +13,10 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { useAuthGate } from '@/hooks/useAuthGate';
 import { supabase } from '@/lib/supabaseClient';
-
-type ResultType = 'completed' | 'time' | 'rounds_reps' | 'calories' | 'meters' | 'weight';
+import type { SectionResultType } from '@/types/index';
 
 interface SectionLogEntry {
-  result_type: ResultType;
+  result_type: SectionResultType;
   is_rx: boolean;
   time?: string;
   rounds?: number;
@@ -32,9 +31,10 @@ interface Props {
   workoutId: string;
   sectionId: string;
   sectionName: string;
+  resultType?: SectionResultType;
 }
 
-const RESULT_TYPE_LABELS: Record<ResultType, string> = {
+const RESULT_TYPE_LABELS: Record<SectionResultType, string> = {
   completed: 'Just Completed',
   time: 'Time',
   rounds_reps: 'Rounds + Reps',
@@ -60,15 +60,17 @@ function formatLogSummary(entry: SectionLogEntry): string {
   }
 }
 
-export default function SectionLogButton({ workoutId, sectionId, sectionName }: Props) {
+export default function SectionLogButton({ workoutId, sectionId, sectionName, resultType = 'completed' }: Props) {
   const { user } = useAuth();
   const { requireAuth } = useAuthGate();
   const submittingRef = useRef(false);
 
-  const [step, setStep] = useState<'rx' | 'type' | 'input'>('rx');
+  // If resultType is 'completed', skip straight to submit after Rx/Scaled
+  const needsInput = resultType !== 'completed';
+
   const [open, setOpen] = useState(false);
+  const [step, setStep] = useState<'rx' | 'input'>('rx');
   const [isRx, setIsRx] = useState(true);
-  const [resultType, setResultType] = useState<ResultType>('completed');
   const [formData, setFormData] = useState({ time: '', rounds: '', reps: '', calories: '', meters: '', weight: '', notes: '' });
   const [submitting, setSubmitting] = useState(false);
   const [validationError, setValidationError] = useState('');
@@ -95,7 +97,6 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName }: 
   const resetModal = () => {
     setStep('rx');
     setIsRx(true);
-    setResultType('completed');
     setFormData({ time: '', rounds: '', reps: '', calories: '', meters: '', weight: '', notes: '' });
     setValidationError('');
     setSubmitError('');
@@ -109,15 +110,11 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName }: 
 
   const handleRxChoice = (rx: boolean) => {
     setIsRx(rx);
-    setStep('type');
-  };
-
-  const handleTypeSelect = (type: ResultType) => {
-    setResultType(type);
-    if (type === 'completed') {
-      handleSubmit(type, true);
-    } else {
+    if (needsInput) {
       setStep('input');
+    } else {
+      // 'completed' — submit immediately
+      handleSubmit(rx, true);
     }
   };
 
@@ -147,9 +144,10 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName }: 
     }
   };
 
-  const handleSubmit = async (overrideType?: ResultType, skipValidation?: boolean) => {
+  const handleSubmit = async (rxOverride?: boolean, skipValidation?: boolean) => {
     if (!user || submittingRef.current) return;
-    const rt = overrideType || resultType;
+
+    const rx = rxOverride !== undefined ? rxOverride : isRx;
 
     if (!skipValidation && !validate()) return;
 
@@ -160,24 +158,24 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName }: 
       user_id: user.id,
       workout_id: workoutId,
       workout_section_id: sectionId,
-      result_type: rt,
-      is_rx: isRx,
+      result_type: resultType,
+      is_rx: rx,
       completion_date: new Date().toISOString(),
     };
 
-    if (rt === 'time' && formData.time) payload.time = formData.time.trim();
-    if (rt === 'rounds_reps') {
+    if (resultType === 'time' && formData.time) payload.time = formData.time.trim();
+    if (resultType === 'rounds_reps') {
       if (formData.rounds !== '') payload.rounds = Math.max(0, parseInt(formData.rounds));
       if (formData.reps !== '') payload.reps = Math.max(0, parseInt(formData.reps));
     }
-    if (rt === 'calories' && formData.calories !== '') payload.calories = Math.max(0, parseInt(formData.calories));
-    if (rt === 'meters' && formData.meters !== '') payload.meters = Math.max(0, parseInt(formData.meters));
-    if (rt === 'weight' && formData.weight !== '') payload.weight = Math.max(0, parseFloat(formData.weight));
+    if (resultType === 'calories' && formData.calories !== '') payload.calories = Math.max(0, parseInt(formData.calories));
+    if (resultType === 'meters' && formData.meters !== '') payload.meters = Math.max(0, parseInt(formData.meters));
+    if (resultType === 'weight' && formData.weight !== '') payload.weight = Math.max(0, parseFloat(formData.weight));
     if (formData.notes) payload.notes = formData.notes;
 
     const newEntry: SectionLogEntry = {
-      result_type: rt,
-      is_rx: isRx,
+      result_type: resultType,
+      is_rx: rx,
       time: payload.time,
       rounds: payload.rounds,
       reps: payload.reps,
@@ -190,7 +188,6 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName }: 
     try {
       const { error } = await supabase.from('workout_logs').insert(payload);
       if (error) throw error;
-      // Success: update UI and close
       setLoggedResults(prev => [newEntry, ...prev]);
       setOpen(false);
     } catch (err: any) {
@@ -247,45 +244,36 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName }: 
               <div className="grid grid-cols-2 gap-3 mt-3">
                 <button
                   onClick={() => handleRxChoice(true)}
-                  className="rounded-xl border-2 border-primary bg-primary/10 p-5 text-center hover:bg-primary/20 transition-colors"
+                  disabled={submitting}
+                  className="rounded-xl border-2 border-primary bg-primary/10 p-5 text-center hover:bg-primary/20 transition-colors disabled:opacity-50"
                 >
                   <p className="text-lg font-bold text-primary">Rx</p>
                   <p className="text-xs text-muted-foreground mt-1 font-body">As Prescribed</p>
                 </button>
                 <button
                   onClick={() => handleRxChoice(false)}
-                  className="rounded-xl border-2 border-border bg-secondary p-5 text-center hover:border-muted-foreground transition-colors"
+                  disabled={submitting}
+                  className="rounded-xl border-2 border-border bg-secondary p-5 text-center hover:border-muted-foreground transition-colors disabled:opacity-50"
                 >
                   <p className="text-lg font-bold text-foreground">Scaled</p>
                   <p className="text-xs text-muted-foreground mt-1 font-body">Modified</p>
                 </button>
               </div>
+              {submitting && (
+                <p className="text-xs text-muted-foreground text-center mt-2 font-body">Saving...</p>
+              )}
+              {submitError && (
+                <p className="text-xs text-destructive font-body text-center font-semibold mt-2">{submitError}</p>
+              )}
             </>
           )}
 
-          {/* Step 2: Result Type */}
-          {step === 'type' && (
-            <>
-              <p className="text-center text-lg font-bold tracking-widest mt-1">RESULT TYPE</p>
-              <div className="grid grid-cols-2 gap-2 mt-3">
-                {(Object.keys(RESULT_TYPE_LABELS) as ResultType[]).map(rt => (
-                  <button
-                    key={rt}
-                    onClick={() => handleTypeSelect(rt)}
-                    className="rounded-lg border border-border bg-secondary p-3 text-center hover:border-primary hover:bg-primary/5 transition-colors"
-                  >
-                    <p className="text-sm font-semibold font-body">{RESULT_TYPE_LABELS[rt]}</p>
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
-
-          {/* Step 3: Conditional Input */}
+          {/* Step 2: Metric Input (only if not 'completed') */}
           {step === 'input' && (
             <>
               <p className="text-center text-sm font-bold tracking-widest mt-1">
                 {RESULT_TYPE_LABELS[resultType].toUpperCase()}
+                <span className="ml-2 text-xs font-normal text-muted-foreground">({isRx ? 'Rx' : 'Scaled'})</span>
               </p>
               <div className="mt-3 space-y-3">
                 {resultType === 'time' && (
@@ -366,11 +354,11 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName }: 
                   </div>
                 )}
 
-                {/* Notes - only show for scaled or always optional */}
+                {/* Notes - always available, especially useful for Scaled */}
                 <Textarea
                   value={formData.notes}
                   onChange={e => { setFormData(d => ({ ...d, notes: e.target.value })); setSubmitError(''); }}
-                  placeholder="Notes (optional)"
+                  placeholder={isRx ? 'Notes (optional)' : 'Scaling notes (optional)'}
                   className="bg-secondary"
                   rows={2}
                 />

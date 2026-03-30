@@ -7,11 +7,13 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabaseClient';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import type { SectionResultType } from '@/types/index';
 
 type Tab = 'workouts' | 'programs' | 'challenges' | 'media' | 'home';
 
@@ -19,10 +21,20 @@ interface WorkoutRow { id: string; title: string; description: string; exercises
 interface ProgramRow { id: string; title: string; description: string; sku: string; store_link: string | null; image_url: string | null; is_free: boolean; }
 interface ChallengeRow { id: string; title: string; description: string; participants: number; }
 
+const RESULT_TYPE_OPTIONS: { value: SectionResultType; label: string }[] = [
+  { value: 'completed', label: 'Just Completed' },
+  { value: 'time', label: 'Time' },
+  { value: 'rounds_reps', label: 'Rounds + Reps' },
+  { value: 'calories', label: 'Calories' },
+  { value: 'meters', label: 'Meters' },
+  { value: 'weight', label: 'Weight' },
+];
+
 const DEFAULT_SECTIONS = ['Morning Meeting', 'Dispatch', 'First-In', 'Overhaul', 'Rehab'];
 
 interface SectionInput {
   section_name: string;
+  result_type: SectionResultType;
   exercises: ExerciseInput[];
 }
 
@@ -101,7 +113,7 @@ const WorkoutsTab = () => {
   const [formDesc, setFormDesc] = useState('');
   const [formDate, setFormDate] = useState<Date | undefined>(new Date());
   const [sections, setSections] = useState<SectionInput[]>(
-    DEFAULT_SECTIONS.map(name => ({ section_name: name, exercises: [emptyExercise()] }))
+    DEFAULT_SECTIONS.map(name => ({ section_name: name, result_type: 'completed' as SectionResultType, exercises: [emptyExercise()] }))
   );
 
   const fetchWorkouts = async () => {
@@ -116,11 +128,11 @@ const WorkoutsTab = () => {
     setFormDesc('');
     setFormDate(new Date());
     setEditingId(null);
-    setSections(DEFAULT_SECTIONS.map(name => ({ section_name: name, exercises: [emptyExercise()] })));
+    setSections(DEFAULT_SECTIONS.map(name => ({ section_name: name, result_type: 'completed' as SectionResultType, exercises: [emptyExercise()] })));
   };
 
   const addSection = () => {
-    setSections(prev => [...prev, { section_name: '', exercises: [emptyExercise()] }]);
+    setSections(prev => [...prev, { section_name: '', result_type: 'completed' as SectionResultType, exercises: [emptyExercise()] }]);
   };
 
   const removeSection = (idx: number) => {
@@ -129,6 +141,10 @@ const WorkoutsTab = () => {
 
   const updateSectionName = (idx: number, name: string) => {
     setSections(prev => prev.map((s, i) => i === idx ? { ...s, section_name: name } : s));
+  };
+
+  const updateSectionResultType = (idx: number, rt: SectionResultType) => {
+    setSections(prev => prev.map((s, i) => i === idx ? { ...s, result_type: rt } : s));
   };
 
   const moveSection = (idx: number, dir: -1 | 1) => {
@@ -178,6 +194,7 @@ const WorkoutsTab = () => {
     if (dbSections.length > 0) {
       setSections(dbSections.map(s => ({
         section_name: s.section_name,
+        result_type: (s.result_type as SectionResultType) || 'completed',
         exercises: dbExercises
           .filter((e: any) => e.section_id === s.id)
           .map((e: any) => ({
@@ -194,6 +211,7 @@ const WorkoutsTab = () => {
       if (jsonExercises.length > 0) {
         setSections([{
           section_name: 'Workout',
+          result_type: 'completed' as SectionResultType,
           exercises: jsonExercises.map((e: any) => ({
             exercise_name: e.name || e.exercise_name || '',
             sets: e.sets?.toString() || '',
@@ -203,7 +221,7 @@ const WorkoutsTab = () => {
           })),
         }]);
       } else {
-        setSections(DEFAULT_SECTIONS.map(name => ({ section_name: name, exercises: [emptyExercise()] })));
+        setSections(DEFAULT_SECTIONS.map(name => ({ section_name: name, result_type: 'completed' as SectionResultType, exercises: [emptyExercise()] })));
       }
     }
 
@@ -276,6 +294,7 @@ const WorkoutsTab = () => {
       .map((s, i) => ({
         workout_id: workoutId,
         section_name: s.section_name,
+        result_type: s.result_type || 'completed',
         order_index: i,
       }));
 
@@ -384,6 +403,21 @@ const WorkoutsTab = () => {
                   <button onClick={() => removeSection(si)} className="text-destructive hover:bg-destructive/10 p-1 rounded">
                     <X className="h-4 w-4" />
                   </button>
+                </div>
+
+                {/* Result Type Selector */}
+                <div className="mb-2">
+                  <label className="text-[10px] text-muted-foreground font-display uppercase tracking-wider mb-1 block">Result Type</label>
+                  <Select value={section.result_type} onValueChange={(v) => updateSectionResultType(si, v as SectionResultType)}>
+                    <SelectTrigger className="bg-background text-xs h-8">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {RESULT_TYPE_OPTIONS.map(opt => (
+                        <SelectItem key={opt.value} value={opt.value} className="text-xs">{opt.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 {section.exercises.map((ex, ei) => (
