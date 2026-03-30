@@ -143,6 +143,10 @@ const WorkoutsTab = () => {
     setSections(prev => prev.map((s, i) => i === idx ? { ...s, section_name: name } : s));
   };
 
+  const updateSectionResultType = (idx: number, rt: SectionResultType) => {
+    setSections(prev => prev.map((s, i) => i === idx ? { ...s, result_type: rt } : s));
+  };
+
   const moveSection = (idx: number, dir: -1 | 1) => {
     const target = idx + dir;
     if (target < 0 || target >= sections.length) return;
