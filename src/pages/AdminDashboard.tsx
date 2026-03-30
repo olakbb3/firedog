@@ -405,6 +405,21 @@ const WorkoutsTab = () => {
                   </button>
                 </div>
 
+                {/* Result Type Selector */}
+                <div className="mb-2">
+                  <label className="text-[10px] text-muted-foreground font-display uppercase tracking-wider mb-1 block">Result Type</label>
+                  <Select value={section.result_type} onValueChange={(v) => updateSectionResultType(si, v as SectionResultType)}>
+                    <SelectTrigger className="bg-background text-xs h-8">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {RESULT_TYPE_OPTIONS.map(opt => (
+                        <SelectItem key={opt.value} value={opt.value} className="text-xs">{opt.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
                 {section.exercises.map((ex, ei) => (
                   <div key={ei} className="grid grid-cols-12 gap-1.5 mb-1.5 items-start">
                     <Input placeholder="Exercise" value={ex.exercise_name} onChange={e => updateExercise(si, ei, 'exercise_name', e.target.value)} className="col-span-3 bg-background text-xs" />
