@@ -207,6 +207,7 @@ const WorkoutsTab = () => {
       if (jsonExercises.length > 0) {
         setSections([{
           section_name: 'Workout',
+          result_type: 'completed' as SectionResultType,
           exercises: jsonExercises.map((e: any) => ({
             exercise_name: e.name || e.exercise_name || '',
             sets: e.sets?.toString() || '',
