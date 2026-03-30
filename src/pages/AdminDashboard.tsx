@@ -128,7 +128,7 @@ const WorkoutsTab = () => {
     setFormDesc('');
     setFormDate(new Date());
     setEditingId(null);
-    setSections(DEFAULT_SECTIONS.map(name => ({ section_name: name, exercises: [emptyExercise()] })));
+    setSections(DEFAULT_SECTIONS.map(name => ({ section_name: name, result_type: 'completed' as SectionResultType, exercises: [emptyExercise()] })));
   };
 
   const addSection = () => {
