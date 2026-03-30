@@ -294,6 +294,7 @@ const WorkoutsTab = () => {
       .map((s, i) => ({
         workout_id: workoutId,
         section_name: s.section_name,
+        result_type: s.result_type || 'completed',
         order_index: i,
       }));
 
