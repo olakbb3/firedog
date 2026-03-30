@@ -16,11 +16,14 @@ export interface Exercise {
   notes?: string;
 }
 
+export type SectionResultType = 'completed' | 'time' | 'rounds_reps' | 'calories' | 'meters' | 'weight';
+
 export interface WorkoutSection {
   id: string;
   workout_id: string;
   section_name: string;
   order_index: number;
+  result_type?: SectionResultType;
   created_at?: string;
 }
 
