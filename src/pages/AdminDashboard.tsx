@@ -36,6 +36,7 @@ const DEFAULT_SECTIONS = ['Morning Meeting', 'Dispatch', 'First-In', 'Overhaul',
 
 interface SectionInput {
   section_name: string;
+  result_type: SectionResultType;
   exercises: ExerciseInput[];
 }
 
