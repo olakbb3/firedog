@@ -14,17 +14,6 @@ import { supabase } from '@/lib/supabaseClient';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import type { SectionResultType } from '@/types/index';
-import { format } from 'date-fns';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/lib/supabaseClient';
-import { useToast } from '@/hooks/use-toast';
-import { cn } from '@/lib/utils';
 
 type Tab = 'workouts' | 'programs' | 'challenges' | 'media' | 'home';
 
