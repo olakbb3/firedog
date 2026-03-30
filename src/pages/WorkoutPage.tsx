@@ -261,6 +261,7 @@ const WorkoutPage = () => {
                 workoutId={workout.id}
                 sectionId={section.id}
                 sectionName={section.section_name}
+                resultType={(section as any).result_type || 'completed'}
               />
             </div>
           ))}
