@@ -190,6 +190,7 @@ const WorkoutsTab = () => {
     if (dbSections.length > 0) {
       setSections(dbSections.map(s => ({
         section_name: s.section_name,
+        result_type: (s.result_type as SectionResultType) || 'completed',
         exercises: dbExercises
           .filter((e: any) => e.section_id === s.id)
           .map((e: any) => ({
