@@ -113,7 +113,7 @@ const WorkoutsTab = () => {
   const [formDesc, setFormDesc] = useState('');
   const [formDate, setFormDate] = useState<Date | undefined>(new Date());
   const [sections, setSections] = useState<SectionInput[]>(
-    DEFAULT_SECTIONS.map(name => ({ section_name: name, exercises: [emptyExercise()] }))
+    DEFAULT_SECTIONS.map(name => ({ section_name: name, result_type: 'completed' as SectionResultType, exercises: [emptyExercise()] }))
   );
 
   const fetchWorkouts = async () => {
