@@ -132,7 +132,7 @@ const WorkoutsTab = () => {
   };
 
   const addSection = () => {
-    setSections(prev => [...prev, { section_name: '', exercises: [emptyExercise()] }]);
+    setSections(prev => [...prev, { section_name: '', result_type: 'completed' as SectionResultType, exercises: [emptyExercise()] }]);
   };
 
   const removeSection = (idx: number) => {
