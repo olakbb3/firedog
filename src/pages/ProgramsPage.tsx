@@ -4,6 +4,15 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAuthGate } from '@/hooks/useAuthGate';
 import { supabase } from '@/lib/supabaseClient';
+import freeWodCover from '@/assets/free-wod-cover.jpg';
+import stationStrengthCover from '@/assets/station-strength-cover.jpg';
+import inferno45Cover from '@/assets/inferno-45-cover.jpg';
+
+const LOCAL_COVERS: Record<string, string> = {
+  FREE_WOD: freeWodCover,
+  STATION_STRENGTH: stationStrengthCover,
+  INFERNO45: inferno45Cover,
+};
 
 interface ProgramRow {
   id: string;
