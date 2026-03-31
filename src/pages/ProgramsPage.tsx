@@ -4,6 +4,15 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAuthGate } from '@/hooks/useAuthGate';
 import { supabase } from '@/lib/supabaseClient';
+import freeWodCover from '@/assets/free-wod-cover.jpg';
+import stationStrengthCover from '@/assets/station-strength-cover.jpg';
+import inferno45Cover from '@/assets/inferno-45-cover.jpg';
+
+const LOCAL_COVERS: Record<string, string> = {
+  FREE_WOD: freeWodCover,
+  STATION_STRENGTH: stationStrengthCover,
+  INFERNO45: inferno45Cover,
+};
 
 interface ProgramRow {
   id: string;
@@ -60,12 +69,15 @@ const ProgramsPage = () => {
               className="rounded-xl bg-card border border-border overflow-hidden shadow-card"
             >
               {/* Program Image */}
-              {program.image_url && (
+              {(program.image_url || LOCAL_COVERS[program.sku]) && (
                 <div className="w-full h-40 overflow-hidden">
                   <img
-                    src={program.image_url}
+                    src={program.image_url || LOCAL_COVERS[program.sku]}
                     alt={program.title}
                     className="w-full h-full object-cover"
+                    loading="lazy"
+                    width={1024}
+                    height={576}
                   />
                 </div>
               )}
