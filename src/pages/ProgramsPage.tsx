@@ -69,12 +69,15 @@ const ProgramsPage = () => {
               className="rounded-xl bg-card border border-border overflow-hidden shadow-card"
             >
               {/* Program Image */}
-              {program.image_url && (
+              {(program.image_url || LOCAL_COVERS[program.sku]) && (
                 <div className="w-full h-40 overflow-hidden">
                   <img
-                    src={program.image_url}
+                    src={program.image_url || LOCAL_COVERS[program.sku]}
                     alt={program.title}
                     className="w-full h-full object-cover"
+                    loading="lazy"
+                    width={1024}
+                    height={576}
                   />
                 </div>
               )}
