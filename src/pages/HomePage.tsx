@@ -99,8 +99,10 @@ const HomePage = () => {
     }
   };
 
-  const handleJoinChallenge = () => {
-    requireAuth('Join Challenge');
+  const handleChallengeAction = () => {
+    if (requireAuth('View Programs')) {
+      navigate('/programs');
+    }
   };
 
   return (
