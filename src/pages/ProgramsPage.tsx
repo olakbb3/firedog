@@ -120,7 +120,7 @@ const ProgramsPage = () => {
                     className="w-full bg-accent text-accent-foreground hover:bg-accent/90 font-display"
                   >
                     <ShoppingBag className="h-4 w-4 mr-2" />
-                    PURCHASE ON STORE
+                    UNLOCK PROGRAM
                   </Button>
                 )}
               </div>

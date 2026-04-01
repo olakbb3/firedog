@@ -99,8 +99,10 @@ const HomePage = () => {
     }
   };
 
-  const handleJoinChallenge = () => {
-    requireAuth('Join Challenge');
+  const handleChallengeAction = () => {
+    if (requireAuth('View Programs')) {
+      navigate('/programs');
+    }
   };
 
   return (
@@ -232,9 +234,9 @@ const HomePage = () => {
                     size="sm"
                     variant="outline"
                     className="text-xs h-7 border-primary text-primary hover:bg-primary hover:text-primary-foreground"
-                    onClick={handleJoinChallenge}
+                    onClick={handleChallengeAction}
                   >
-                    Join
+                    View Program
                   </Button>
                 </div>
               </div>
