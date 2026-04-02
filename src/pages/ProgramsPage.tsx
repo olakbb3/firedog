@@ -130,7 +130,16 @@ const ProgramsPage = () => {
                 <p className="text-sm text-muted-foreground mb-4">{program.description}</p>
 
                 {isFree ? (
-                  <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-display">
+                  <Button
+                    onClick={() => {
+                      if (todayWorkoutId) {
+                        navigate(`/workout/${todayWorkoutId}`);
+                      } else {
+                        toast("No workout scheduled for today. Check back soon!");
+                      }
+                    }}
+                    className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-display"
+                  >
                     <Flame className="h-4 w-4 mr-2" />
                     START WORKOUT
                   </Button>
