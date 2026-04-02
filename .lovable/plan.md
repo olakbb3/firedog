@@ -1,46 +1,30 @@
 
 
-## Lightweight Brand Integration
+## Profile Page — Active Training Only
 
-Two focused additions — no existing UI or logic modified.
+### File: `src/pages/ProfilePage.tsx`
 
-### 1. Workout Completion Celebration (Dalmatian)
+**1. Update data fetching (lines 34-39)**
 
-**File: `src/components/SectionLogButton.tsx`**
+Replace the generic `programs` query with two queries:
 
-After a successful log submission (line 191, after `setOpen(false)`), show a success toast using sonner with the Dalmatian image:
+- **Enrolled programs**: `supabase.from('user_programs').select('program_sku').eq('user_id', user.id)` — then fetch matching programs via `supabase.from('programs').select('id, title').in('sku', [enrolled SKUs])`
+- **Free WOD**: Always include by fetching `supabase.from('programs').select('id, title').eq('sku', 'FREE_WOD').maybeSingle()`
+- Merge results, deduplicate, fail gracefully (empty array on error)
 
-- Import sonner's `toast` (replace the current `use-toast` import)
-- After successful insert, call `toast` with a custom render that shows:
-  - The Dalmatian image (small, ~80px)
-  - Text: "You got that dog in you! 🐾"
-- Auto-dismisses after 3 seconds
-- Does not block the logging flow — the modal still closes immediately
+**2. Rename section header**
 
-**File: `src/assets/`** — add `dalmatian-reward.jpeg` (the uploaded Dalmatian image)
+- "PROGRAMS" → "MY ACTIVE TRAINING"
 
-### 2. "Our Philosophy" Section on Home Page
+**3. Add empty state**
 
-**File: `src/pages/HomePage.tsx`**
+- When `programs.length === 0`: show muted text "You haven't started a training track yet." + a styled "BROWSE PROGRAMS" button that navigates to `/programs`
 
-Add a new section between Active Challenges and the Footer (before line 248):
+**4. Untouched**
 
-- Label: "OUR PHILOSOPHY" (styled like other section headers)
-- Full-width responsive image of the "Firefighting in 100 Words" poster
-- Rounded corners, proper spacing, consistent with existing card style
-- Image loaded from `src/assets/`
-
-**File: `src/assets/`** — add `100-words.jpeg` (the uploaded poster image)
-
-### 3. Constraints Respected
-
-- No navigation, layout, or schema changes
-- Images imported as ES modules (same pattern as `firedog-logo.png`)
-- Both images are static assets — no database storage needed
+- Admin button, Sign Out, avatar, stats, footer — no changes
+- No schema changes
 
 ### Files Changed
-- `src/assets/dalmatian-reward.jpeg` — new image
-- `src/assets/100-words.jpeg` — new image
-- `src/components/SectionLogButton.tsx` — add success toast with Dalmatian after log
-- `src/pages/HomePage.tsx` — add "Our Philosophy" section before footer
+- `src/pages/ProfilePage.tsx` — query logic, header rename, empty state CTA
 
