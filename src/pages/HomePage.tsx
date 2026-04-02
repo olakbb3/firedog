@@ -185,29 +185,6 @@ const HomePage = () => {
         </div>
       )}
 
-      {/* Featured Program */}
-      {featuredProgram && !featuredProgram.is_free && (
-        <div className="mb-6">
-          <h2 className="text-lg font-bold mb-3 flex items-center gap-2">
-            <Trophy className="h-5 w-5 text-accent" />
-            FEATURED PROGRAM
-          </h2>
-          <button
-            onClick={() => navigate('/programs')}
-            className="w-full rounded-xl bg-card border border-border overflow-hidden text-left shadow-card hover:border-accent/50 transition-colors"
-          >
-            {featuredProgram.image_url && (
-              <img src={featuredProgram.image_url} alt={featuredProgram.title} className="w-full h-32 object-cover" />
-            )}
-            <div className="p-5 flex items-center justify-between">
-              <div>
-                <h3 className="font-bold font-display">{featuredProgram.title}</h3>
-                <p className="text-sm text-muted-foreground mt-1">{featuredProgram.description}</p>
-              </div>
-            </div>
-          </button>
-        </div>
-      )}
 
       {/* Active Challenges */}
       {challenges.length > 0 && (
