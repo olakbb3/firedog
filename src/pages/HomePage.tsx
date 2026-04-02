@@ -20,15 +20,6 @@ interface WorkoutRow {
   workout_date: string | null;
 }
 
-interface ProgramRow {
-  id: string;
-  title: string;
-  description: string;
-  sku: string;
-  store_link: string | null;
-  image_url: string | null;
-  is_free: boolean;
-}
 
 interface ChallengeRow {
   id: string;
