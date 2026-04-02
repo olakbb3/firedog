@@ -51,14 +51,12 @@ const HomePage = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-      const [workoutsRes, programRes, challengeRes] = await Promise.all([
+      const [workoutsRes, challengeRes] = await Promise.all([
         supabase.from('workouts').select('*').order('workout_date', { ascending: false }),
-        supabase.from('programs').select('id, title, description, sku, store_link, image_url, is_free').eq('is_free', false).limit(1).maybeSingle(),
         supabase.from('challenges').select('*'),
       ]);
 
       if (workoutsRes.data) setAllWorkouts(workoutsRes.data);
-      if (programRes.data) setFeaturedProgram(programRes.data);
       if (challengeRes.data) setChallenges(challengeRes.data);
 
       if (user) {
