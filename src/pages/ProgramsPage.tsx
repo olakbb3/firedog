@@ -29,8 +29,10 @@ interface ProgramRow {
 const ProgramsPage = () => {
   const { user } = useAuth();
   const { requireAuth } = useAuthGate();
+  const navigate = useNavigate();
   const [programs, setPrograms] = useState<ProgramRow[]>([]);
   const [ownedSkus, setOwnedSkus] = useState<Set<string>>(new Set());
+  const [todayWorkoutId, setTodayWorkoutId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
