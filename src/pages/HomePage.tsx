@@ -246,6 +246,19 @@ const HomePage = () => {
         </div>
       )}
 
+      {/* Our Philosophy */}
+      <div className="mb-6">
+        <h2 className="text-lg font-bold mb-3">OUR PHILOSOPHY</h2>
+        <div className="rounded-xl overflow-hidden border border-border shadow-card">
+          <img
+            src={philosophyImage}
+            alt="Firefighting in 100 Words"
+            className="w-full h-auto"
+            loading="lazy"
+          />
+        </div>
+      </div>
+
       {/* Footer */}
       <div className="mt-4 flex items-center justify-center gap-4 pb-2">
         <button
