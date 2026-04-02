@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { CheckCircle2 } from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
+import dalmatianReward from '@/assets/dalmatian-reward.jpeg';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -190,13 +191,16 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName, re
       if (error) throw error;
       setLoggedResults(prev => [newEntry, ...prev]);
       setOpen(false);
+      toast(
+        <div className="flex items-center gap-3">
+          <img src={dalmatianReward} alt="Got that dog in me" className="w-16 h-16 rounded-lg object-cover" />
+          <span className="font-semibold text-sm">You got that dog in you! 🐾</span>
+        </div>,
+        { duration: 3000 }
+      );
     } catch (err: any) {
       setSubmitError('Failed to save. Check your connection and try again.');
-      toast({
-        title: 'Failed to save',
-        description: 'Please check your connection and try again.',
-        variant: 'destructive',
-      });
+      toast.error('Failed to save. Please check your connection and try again.');
     } finally {
       setSubmitting(false);
       submittingRef.current = false;

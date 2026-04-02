@@ -8,6 +8,7 @@ import { supabase } from '@/lib/supabaseClient';
 import WeeklyDateStrip from '@/components/WeeklyDateStrip';
 import { format, isSameDay } from 'date-fns';
 import firedogLogo from '@/assets/firedog-logo.png';
+import philosophyImage from '@/assets/100-words.jpeg';
 
 interface WorkoutRow {
   id: string;
@@ -244,6 +245,19 @@ const HomePage = () => {
           </div>
         </div>
       )}
+
+      {/* Our Philosophy */}
+      <div className="mb-6">
+        <h2 className="text-lg font-bold mb-3">OUR PHILOSOPHY</h2>
+        <div className="rounded-xl overflow-hidden border border-border shadow-card">
+          <img
+            src={philosophyImage}
+            alt="Firefighting in 100 Words"
+            className="w-full h-auto"
+            loading="lazy"
+          />
+        </div>
+      </div>
 
       {/* Footer */}
       <div className="mt-4 flex items-center justify-center gap-4 pb-2">
