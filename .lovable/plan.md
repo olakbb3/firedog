@@ -1,30 +1,20 @@
 
 
-## Profile Page — Active Training Only
+## Home Screen Declutter
 
-### File: `src/pages/ProfilePage.tsx`
+### File: `src/pages/HomePage.tsx`
 
-**1. Update data fetching (lines 34-39)**
+**1. Remove Featured Program section (lines ~156-175)**
+- Delete the entire `{featuredProgram && !featuredProgram.is_free && (...)}` block
+- Optionally remove the `featuredProgram` state, the query in `useEffect`, the `ProgramRow` interface, and the `Trophy` import (dead code cleanup)
 
-Replace the generic `programs` query with two queries:
+**2. No other changes**
+- WOD card, Weekly Date Strip, Active Challenges, Our Philosophy, Footer — all untouched
+- No schema or navigation changes
 
-- **Enrolled programs**: `supabase.from('user_programs').select('program_sku').eq('user_id', user.id)` — then fetch matching programs via `supabase.from('programs').select('id, title').in('sku', [enrolled SKUs])`
-- **Free WOD**: Always include by fetching `supabase.from('programs').select('id, title').eq('sku', 'FREE_WOD').maybeSingle()`
-- Merge results, deduplicate, fail gracefully (empty array on error)
-
-**2. Rename section header**
-
-- "PROGRAMS" → "MY ACTIVE TRAINING"
-
-**3. Add empty state**
-
-- When `programs.length === 0`: show muted text "You haven't started a training track yet." + a styled "BROWSE PROGRAMS" button that navigates to `/programs`
-
-**4. Untouched**
-
-- Admin button, Sign Out, avatar, stats, footer — no changes
-- No schema changes
+### Result
+Home page flow becomes: Header → Date Strip → Banner → WOD → Active Challenges → Our Philosophy → Footer
 
 ### Files Changed
-- `src/pages/ProfilePage.tsx` — query logic, header rename, empty state CTA
+- `src/pages/HomePage.tsx` — remove Featured Program block + dead code
 
