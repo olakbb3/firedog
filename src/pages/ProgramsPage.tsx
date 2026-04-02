@@ -49,6 +49,26 @@ const ProgramsPage = () => {
           .eq('user_id', user.id);
         if (owned) setOwnedSkus(new Set(owned.map(r => r.program_sku)));
       }
+
+      // Fetch today's workout, fallback to most recent
+      const today = new Date().toISOString().split('T')[0];
+      const { data: todayWod } = await supabase
+        .from('workouts')
+        .select('id')
+        .eq('workout_date', today)
+        .limit(1)
+        .single();
+      if (todayWod) {
+        setTodayWorkoutId(todayWod.id);
+      } else {
+        const { data: latestWod } = await supabase
+          .from('workouts')
+          .select('id')
+          .order('workout_date', { ascending: false })
+          .limit(1)
+          .single();
+        if (latestWod) setTodayWorkoutId(latestWod.id);
+      }
     };
     fetchData();
   }, [user]);
