@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Lock, CheckCircle2, ShoppingBag, Flame } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAuthGate } from '@/hooks/useAuthGate';
 import { supabase } from '@/lib/supabaseClient';
