@@ -41,7 +41,7 @@ const HomePage = () => {
   const { requireAuth, isGuest } = useAuthGate();
   const [profile, setProfile] = useState<ProfileRow | null>(null);
   const [allWorkouts, setAllWorkouts] = useState<WorkoutRow[]>([]);
-  const [featuredProgram, setFeaturedProgram] = useState<ProgramRow | null>(null);
+  
   const [challenges, setChallenges] = useState<ChallengeRow[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date>(() => {
     const d = new Date();
