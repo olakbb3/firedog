@@ -31,12 +31,34 @@ const ProfilePage = () => {
     if (!user) return;
 
     const fetchProfile = async () => {
-      const [profileRes, programsRes] = await Promise.all([
-        supabase.from('profiles').select('full_name, points, completed_workouts, avatar_url').eq('id', user.id).maybeSingle(),
-        supabase.from('programs').select('id, title').limit(10),
-      ]);
+      const profileRes = await supabase.from('profiles').select('full_name, points, completed_workouts, avatar_url').eq('id', user.id).maybeSingle();
       if (profileRes.data) setProfile(profileRes.data);
-      if (programsRes.data) setPrograms(programsRes.data);
+
+      // Fetch active programs: enrolled + Free WOD
+      try {
+        const [enrolledRes, freeWodRes] = await Promise.all([
+          supabase.from('user_programs').select('program_sku').eq('user_id', user.id),
+          supabase.from('programs').select('id, title').eq('sku', 'FREE_WOD').maybeSingle(),
+        ]);
+
+        let activePrograms: ProgramRow[] = [];
+
+        // Fetch enrolled program details
+        const enrolledSkus = (enrolledRes.data || []).map(r => r.program_sku).filter(Boolean);
+        if (enrolledSkus.length > 0) {
+          const { data } = await supabase.from('programs').select('id, title').in('sku', enrolledSkus);
+          if (data) activePrograms = data;
+        }
+
+        // Always include Free WOD, deduplicate
+        if (freeWodRes.data && !activePrograms.some(p => p.id === freeWodRes.data!.id)) {
+          activePrograms.push(freeWodRes.data);
+        }
+
+        setPrograms(activePrograms);
+      } catch {
+        setPrograms([]);
+      }
     };
 
     fetchProfile();
