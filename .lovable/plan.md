@@ -1,22 +1,22 @@
 
 
-## Update Program CTAs + Wire Challenge Buttons
+## Fix Free WOD Button Logic
 
-Two small, safe changes — no logic or schema modifications.
+### File: `src/pages/ProgramsPage.tsx`
 
-### 1. Update CTA Labels in ProgramsPage.tsx
+**1. Fetch today's workout on mount**
+- Add state: `todayWorkoutId: string | null`
+- In the existing `useEffect`, query `workouts` table for today's date (`workout_date = CURRENT_DATE`)
+- Fallback: if none found, fetch the most recent workout (`order by workout_date desc, limit 1`)
+- Store the resulting ID
 
-- Change "PURCHASE ON STORE" → "UNLOCK PROGRAM" for paid/unowned programs
-- Keep "START WORKOUT" for Free WOD and "VIEW PROGRAM" for owned programs
-- No navigation or logic changes
+**2. Wire the "START WORKOUT" button (line 109)**
+- Add `onClick`: if `todayWorkoutId` exists, `navigate(/workout/${todayWorkoutId})`
+- If no ID available, show sonner toast: "No workout scheduled for today. Check back soon!"
 
-### 2. Wire Challenge "Join" Buttons in HomePage.tsx
+**3. Import additions**
+- `useNavigate` from react-router-dom
+- `toast` from sonner
 
-- Replace `handleJoinChallenge` with a function that navigates to `/programs` after auth check
-- Change button label from "Join" to "View Program"
-- All challenges route to `/programs` so users land on the page showing Free WOD + paid programs with clear options
-
-### Files Changed
-- `src/pages/ProgramsPage.tsx` — button label update (1 line)
-- `src/pages/HomePage.tsx` — challenge button handler + label (2-3 lines)
+### No other files changed. No schema changes.
 
