@@ -164,7 +164,7 @@ const ProfilePage = () => {
       {/* Programs */}
       {programs.length > 0 && (
         <div className="mb-6">
-          <h2 className="text-sm font-bold font-display mb-3">PROGRAMS</h2>
+          <h2 className="text-sm font-bold font-display mb-3">MY ACTIVE TRAINING</h2>
           <div className="space-y-2">
             {programs.map(p => (
               <div key={p.id} className="rounded-xl bg-card border border-border p-4 flex items-center justify-between shadow-card">
@@ -176,6 +176,16 @@ const ProfilePage = () => {
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Empty state when no active programs */}
+      {programs.length === 0 && (
+        <div className="mb-6 text-center py-6">
+          <p className="text-sm text-muted-foreground mb-3">You haven't started a training track yet.</p>
+          <Button variant="outline" className="font-display" onClick={() => navigate('/programs')}>
+            BROWSE PROGRAMS
+          </Button>
         </div>
       )}
 
