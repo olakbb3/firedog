@@ -1,3 +1,4 @@
+// Triggering rebuild to clear stale cache
 import { useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { Flame, Zap, ShoppingBag, Instagram } from 'lucide-react';
