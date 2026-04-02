@@ -1,20 +1,17 @@
 
 
-## Home Screen Declutter
+## Force Rebuild — Cache Bust
+
+Yes, this will work. Adding a harmless comment to `src/pages/HomePage.tsx` forces Vite's HMR to reprocess the file, clearing the stale cached version that references the deleted `featuredProgram` variable.
 
 ### File: `src/pages/HomePage.tsx`
 
-**1. Remove Featured Program section (lines ~156-175)**
-- Delete the entire `{featuredProgram && !featuredProgram.is_free && (...)}` block
-- Optionally remove the `featuredProgram` state, the query in `useEffect`, the `ProgramRow` interface, and the `Trophy` import (dead code cleanup)
+- Add `// Triggering rebuild to clear stale cache` as line 1
+- No other changes
 
-**2. No other changes**
-- WOD card, Weekly Date Strip, Active Challenges, Our Philosophy, Footer — all untouched
-- No schema or navigation changes
-
-### Result
-Home page flow becomes: Header → Date Strip → Banner → WOD → Active Challenges → Our Philosophy → Footer
+### Risk: None
+A comment has zero runtime effect. The app will recompile with the current (already-fixed) source and the ReferenceError will be gone.
 
 ### Files Changed
-- `src/pages/HomePage.tsx` — remove Featured Program block + dead code
+- `src/pages/HomePage.tsx` — one comment added at top
 
