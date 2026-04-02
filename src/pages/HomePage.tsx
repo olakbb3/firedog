@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { Flame, Trophy, Zap, ShoppingBag, Instagram } from 'lucide-react';
+import { Flame, Zap, ShoppingBag, Instagram } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAuthGate } from '@/hooks/useAuthGate';
@@ -20,15 +20,6 @@ interface WorkoutRow {
   workout_date: string | null;
 }
 
-interface ProgramRow {
-  id: string;
-  title: string;
-  description: string;
-  sku: string;
-  store_link: string | null;
-  image_url: string | null;
-  is_free: boolean;
-}
 
 interface ChallengeRow {
   id: string;
@@ -50,7 +41,7 @@ const HomePage = () => {
   const { requireAuth, isGuest } = useAuthGate();
   const [profile, setProfile] = useState<ProfileRow | null>(null);
   const [allWorkouts, setAllWorkouts] = useState<WorkoutRow[]>([]);
-  const [featuredProgram, setFeaturedProgram] = useState<ProgramRow | null>(null);
+  
   const [challenges, setChallenges] = useState<ChallengeRow[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date>(() => {
     const d = new Date();
@@ -60,14 +51,12 @@ const HomePage = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-      const [workoutsRes, programRes, challengeRes] = await Promise.all([
+      const [workoutsRes, challengeRes] = await Promise.all([
         supabase.from('workouts').select('*').order('workout_date', { ascending: false }),
-        supabase.from('programs').select('id, title, description, sku, store_link, image_url, is_free').eq('is_free', false).limit(1).maybeSingle(),
         supabase.from('challenges').select('*'),
       ]);
 
       if (workoutsRes.data) setAllWorkouts(workoutsRes.data);
-      if (programRes.data) setFeaturedProgram(programRes.data);
       if (challengeRes.data) setChallenges(challengeRes.data);
 
       if (user) {
@@ -196,29 +185,6 @@ const HomePage = () => {
         </div>
       )}
 
-      {/* Featured Program */}
-      {featuredProgram && !featuredProgram.is_free && (
-        <div className="mb-6">
-          <h2 className="text-lg font-bold mb-3 flex items-center gap-2">
-            <Trophy className="h-5 w-5 text-accent" />
-            FEATURED PROGRAM
-          </h2>
-          <button
-            onClick={() => navigate('/programs')}
-            className="w-full rounded-xl bg-card border border-border overflow-hidden text-left shadow-card hover:border-accent/50 transition-colors"
-          >
-            {featuredProgram.image_url && (
-              <img src={featuredProgram.image_url} alt={featuredProgram.title} className="w-full h-32 object-cover" />
-            )}
-            <div className="p-5 flex items-center justify-between">
-              <div>
-                <h3 className="font-bold font-display">{featuredProgram.title}</h3>
-                <p className="text-sm text-muted-foreground mt-1">{featuredProgram.description}</p>
-              </div>
-            </div>
-          </button>
-        </div>
-      )}
 
       {/* Active Challenges */}
       {challenges.length > 0 && (
