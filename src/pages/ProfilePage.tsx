@@ -31,12 +31,34 @@ const ProfilePage = () => {
     if (!user) return;
 
     const fetchProfile = async () => {
-      const [profileRes, programsRes] = await Promise.all([
-        supabase.from('profiles').select('full_name, points, completed_workouts, avatar_url').eq('id', user.id).maybeSingle(),
-        supabase.from('programs').select('id, title').limit(10),
-      ]);
+      const profileRes = await supabase.from('profiles').select('full_name, points, completed_workouts, avatar_url').eq('id', user.id).maybeSingle();
       if (profileRes.data) setProfile(profileRes.data);
-      if (programsRes.data) setPrograms(programsRes.data);
+
+      // Fetch active programs: enrolled + Free WOD
+      try {
+        const [enrolledRes, freeWodRes] = await Promise.all([
+          supabase.from('user_programs').select('program_sku').eq('user_id', user.id),
+          supabase.from('programs').select('id, title').eq('sku', 'FREE_WOD').maybeSingle(),
+        ]);
+
+        let activePrograms: ProgramRow[] = [];
+
+        // Fetch enrolled program details
+        const enrolledSkus = (enrolledRes.data || []).map(r => r.program_sku).filter(Boolean);
+        if (enrolledSkus.length > 0) {
+          const { data } = await supabase.from('programs').select('id, title').in('sku', enrolledSkus);
+          if (data) activePrograms = data;
+        }
+
+        // Always include Free WOD, deduplicate
+        if (freeWodRes.data && !activePrograms.some(p => p.id === freeWodRes.data!.id)) {
+          activePrograms.push(freeWodRes.data);
+        }
+
+        setPrograms(activePrograms);
+      } catch {
+        setPrograms([]);
+      }
     };
 
     fetchProfile();
@@ -142,7 +164,7 @@ const ProfilePage = () => {
       {/* Programs */}
       {programs.length > 0 && (
         <div className="mb-6">
-          <h2 className="text-sm font-bold font-display mb-3">PROGRAMS</h2>
+          <h2 className="text-sm font-bold font-display mb-3">MY ACTIVE TRAINING</h2>
           <div className="space-y-2">
             {programs.map(p => (
               <div key={p.id} className="rounded-xl bg-card border border-border p-4 flex items-center justify-between shadow-card">
@@ -154,6 +176,16 @@ const ProfilePage = () => {
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Empty state when no active programs */}
+      {programs.length === 0 && (
+        <div className="mb-6 text-center py-6">
+          <p className="text-sm text-muted-foreground mb-3">You haven't started a training track yet.</p>
+          <Button variant="outline" className="font-display" onClick={() => navigate('/programs')}>
+            BROWSE PROGRAMS
+          </Button>
         </div>
       )}
 
