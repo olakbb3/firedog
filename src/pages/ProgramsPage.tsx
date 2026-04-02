@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Lock, CheckCircle2, ShoppingBag, Flame } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAuthGate } from '@/hooks/useAuthGate';
 import { supabase } from '@/lib/supabaseClient';
@@ -27,8 +29,10 @@ interface ProgramRow {
 const ProgramsPage = () => {
   const { user } = useAuth();
   const { requireAuth } = useAuthGate();
+  const navigate = useNavigate();
   const [programs, setPrograms] = useState<ProgramRow[]>([]);
   const [ownedSkus, setOwnedSkus] = useState<Set<string>>(new Set());
+  const [todayWorkoutId, setTodayWorkoutId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -44,6 +48,26 @@ const ProgramsPage = () => {
           .select('program_sku')
           .eq('user_id', user.id);
         if (owned) setOwnedSkus(new Set(owned.map(r => r.program_sku)));
+      }
+
+      // Fetch today's workout, fallback to most recent
+      const today = new Date().toISOString().split('T')[0];
+      const { data: todayWod } = await supabase
+        .from('workouts')
+        .select('id')
+        .eq('workout_date', today)
+        .limit(1)
+        .single();
+      if (todayWod) {
+        setTodayWorkoutId(todayWod.id);
+      } else {
+        const { data: latestWod } = await supabase
+          .from('workouts')
+          .select('id')
+          .order('workout_date', { ascending: false })
+          .limit(1)
+          .single();
+        if (latestWod) setTodayWorkoutId(latestWod.id);
       }
     };
     fetchData();
@@ -106,7 +130,16 @@ const ProgramsPage = () => {
                 <p className="text-sm text-muted-foreground mb-4">{program.description}</p>
 
                 {isFree ? (
-                  <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-display">
+                  <Button
+                    onClick={() => {
+                      if (todayWorkoutId) {
+                        navigate(`/workout/${todayWorkoutId}`);
+                      } else {
+                        toast("No workout scheduled for today. Check back soon!");
+                      }
+                    }}
+                    className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-display"
+                  >
                     <Flame className="h-4 w-4 mr-2" />
                     START WORKOUT
                   </Button>
