@@ -96,6 +96,8 @@ const WorkoutTimer = ({ workoutTitle, workoutDescription, sectionNames, onTimerS
         if (mode === 'countdown') {
           if (prev <= 1) {
             stop();
+            playBeep(800, 200, 3);
+            triggerVibration([200, 100, 200, 100, 200]);
             onTimerStop(formatTime(dur));
             return 0;
           }
