@@ -239,6 +239,14 @@ const WorkoutPage = () => {
           </div>
         )}
 
+        {/* === WORKOUT TIMER === */}
+        <WorkoutTimer
+          workoutTitle={workout.title}
+          workoutDescription={workout.description || ''}
+          sectionNames={groupedSections.map(s => s.section_name)}
+          onTimerStop={setTimerResult}
+        />
+
         {/* === MOVEMENT LIST WITH PER-SECTION LOGGING === */}
         <div className="mt-5 space-y-5">
           {groupedSections.map((section) => (
