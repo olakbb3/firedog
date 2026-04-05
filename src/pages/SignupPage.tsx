@@ -34,8 +34,9 @@ const SignupPage = () => {
         return;
       }
 
-      // Update profile with onboarding data
+      // Update profile with onboarding data + consent
       if (data.user) {
+        const consentGiven = localStorage.getItem('consent_given') === 'true';
         const { error: profileError } = await supabase
           .from('profiles')
           .update({
@@ -44,11 +45,18 @@ const SignupPage = () => {
             fitness_goal: onboardingData.fitness_goal || null,
             training_frequency: onboardingData.training_frequency || null,
             onboarding_completed: true,
+            ...(consentGiven
+              ? { accepted_terms: true, accepted_terms_at: new Date().toISOString() }
+              : {}),
           })
           .eq('id', data.user.id);
 
         if (profileError) {
           console.warn('Profile update failed:', profileError.message);
+        }
+
+        if (consentGiven) {
+          localStorage.removeItem('consent_given');
         }
       }
 
