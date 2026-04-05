@@ -20,6 +20,7 @@ import LeaderboardPage from "@/pages/LeaderboardPage";
 import ProgramsPage from "@/pages/ProgramsPage";
 import ProfilePage from "@/pages/ProfilePage";
 import AdminDashboard from "@/pages/AdminDashboard";
+import ConsentPage from "@/pages/ConsentPage";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
