@@ -8,6 +8,8 @@ interface AuthContextType {
   session: Session | null;
   user: User | null;
   role: AppRole | null;
+  acceptedTerms: boolean;
+  setAcceptedTerms: (v: boolean) => void;
   loading: boolean;
   signOut: () => Promise<void>;
 }
@@ -20,19 +22,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [role, setRole] = useState<AppRole | null>(null);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [loading, setLoading] = useState(true);
   const isInitializedRef = useRef(false);
 
-  const fetchRole = async (userId: string) => {
+  const fetchProfile = async (userId: string) => {
     try {
       const { data } = await supabase
         .from('profiles')
-        .select('role')
+        .select('role, accepted_terms')
         .eq('id', userId)
         .maybeSingle();
       setRole((data?.role as AppRole) || 'athlete');
+      setAcceptedTerms(data?.accepted_terms === true);
     } catch {
       setRole('athlete');
+      setAcceptedTerms(false);
     }
   };
 
@@ -42,9 +47,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(nextSession?.user ?? null);
 
       if (nextSession?.user) {
-        setTimeout(() => fetchRole(nextSession.user.id), 0);
+        setTimeout(() => fetchProfile(nextSession.user.id), 0);
       } else {
         setRole(null);
+        setAcceptedTerms(false);
       }
     };
 
@@ -70,10 +76,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setSession(null);
     setUser(null);
     setRole(null);
+    setAcceptedTerms(false);
   };
 
   return (
-    <AuthContext.Provider value={{ session, user, role, loading, signOut }}>
+    <AuthContext.Provider value={{ session, user, role, acceptedTerms, setAcceptedTerms, loading, signOut }}>
       {children}
     </AuthContext.Provider>
   );

@@ -17,7 +17,7 @@ const AppLayout = ({ children }: { children: ReactNode }) => {
   const { user } = useAuth();
 
   // Hide nav on auth/splash/admin/onboarding pages
-  const hideNav = ['/login', '/signup', '/onboarding'].includes(location.pathname) || location.pathname.startsWith('/admin');
+  const hideNav = ['/login', '/signup', '/onboarding', '/consent'].includes(location.pathname) || location.pathname.startsWith('/admin');
 
   // For guests, show a simpler nav (Home, Programs only)
   const guestNavItems = navItems.filter(n => ['/', '/programs'].includes(n.path));

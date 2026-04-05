@@ -34,7 +34,7 @@ const OnboardingPage = () => {
     if (step < steps.length - 1) {
       setStep(step + 1);
     } else {
-      navigate('/signup');
+      navigate('/consent');
     }
   };
 

@@ -20,6 +20,7 @@ import LeaderboardPage from "@/pages/LeaderboardPage";
 import ProgramsPage from "@/pages/ProgramsPage";
 import ProfilePage from "@/pages/ProfilePage";
 import AdminDashboard from "@/pages/AdminDashboard";
+import ConsentPage from "@/pages/ConsentPage";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -44,6 +45,7 @@ const App = () => {
                   <Route path="/login" element={<LoginPage />} />
                   <Route path="/signup" element={<SignupPage />} />
                   <Route path="/onboarding" element={<OnboardingPage />} />
+                  <Route path="/consent" element={<ConsentPage />} />
 
                   {/* Guest-accessible routes */}
                   <Route path="/" element={<HomePage />} />
