@@ -1,61 +1,51 @@
 
 
-## Liability Consent with Persistent Tracking
+## Workout Timer — Implementation Plan
 
-Your spec is clean, complete, and well-sequenced. One important note: the memory constraint says "no schema changes without explicit instruction" — your request here serves as that explicit instruction, so we're good.
-
-### Flow
-```text
-Onboarding (3 steps) → /consent → /signup → App
-Post-login: if accepted_terms !== true → redirect /consent
-```
-
-### 1. Database Migration — `sql/add_consent_fields.sql`
-```sql
-ALTER TABLE profiles
-ADD COLUMN IF NOT EXISTS accepted_terms boolean DEFAULT false,
-ADD COLUMN IF NOT EXISTS accepted_terms_at timestamptz;
-```
-
-### 2. New Page — `src/pages/ConsentPage.tsx`
-- Logo, "TRAINING WAIVER" title, scrollable liability card, checkbox, "CONTINUE" button
-- Not logged in: save to localStorage, navigate `/signup`
-- Logged in: update profiles + update local auth state immediately, navigate `/`
-
-### 3. AuthContext — `src/contexts/AuthContext.tsx`
-- Add `acceptedTerms: boolean` to state and context type
-- Fetch `accepted_terms` alongside `role` in `fetchRole` (single query, no extra DB calls)
-- Expose setter so ConsentPage can update state locally without refetch
-
-### 4. Onboarding — `src/pages/OnboardingPage.tsx`
-- Final step: `navigate('/consent')` instead of `navigate('/signup')`
-
-### 5. Signup — `src/pages/SignupPage.tsx`
-- After signup, check `localStorage.consent_given`, persist to profile, clear flag
-
-### 6. Route Protection — `src/components/ProtectedRoute.tsx`
-- If user loaded and `acceptedTerms !== true`, redirect to `/consent`
-- Skip redirect if already on `/consent`
-
-### 7. Routing — `src/App.tsx`
-- Add `/consent` route (public)
-
-### 8. Nav — `src/components/AppLayout.tsx`
-- Add `/consent` to `hideNav` array
-
-### Constraints Respected
-- No changes to workout, leaderboard, or logging systems
-- Single profile fetch (role + accepted_terms together)
-- Styling matches existing onboarding/signup pages
-- No redirect loops
+Your revised spec is better than the previous version. The key improvement is the "Important Behavior Fix" — no hardcoded default times, stopwatch always starts at 00:00, and countdown only activates when a duration is confidently parsed. This prevents confusing UX where a random "12:45" appears.
 
 ### Files Changed
-- `sql/add_consent_fields.sql` — new migration
-- `src/pages/ConsentPage.tsx` — new page
-- `src/contexts/AuthContext.tsx` — add acceptedTerms state
-- `src/pages/OnboardingPage.tsx` — redirect change
-- `src/pages/SignupPage.tsx` — persist consent from localStorage
-- `src/components/ProtectedRoute.tsx` — consent gate
-- `src/App.tsx` — add route
-- `src/components/AppLayout.tsx` — hide nav
+- `src/components/WorkoutTimer.tsx` — new component
+- `src/pages/WorkoutPage.tsx` — import timer, add `timerResult` state
+
+### 1. New: `src/components/WorkoutTimer.tsx`
+
+**Props**: `workoutTitle`, `workoutDescription`, `sectionNames: string[]`, `onTimerStop: (time: string) => void`
+
+**Mode detection** (runs once on mount via `useMemo`):
+- Lowercase-join all text inputs
+- Regex for time patterns: `/(\d+)\s*min/i` → extract minutes
+- If "amrap" found AND minutes parsed → Countdown mode with that duration
+- If "for time" found → Stopwatch
+- Fallback → Stopwatch (never guess a duration)
+
+**State & refs**:
+- `useState`: `seconds` (number), `isRunning` (boolean), `mode` ('stopwatch' | 'countdown')
+- `useRef<ReturnType<typeof setInterval>>` for the interval
+- Cleanup in `useEffect` return
+
+**Tick logic**:
+- Stopwatch: increment `seconds` each tick
+- Countdown: decrement `seconds`, auto-stop at 0
+
+**UI**:
+- Large monospace `mm:ss` display (e.g. `font-mono text-5xl font-bold text-center`)
+- Three buttons: Start / Stop / Reset — using existing `Button` component
+- Small mode label below: "Mode: For Time" or "Mode: AMRAP (15:00)"
+- Optional manual mode toggle (text link)
+- Styled consistently with the whiteboard card design
+
+**Result callback**: On Stop press, format current time as `mm:ss` and call `onTimerStop`
+
+### 2. Modified: `src/pages/WorkoutPage.tsx`
+
+- Import `WorkoutTimer`
+- Add `const [timerResult, setTimerResult] = useState<string | null>(null)`
+- Render `WorkoutTimer` inside the whiteboard container, between the athlete snapshot and the movement list
+- Pass workout title, description, section names array, and `setTimerResult` as `onTimerStop`
+- No changes to `SectionLogButton`, logging, or leaderboard
+
+### Constraints respected
+- No DB changes, no leaderboard changes, no logging changes
+- Timer is purely local state, resets on unmount/navigation
 
