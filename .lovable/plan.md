@@ -1,51 +1,45 @@
 
 
-## Workout Timer — Implementation Plan
+## Improve Timer Mode Selection UX
 
-Your revised spec is better than the previous version. The key improvement is the "Important Behavior Fix" — no hardcoded default times, stopwatch always starts at 00:00, and countdown only activates when a duration is confidently parsed. This prevents confusing UX where a random "12:45" appears.
+### Problem
+The current mode toggle is a tiny `text-[10px]` button that looks like a label. Users won't realize they can tap it, and it doesn't allow setting a custom countdown duration.
+
+### Proposed Changes
+
+**File: `src/components/WorkoutTimer.tsx`**
+
+1. **Replace the text toggle with a visible segmented control** using two styled buttons/tabs:
+   - "FOR TIME" (stopwatch)
+   - "COUNTDOWN" (countdown)
+   - Highlight the active mode with primary color
+
+2. **Add custom duration input for countdown mode**:
+   - When "COUNTDOWN" is selected and no duration was auto-detected, show a simple minute input (e.g., a number stepper or small input field)
+   - Pre-fill with auto-detected duration if available
+   - Only visible when countdown mode is active and timer is not running
+
+3. **Disable mode switching while timer is running** to prevent accidental resets
+
+### UI Layout (top to bottom)
+```text
+┌─────────────────────────────┐
+│  [ FOR TIME ]  [ COUNTDOWN ]│  ← segmented toggle
+│                             │
+│        12:00                │  ← large timer display
+│    [  15  ] min             │  ← duration input (countdown only, when stopped)
+│                             │
+│    [ Start ]   [ Reset ]    │  ← action buttons
+└─────────────────────────────┘
+```
+
+### Technical Details
+- Add `customDuration` state (number, in minutes)
+- When user selects countdown and no auto-detected duration, default to 10 minutes
+- Duration input uses a simple `<input type="number" min={1} max={60}>`
+- Segmented control uses existing `Button` component with `variant="outline"` / `variant="default"` for active state
+- Auto-detected duration still pre-fills but is now editable
 
 ### Files Changed
-- `src/components/WorkoutTimer.tsx` — new component
-- `src/pages/WorkoutPage.tsx` — import timer, add `timerResult` state
-
-### 1. New: `src/components/WorkoutTimer.tsx`
-
-**Props**: `workoutTitle`, `workoutDescription`, `sectionNames: string[]`, `onTimerStop: (time: string) => void`
-
-**Mode detection** (runs once on mount via `useMemo`):
-- Lowercase-join all text inputs
-- Regex for time patterns: `/(\d+)\s*min/i` → extract minutes
-- If "amrap" found AND minutes parsed → Countdown mode with that duration
-- If "for time" found → Stopwatch
-- Fallback → Stopwatch (never guess a duration)
-
-**State & refs**:
-- `useState`: `seconds` (number), `isRunning` (boolean), `mode` ('stopwatch' | 'countdown')
-- `useRef<ReturnType<typeof setInterval>>` for the interval
-- Cleanup in `useEffect` return
-
-**Tick logic**:
-- Stopwatch: increment `seconds` each tick
-- Countdown: decrement `seconds`, auto-stop at 0
-
-**UI**:
-- Large monospace `mm:ss` display (e.g. `font-mono text-5xl font-bold text-center`)
-- Three buttons: Start / Stop / Reset — using existing `Button` component
-- Small mode label below: "Mode: For Time" or "Mode: AMRAP (15:00)"
-- Optional manual mode toggle (text link)
-- Styled consistently with the whiteboard card design
-
-**Result callback**: On Stop press, format current time as `mm:ss` and call `onTimerStop`
-
-### 2. Modified: `src/pages/WorkoutPage.tsx`
-
-- Import `WorkoutTimer`
-- Add `const [timerResult, setTimerResult] = useState<string | null>(null)`
-- Render `WorkoutTimer` inside the whiteboard container, between the athlete snapshot and the movement list
-- Pass workout title, description, section names array, and `setTimerResult` as `onTimerStop`
-- No changes to `SectionLogButton`, logging, or leaderboard
-
-### Constraints respected
-- No DB changes, no leaderboard changes, no logging changes
-- Timer is purely local state, resets on unmount/navigation
+- `src/components/WorkoutTimer.tsx` — redesign mode selector + add duration input
 
