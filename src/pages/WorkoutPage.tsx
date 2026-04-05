@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabaseClient';
 import type { WorkoutSection, ExerciseRow } from '@/types/index';
 import { parseTextWithLinks, extractLinkButtons, LinkButtons } from '@/lib/urlParser';
 import SectionLogButton from '@/components/SectionLogButton';
+import WorkoutTimer from '@/components/WorkoutTimer';
 import { useLeaderboard } from '@/hooks/useLeaderboard';
 
 interface WorkoutData {
@@ -37,6 +38,7 @@ const WorkoutPage = () => {
 
   // Performance & leaderboard
   const [snapshot, setSnapshot] = useState<PerformanceSnapshot>({ lastDate: null, bestResult: null, completedCount: 0 });
+  const [timerResult, setTimerResult] = useState<string | null>(null);
   const { crew } = useLeaderboard(id, sections);
 
   useEffect(() => {
@@ -236,6 +238,14 @@ const WorkoutPage = () => {
             </div>
           </div>
         )}
+
+        {/* === WORKOUT TIMER === */}
+        <WorkoutTimer
+          workoutTitle={workout.title}
+          workoutDescription={workout.description || ''}
+          sectionNames={groupedSections.map(s => s.section_name)}
+          onTimerStop={setTimerResult}
+        />
 
         {/* === MOVEMENT LIST WITH PER-SECTION LOGGING === */}
         <div className="mt-5 space-y-5">
