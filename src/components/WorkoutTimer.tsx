@@ -88,6 +88,8 @@ const WorkoutTimer = ({ workoutTitle, workoutDescription, sectionNames, onTimerS
   const start = useCallback(() => {
     if (isRunning) return;
     setIsRunning(true);
+    playBeep(600, 150, 1);
+    triggerVibration([100]);
     const dur = customMinutes * 60;
     intervalRef.current = setInterval(() => {
       setSeconds(prev => {
