@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Play, Square, RotateCcw } from 'lucide-react';
 
 interface WorkoutTimerProps {
@@ -29,11 +30,15 @@ const WorkoutTimer = ({ workoutTitle, workoutDescription, sectionNames, onTimerS
   }, [workoutTitle, workoutDescription, sectionNames]);
 
   const [mode, setMode] = useState<TimerMode>(detected.type);
+  const [customMinutes, setCustomMinutes] = useState<number>(
+    detected.type === 'countdown' ? detected.duration / 60 : 10
+  );
   const [seconds, setSeconds] = useState(detected.type === 'countdown' ? detected.duration : 0);
   const [isRunning, setIsRunning] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Cleanup on unmount
+  const countdownDuration = mode === 'countdown' ? customMinutes * 60 : 0;
+
   useEffect(() => {
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
@@ -51,12 +56,13 @@ const WorkoutTimer = ({ workoutTitle, workoutDescription, sectionNames, onTimerS
   const start = useCallback(() => {
     if (isRunning) return;
     setIsRunning(true);
+    const dur = customMinutes * 60;
     intervalRef.current = setInterval(() => {
       setSeconds(prev => {
         if (mode === 'countdown') {
           if (prev <= 1) {
             stop();
-            onTimerStop(formatTime(detected.duration));
+            onTimerStop(formatTime(dur));
             return 0;
           }
           return prev - 1;
@@ -64,45 +70,86 @@ const WorkoutTimer = ({ workoutTitle, workoutDescription, sectionNames, onTimerS
         return prev + 1;
       });
     }, 1000);
-  }, [isRunning, mode, stop, onTimerStop, detected.duration]);
+  }, [isRunning, mode, stop, onTimerStop, customMinutes]);
 
   const handleStop = useCallback(() => {
     stop();
+    const dur = customMinutes * 60;
     const result = mode === 'countdown'
-      ? formatTime(detected.duration - seconds)
+      ? formatTime(dur - seconds)
       : formatTime(seconds);
     onTimerStop(result);
-  }, [stop, mode, seconds, detected.duration, onTimerStop]);
+  }, [stop, mode, seconds, customMinutes, onTimerStop]);
 
   const reset = useCallback(() => {
     stop();
-    setSeconds(mode === 'countdown' ? detected.duration : 0);
-  }, [stop, mode, detected.duration]);
+    setSeconds(mode === 'countdown' ? customMinutes * 60 : 0);
+  }, [stop, mode, customMinutes]);
 
-  const toggleMode = useCallback(() => {
+  const selectMode = useCallback((newMode: TimerMode) => {
+    if (isRunning) return;
     stop();
-    if (mode === 'stopwatch' && detected.type === 'countdown') {
-      setMode('countdown');
-      setSeconds(detected.duration);
-    } else if (mode === 'countdown') {
-      setMode('stopwatch');
-      setSeconds(0);
+    setMode(newMode);
+    if (newMode === 'countdown') {
+      setSeconds(customMinutes * 60);
     } else {
-      // No countdown available, stay on stopwatch
       setSeconds(0);
     }
-  }, [stop, mode, detected]);
+  }, [isRunning, stop, customMinutes]);
 
-  const modeLabel = mode === 'countdown'
-    ? `AMRAP (${formatTime(detected.duration)})`
-    : 'For Time';
+  const handleMinutesChange = (val: string) => {
+    const n = Math.max(1, Math.min(60, parseInt(val) || 1));
+    setCustomMinutes(n);
+    if (!isRunning) setSeconds(n * 60);
+  };
 
   return (
     <div className="mt-4 mb-2 flex flex-col items-center gap-3 border-t border-border pt-4">
+      {/* Mode selector */}
+      <div className="flex rounded-md overflow-hidden border border-border">
+        <button
+          onClick={() => selectMode('stopwatch')}
+          disabled={isRunning}
+          className={`px-4 py-1.5 text-xs font-bold tracking-widest uppercase transition-colors ${
+            mode === 'stopwatch'
+              ? 'bg-primary text-primary-foreground'
+              : 'bg-card text-muted-foreground hover:text-foreground'
+          } ${isRunning ? 'opacity-60 cursor-not-allowed' : ''}`}
+        >
+          For Time
+        </button>
+        <button
+          onClick={() => selectMode('countdown')}
+          disabled={isRunning}
+          className={`px-4 py-1.5 text-xs font-bold tracking-widest uppercase transition-colors border-l border-border ${
+            mode === 'countdown'
+              ? 'bg-primary text-primary-foreground'
+              : 'bg-card text-muted-foreground hover:text-foreground'
+          } ${isRunning ? 'opacity-60 cursor-not-allowed' : ''}`}
+        >
+          Countdown
+        </button>
+      </div>
+
       {/* Timer display */}
       <p className="font-mono text-5xl font-bold text-foreground tracking-wider">
         {formatTime(seconds)}
       </p>
+
+      {/* Duration input (countdown only, when stopped) */}
+      {mode === 'countdown' && !isRunning && (
+        <div className="flex items-center gap-2">
+          <Input
+            type="number"
+            min={1}
+            max={60}
+            value={customMinutes}
+            onChange={(e) => handleMinutesChange(e.target.value)}
+            className="w-16 h-8 text-center text-sm"
+          />
+          <span className="text-xs text-muted-foreground font-body">min</span>
+        </div>
+      )}
 
       {/* Buttons */}
       <div className="flex items-center gap-2">
@@ -119,14 +166,6 @@ const WorkoutTimer = ({ workoutTitle, workoutDescription, sectionNames, onTimerS
           <RotateCcw className="h-4 w-4" /> Reset
         </Button>
       </div>
-
-      {/* Mode label */}
-      <button
-        onClick={toggleMode}
-        className="text-[10px] text-muted-foreground uppercase tracking-widest font-body hover:text-foreground transition-colors"
-      >
-        Mode: {modeLabel}
-      </button>
     </div>
   );
 };
