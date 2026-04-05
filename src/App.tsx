@@ -45,6 +45,7 @@ const App = () => {
                   <Route path="/login" element={<LoginPage />} />
                   <Route path="/signup" element={<SignupPage />} />
                   <Route path="/onboarding" element={<OnboardingPage />} />
+                  <Route path="/consent" element={<ConsentPage />} />
 
                   {/* Guest-accessible routes */}
                   <Route path="/" element={<HomePage />} />
