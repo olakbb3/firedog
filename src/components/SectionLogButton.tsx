@@ -119,6 +119,12 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName, re
     }
   };
 
+  const autoFormatTime = (raw: string): string => {
+    const digits = raw.replace(/\D/g, '').slice(0, 5);
+    if (digits.length <= 2) return digits;
+    return digits.slice(0, digits.length - 2) + ':' + digits.slice(digits.length - 2);
+  };
+
   const validateTimeFormat = (t: string) => /^\d{1,3}:\d{2}$/.test(t);
 
   const validate = (): boolean => {
@@ -126,7 +132,7 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName, re
     switch (resultType) {
       case 'time':
         if (!formData.time.trim()) { setValidationError('Time is required'); return false; }
-        if (!validateTimeFormat(formData.time.trim())) { setValidationError('Use MM:SS format'); return false; }
+        if (!validateTimeFormat(formData.time.trim())) { setValidationError('Enter a valid time'); return false; }
         return true;
       case 'rounds_reps':
         if (formData.rounds === '' && formData.reps === '') { setValidationError('Enter rounds or reps'); return false; }
