@@ -10,6 +10,38 @@ interface WorkoutTimerProps {
   onTimerStop: (time: string) => void;
 }
 
+/* ---- Audio & Haptic helpers ---- */
+let audioCtx: AudioContext | null = null;
+
+const getAudioCtx = (): AudioContext | null => {
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    return audioCtx;
+  } catch { return null; }
+};
+
+const playBeep = (freq: number, durationMs: number, repeats: number) => {
+  const ctx = getAudioCtx();
+  if (!ctx) return;
+  for (let i = 0; i < repeats; i++) {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.frequency.value = freq;
+    gain.gain.value = 0.3;
+    const start = ctx.currentTime + i * (durationMs + 100) / 1000;
+    osc.start(start);
+    osc.stop(start + durationMs / 1000);
+  }
+};
+
+const triggerVibration = (pattern: number[]) => {
+  if (typeof navigator !== 'undefined' && navigator.vibrate) {
+    navigator.vibrate(pattern);
+  }
+};
+
 type TimerMode = 'stopwatch' | 'countdown';
 
 const formatTime = (totalSeconds: number): string => {
