@@ -1,45 +1,25 @@
 
 
-## Improve Timer Mode Selection UX
+## Workout Timer Audio & Haptics
 
-### Problem
-The current mode toggle is a tiny `text-[10px]` button that looks like a label. Users won't realize they can tap it, and it doesn't allow setting a custom countdown duration.
+Your spec is clean and complete. It aligns with the previously discussed plan and adds important details (AudioContext user-gesture compliance, iOS safety checks). No changes needed.
 
-### Proposed Changes
+### Implementation
 
 **File: `src/components/WorkoutTimer.tsx`**
 
-1. **Replace the text toggle with a visible segmented control** using two styled buttons/tabs:
-   - "FOR TIME" (stopwatch)
-   - "COUNTDOWN" (countdown)
-   - Highlight the active mode with primary color
+1. Add `playBeep(freq, durationMs, repeats)` helper using Web Audio API (`AudioContext` + `OscillatorNode`). Lazily create `AudioContext` on first user gesture (Start button click) to satisfy browser autoplay policies.
 
-2. **Add custom duration input for countdown mode**:
-   - When "COUNTDOWN" is selected and no duration was auto-detected, show a simple minute input (e.g., a number stepper or small input field)
-   - Pre-fill with auto-detected duration if available
-   - Only visible when countdown mode is active and timer is not running
+2. Add `triggerVibration(pattern)` wrapper with `navigator.vibrate` existence check for silent failure on unsupported browsers.
 
-3. **Disable mode switching while timer is running** to prevent accidental resets
+3. In `start()` — call `playBeep(600, 150, 1)` + `triggerVibration([100])`
 
-### UI Layout (top to bottom)
-```text
-┌─────────────────────────────┐
-│  [ FOR TIME ]  [ COUNTDOWN ]│  ← segmented toggle
-│                             │
-│        12:00                │  ← large timer display
-│    [  15  ] min             │  ← duration input (countdown only, when stopped)
-│                             │
-│    [ Start ]   [ Reset ]    │  ← action buttons
-└─────────────────────────────┘
-```
+4. In countdown completion block (where `prev <= 1`) — call `playBeep(800, 200, 3)` + `triggerVibration([200, 100, 200, 100, 200])`
 
-### Technical Details
-- Add `customDuration` state (number, in minutes)
-- When user selects countdown and no auto-detected duration, default to 10 minutes
-- Duration input uses a simple `<input type="number" min={1} max={60}>`
-- Segmented control uses existing `Button` component with `variant="outline"` / `variant="default"` for active state
-- Auto-detected duration still pre-fills but is now editable
+### Constraints respected
+- No changes to timer logic, layout, state, or any other files
+- Graceful degradation on all browsers
 
 ### Files Changed
-- `src/components/WorkoutTimer.tsx` — redesign mode selector + add duration input
+- `src/components/WorkoutTimer.tsx` — add audio/vibration helpers and two trigger points
 
