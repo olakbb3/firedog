@@ -140,7 +140,7 @@ const WorkoutPage = () => {
         });
         groups.sort((a, b) => (a.order_index === -1 ? -1 : a.order_index) - (b.order_index === -1 ? -1 : b.order_index));
       }
-      return groups.filter(g => g.exercises.length > 0);
+      return groups.filter(g => g.exercises.length > 0 || (g as any).result_type);
     }
     if (exercises.length > 0) {
       const deduped = exercises.filter((ex, idx, arr) =>
