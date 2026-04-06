@@ -45,7 +45,7 @@ const HomePage = () => {
   const [profile, setProfile] = useState<ProfileRow | null>(null);
   const [allWorkouts, setAllWorkouts] = useState<WorkoutRow[]>([]);
   
-  const [challenges, setChallenges] = useState<ChallengeRow[]>([]);
+  
   const [selectedDate, setSelectedDate] = useState<Date>(() => {
     const d = new Date();
     d.setHours(0, 0, 0, 0);
