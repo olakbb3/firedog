@@ -54,13 +54,9 @@ const HomePage = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-      const [workoutsRes, challengeRes] = await Promise.all([
-        supabase.from('workouts').select('*').order('workout_date', { ascending: false }),
-        supabase.from('challenges').select('*'),
-      ]);
+      const workoutsRes = await supabase.from('workouts').select('*').order('workout_date', { ascending: false });
 
       if (workoutsRes.data) setAllWorkouts(workoutsRes.data);
-      if (challengeRes.data) setChallenges(challengeRes.data);
 
       if (user) {
         const profileRes = await supabase.from('profiles').select('full_name, points').eq('id', user.id).maybeSingle();
