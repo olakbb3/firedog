@@ -88,6 +88,16 @@ const WorkoutPage = () => {
     fetchPerformance();
   }, [id, user]);
 
+  const isFiredogTotal = workout?.title === 'Firedog Total';
+
+  // Firedog Total month info
+  const challengeMonth = new Date().toLocaleString('default', { month: 'long' });
+  const daysLeft = (() => {
+    const now = new Date();
+    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    return Math.ceil((lastDay.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+  })();
+
   // Group exercises by section (deduplicate sections by name)
   const groupedSections = (() => {
     if (sections.length > 0) {
