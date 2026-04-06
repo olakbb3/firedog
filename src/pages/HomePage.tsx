@@ -24,14 +24,7 @@ interface WorkoutRow {
 }
 
 
-interface ChallengeRow {
-  id: string;
-  title: string;
-  description: string;
-  start_date: string;
-  end_date: string;
-  participants: number;
-}
+
 
 interface ProfileRow {
   full_name: string | null;
@@ -45,7 +38,7 @@ const HomePage = () => {
   const [profile, setProfile] = useState<ProfileRow | null>(null);
   const [allWorkouts, setAllWorkouts] = useState<WorkoutRow[]>([]);
   
-  const [challenges, setChallenges] = useState<ChallengeRow[]>([]);
+  
   const [selectedDate, setSelectedDate] = useState<Date>(() => {
     const d = new Date();
     d.setHours(0, 0, 0, 0);
@@ -54,13 +47,9 @@ const HomePage = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-      const [workoutsRes, challengeRes] = await Promise.all([
-        supabase.from('workouts').select('*').order('workout_date', { ascending: false }),
-        supabase.from('challenges').select('*'),
-      ]);
+      const workoutsRes = await supabase.from('workouts').select('*').order('workout_date', { ascending: false });
 
       if (workoutsRes.data) setAllWorkouts(workoutsRes.data);
-      if (challengeRes.data) setChallenges(challengeRes.data);
 
       if (user) {
         const profileRes = await supabase.from('profiles').select('full_name, points').eq('id', user.id).maybeSingle();
@@ -97,11 +86,8 @@ const HomePage = () => {
     }
   };
 
-  const handleChallengeAction = () => {
-    if (requireAuth('View Programs')) {
-      navigate('/programs');
-    }
-  };
+
+
 
   return (
     <div className="px-4 pt-6 pb-4 max-w-lg mx-auto">
@@ -226,44 +212,24 @@ const HomePage = () => {
       </div>
 
       {/* Active Challenges */}
-      {(challenges.length > 0 || firedogTotal) && (
+      {firedogTotal && (
         <div className="mb-6">
           <h2 className="text-lg font-bold mb-3">🔥 ACTIVE CHALLENGES</h2>
           <div className="space-y-3">
-            {challenges.map((ch) => (
-              <div key={ch.id} className="rounded-xl bg-card border border-border p-4 shadow-card">
-                <h3 className="font-bold font-display text-sm">{ch.title}</h3>
-                <p className="text-xs text-muted-foreground mt-1">{ch.description}</p>
-                <div className="mt-2 flex items-center justify-between">
-                  <span className="text-xs text-muted-foreground">{ch.participants} athletes joined</span>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="text-xs h-7 border-primary text-primary hover:bg-primary hover:text-primary-foreground"
-                    onClick={handleChallengeAction}
-                  >
-                    View Program
-                  </Button>
-                </div>
+            <div className="rounded-xl bg-card border border-border p-4 shadow-card">
+              <h3 className="font-bold font-display text-sm">🔥 FIREDOG TOTAL</h3>
+              <p className="text-xs text-muted-foreground mt-1">{firedogTotal.description}</p>
+              <div className="mt-2 flex items-center justify-end">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="text-xs h-7 border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+                  onClick={() => navigate(`/workout/${firedogTotal.id}`)}
+                >
+                  View Challenge
+                </Button>
               </div>
-            ))}
-            {/* Firedog Total — dynamic from DB */}
-            {firedogTotal && (
-              <div className="rounded-xl bg-card border border-border p-4 shadow-card">
-                <h3 className="font-bold font-display text-sm">🔥 FIREDOG TOTAL</h3>
-                <p className="text-xs text-muted-foreground mt-1">{firedogTotal.description}</p>
-                <div className="mt-2 flex items-center justify-end">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="text-xs h-7 border-primary text-primary hover:bg-primary hover:text-primary-foreground"
-                    onClick={() => navigate(`/workout/${firedogTotal.id}`)}
-                  >
-                    View Challenge
-                  </Button>
-                </div>
-              </div>
-            )}
+            </div>
           </div>
         </div>
       )}

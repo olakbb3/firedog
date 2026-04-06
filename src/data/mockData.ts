@@ -83,10 +83,7 @@ export const mockLeaderboard: LeaderboardEntry[] = [
 ];
 
 export const mockPrograms: Program[] = [];
-export const mockChallenges: Challenge[] = [
-  { id: 'ch-1', title: '30-DAY CONDITIONING CHALLENGE', description: 'Complete a workout every day for 30 days. No excuses.', start_date: '2026-03-01', end_date: '2026-03-31', participants: 47 },
-  { id: 'ch-2', title: 'STRENGTH TEST WEEK', description: 'Test your 1RM on all major lifts. Post your numbers.', start_date: '2026-03-15', end_date: '2026-03-22', participants: 32 },
-];
+export const mockChallenges: Challenge[] = [];
 
 export const mockHomeContent: HomeContent = {
   featured_workout_id: 'wod-1',
