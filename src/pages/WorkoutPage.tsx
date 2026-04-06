@@ -27,7 +27,7 @@ interface PerformanceSnapshot {
   completedCount: number;
 }
 
-const WorkoutPage = () => {
+const isFiredogTotal = workout?.title === 'Firedog Total';
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
