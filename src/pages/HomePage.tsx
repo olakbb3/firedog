@@ -24,14 +24,7 @@ interface WorkoutRow {
 }
 
 
-interface ChallengeRow {
-  id: string;
-  title: string;
-  description: string;
-  start_date: string;
-  end_date: string;
-  participants: number;
-}
+
 
 interface ProfileRow {
   full_name: string | null;
