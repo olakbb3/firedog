@@ -86,11 +86,8 @@ const HomePage = () => {
     }
   };
 
-  const handleChallengeAction = () => {
-    if (requireAuth('View Programs')) {
-      navigate('/programs');
-    }
-  };
+
+
 
   return (
     <div className="px-4 pt-6 pb-4 max-w-lg mx-auto">
