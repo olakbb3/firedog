@@ -189,6 +189,37 @@ const HomePage = () => {
       )}
 
 
+      {/* Program Cards */}
+      <div className="mb-6">
+        <h2 className="text-lg font-bold mb-3">PROGRAMS</h2>
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            onClick={() => navigate('/programs')}
+            className="rounded-xl bg-card border border-border overflow-hidden shadow-card text-left hover:border-primary/50 transition-colors"
+          >
+            <div className="w-full h-24 overflow-hidden">
+              <img src={inferno45Cover} alt="Engine" className="w-full h-full object-cover" loading="lazy" />
+            </div>
+            <div className="p-3">
+              <h3 className="font-bold font-display text-sm">ENGINE</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">Aerobic conditioning</p>
+            </div>
+          </button>
+          <button
+            onClick={() => navigate('/programs')}
+            className="rounded-xl bg-card border border-border overflow-hidden shadow-card text-left hover:border-primary/50 transition-colors"
+          >
+            <div className="w-full h-24 overflow-hidden">
+              <img src={stationStrengthCover} alt="Firedog" className="w-full h-full object-cover" loading="lazy" />
+            </div>
+            <div className="p-3">
+              <h3 className="font-bold font-display text-sm">FIREDOG</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">Full 5-section training</p>
+            </div>
+          </button>
+        </div>
+      </div>
+
       {/* Active Challenges */}
       {challenges.length > 0 && (
         <div className="mb-6">
@@ -211,6 +242,21 @@ const HomePage = () => {
                 </div>
               </div>
             ))}
+            {/* Firedog Total static challenge */}
+            <div className="rounded-xl bg-card border border-border p-4 shadow-card">
+              <h3 className="font-bold font-display text-sm">FIREDOG TOTAL</h3>
+              <p className="text-xs text-muted-foreground mt-1">Log your best lifts this month</p>
+              <div className="mt-2 flex items-center justify-end">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="text-xs h-7 border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+                  onClick={() => navigate('/programs')}
+                >
+                  View Details
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
       )}
