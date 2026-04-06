@@ -1,46 +1,58 @@
 
 
-## Home Structure + Program Rename
+## Firedog Total — Full Challenge System
 
-### 1. Program Renaming
+### 1. Database Inserts (Manual Step)
 
-The program names ("Inferno 45", "Station Strength") are stored in the **database** (`programs` table), not hardcoded in the UI. The only hardcoded references are:
-- **Cover image imports** in `ProgramsPage.tsx` — file names (`inferno-45-cover.jpg`, `station-strength-cover.jpg`) and SKU keys (`INFERNO45`, `STATION_STRENGTH`) stay as-is since they're internal identifiers
-- **Mock data** in `src/data/mockData.ts` — update the workout title "INFERNO 45" to "ENGINE"
-- **Store links** in memory reference Shopify URLs — these remain unchanged (they're external)
+You need to run this SQL in your Supabase dashboard to create the workout and its 5 sections:
 
-**Action needed from you**: Rename the program titles in the Supabase `programs` table:
-- "Inferno 45" → "Engine"  
-- "Station Strength" → "Firedog"
+```sql
+-- Create the Firedog Total workout
+INSERT INTO workouts (id, title, description, date, workout_date)
+VALUES (
+  gen_random_uuid(),
+  'Firedog Total',
+  'Log your best lifts this month',
+  CURRENT_DATE,
+  NULL
+);
 
-No SQL migration needed — just an UPDATE in the dashboard.
+-- Get the workout ID, then insert 5 sections
+INSERT INTO workout_sections (id, workout_id, section_name, order_index, result_type)
+SELECT gen_random_uuid(), w.id, s.name, s.idx, 'weight'
+FROM workouts w,
+(VALUES (0, 'Deadlift'), (1, 'Back Squat'), (2, 'Bench Press'), (3, 'Shoulder Press'), (4, 'Weighted Pull-up')) AS s(idx, name)
+WHERE w.title = 'Firedog Total';
+```
 
-### 2. Home Page Layout Changes (`src/pages/HomePage.tsx`)
+Setting `workout_date = NULL` ensures it never appears as a daily WOD but remains accessible via direct link.
 
-New layout order:
-1. Header (unchanged)
-2. Guest CTA (unchanged)
-3. Weekly Date Strip (unchanged)
-4. Banner (unchanged)
-5. **Free WOD card** (unchanged)
-6. **NEW: Two program cards** — "Engine" and "Firedog" in a 2-column grid, each navigates to `/programs`
-7. **Active Challenges** (moved below programs)
-8. **NEW: "Firedog Total" challenge card** — added to challenges section
-9. Our Philosophy (unchanged)
-10. Footer (unchanged)
+### 2. Home Page Changes (`src/pages/HomePage.tsx`)
 
-Program cards will use the existing cover images (`inferno-45-cover.jpg` and `station-strength-cover.jpg`) and be styled consistently with the existing card design. Each card shows the program name, a short tagline, and navigates to `/programs` on tap.
+- Remove the hardcoded "FIREDOG TOTAL" static card (lines 245-259)
+- After fetching workouts, find the Firedog Total workout: `const firedogTotal = allWorkouts.find(w => w.title === 'Firedog Total')`
+- Render a dynamic challenge card for it in the Active Challenges section, with the button navigating to `/workout/${firedogTotal.id}` instead of `/programs`
+- Filter Firedog Total OUT of the daily WOD display so it doesn't show as a regular workout
 
-The "Firedog Total" card will be a static card rendered alongside DB challenges, with title "Firedog Total", description "Log your best lifts this month", navigating to `/programs` on click.
+### 3. Workout Page Enhancements (`src/pages/WorkoutPage.tsx`)
 
-### 3. Mock Data Update (`src/data/mockData.ts`)
+Detect `workout.title === 'Firedog Total'` and render a custom header block above the whiteboard container:
 
-Rename "INFERNO 45" → "ENGINE" in mock workout title.
+- Fire emoji + "FIREDOG TOTAL" title + "Monthly Strength Challenge" subtitle
+- "Test your max lifts and see where you rank."
+- Dynamic month name + days remaining countdown
+- "Log your best lifts anytime this month. You can update your score as you improve."
+
+Before each section title, prepend a dumbbell emoji: "&#127947; Max Lift"
+
+Above the leaderboard, replace "TOP CREW" with "Top Performers This Month" when Firedog Total is detected.
+
+Hide the workout timer for Firedog Total (it's a max-lift challenge, not timed).
 
 ### Files Changed
-- `src/pages/HomePage.tsx` — add program cards section + Firedog Total challenge card, reorder layout
-- `src/data/mockData.ts` — rename mock workout title
+- `src/pages/HomePage.tsx` — remove static card, add dynamic Firedog Total card linking to `/workout/{id}`, filter from daily WOD
+- `src/pages/WorkoutPage.tsx` — add challenge header, section context labels, leaderboard title override for Firedog Total
 
-### Manual Step (User)
-- Update program titles in Supabase `programs` table: "Inferno 45" → "Engine", "Station Strength" → "Firedog"
+### Manual Step
+- Run the SQL above in Supabase to create the workout + 5 sections
 
