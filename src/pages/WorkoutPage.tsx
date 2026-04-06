@@ -322,7 +322,7 @@ const WorkoutPage = () => {
       <div className="rounded-xl border border-border bg-card p-4 mb-4">
         <div className="flex items-center gap-2 mb-3">
           <Trophy className="h-4 w-4 text-accent" />
-          <p className="text-xs font-bold tracking-widest">TOP CREW</p>
+          <p className="text-xs font-bold tracking-widest">{isFiredogTotal ? 'TOP PERFORMERS THIS MONTH' : 'TOP CREW'}</p>
         </div>
         {crew.length > 0 ? (
           <div className="space-y-1.5">
