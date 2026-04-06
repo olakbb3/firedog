@@ -211,6 +211,22 @@ const WorkoutPage = () => {
         <span className="text-sm font-body">Back</span>
       </button>
 
+      {/* === FIREDOG TOTAL CHALLENGE HEADER === */}
+      {isFiredogTotal && (
+        <div className="rounded-xl border border-primary/30 bg-primary/5 p-5 mb-4 text-center">
+          <p className="text-2xl font-bold font-display">🔥 FIREDOG TOTAL</p>
+          <p className="text-sm text-muted-foreground mt-1">Monthly Strength Challenge</p>
+          <p className="text-xs text-foreground mt-2">Test your max lifts and see where you rank.</p>
+          <div className="mt-3 flex items-center justify-center gap-2">
+            <span className="text-xs font-semibold text-primary">{challengeMonth} Challenge</span>
+            <span className="text-xs text-muted-foreground">• Ends in {daysLeft} days</span>
+          </div>
+          <p className="text-[10px] text-muted-foreground mt-2 italic">
+            Log your best lifts anytime this month. You can update your score as you improve.
+          </p>
+        </div>
+      )}
+
       {/* === WHITEBOARD CONTAINER === */}
       <div className="rounded-xl border border-border bg-card p-5 mb-4">
         {/* Title */}
