@@ -23,7 +23,7 @@ export const mockAdminUser: User = {
 export const mockWorkouts: Workout[] = [
   {
     id: 'wod-1',
-    title: 'INFERNO 45',
+    title: 'ENGINE',
     description: 'High-intensity firefighter conditioning. Push through the flames.',
     exercises: [
       { name: 'Deadlifts', reps: 15, sets: 5, notes: 'Heavy — go 80% 1RM' },
