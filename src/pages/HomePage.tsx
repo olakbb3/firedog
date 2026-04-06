@@ -222,27 +222,10 @@ const HomePage = () => {
       </div>
 
       {/* Active Challenges */}
-      {(challenges.length > 0 || firedogTotal) && (
+    {firedogTotal && (
         <div className="mb-6">
           <h2 className="text-lg font-bold mb-3">🔥 ACTIVE CHALLENGES</h2>
           <div className="space-y-3">
-            {challenges.map((ch) => (
-              <div key={ch.id} className="rounded-xl bg-card border border-border p-4 shadow-card">
-                <h3 className="font-bold font-display text-sm">{ch.title}</h3>
-                <p className="text-xs text-muted-foreground mt-1">{ch.description}</p>
-                <div className="mt-2 flex items-center justify-between">
-                  <span className="text-xs text-muted-foreground">{ch.participants} athletes joined</span>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="text-xs h-7 border-primary text-primary hover:bg-primary hover:text-primary-foreground"
-                    onClick={handleChallengeAction}
-                  >
-                    View Program
-                  </Button>
-                </div>
-              </div>
-            ))}
             {/* Firedog Total — dynamic from DB */}
             {firedogTotal && (
               <div className="rounded-xl bg-card border border-border p-4 shadow-card">
