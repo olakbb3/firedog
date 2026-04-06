@@ -1,40 +1,46 @@
 
 
-## Two Issues: Time Input Friction + Streak Logic
+## Home Structure + Program Rename
 
-### 1. Auto-format Time Input (Remove MM:SS Friction)
+### 1. Program Renaming
 
-**Problem**: Users must manually type the colon in `08:23`. Typing `0823` fails validation.
+The program names ("Inferno 45", "Station Strength") are stored in the **database** (`programs` table), not hardcoded in the UI. The only hardcoded references are:
+- **Cover image imports** in `ProgramsPage.tsx` — file names (`inferno-45-cover.jpg`, `station-strength-cover.jpg`) and SKU keys (`INFERNO45`, `STATION_STRENGTH`) stay as-is since they're internal identifiers
+- **Mock data** in `src/data/mockData.ts` — update the workout title "INFERNO 45" to "ENGINE"
+- **Store links** in memory reference Shopify URLs — these remain unchanged (they're external)
 
-**Fix in `src/components/SectionLogButton.tsx`**:
+**Action needed from you**: Rename the program titles in the Supabase `programs` table:
+- "Inferno 45" → "Engine"  
+- "Station Strength" → "Firedog"
 
-- Add an `autoFormatTime` helper that runs on every keystroke
-- Strip non-digits, then auto-insert the colon before the last 2 digits
-- Example: user types `0823` → display shows `08:23`; types `123` → shows `1:23`
-- Update the validation regex to still accept `MM:SS` (already formatted by this point)
-- Keep the "TIME (MM:SS)" label as a hint, but remove the "Use MM:SS format" error — it should never trigger
+No SQL migration needed — just an UPDATE in the dashboard.
 
-```text
-User types:  0  →  0
-             08 →  08
-             082 → 0:82 → wait...
-             0823 → 08:23  ✓
-```
+### 2. Home Page Layout Changes (`src/pages/HomePage.tsx`)
 
-Actual logic: on change, strip non-digits, if length > 2 insert `:` before last 2 chars. Max 5 chars displayed.
+New layout order:
+1. Header (unchanged)
+2. Guest CTA (unchanged)
+3. Weekly Date Strip (unchanged)
+4. Banner (unchanged)
+5. **Free WOD card** (unchanged)
+6. **NEW: Two program cards** — "Engine" and "Firedog" in a 2-column grid, each navigates to `/programs`
+7. **Active Challenges** (moved below programs)
+8. **NEW: "Firedog Total" challenge card** — added to challenges section
+9. Our Philosophy (unchanged)
+10. Footer (unchanged)
 
-### 2. Streak Logic — Current Behavior Explained
+Program cards will use the existing cover images (`inferno-45-cover.jpg` and `station-strength-cover.jpg`) and be styled consistently with the existing card design. Each card shows the program name, a short tagline, and navigates to `/programs` on tap.
 
-**How it works now**: The streak counts consecutive days backward starting from today (or yesterday). If your most recent log is from 2+ days ago, streak = 0. Missing one day breaks it.
+The "Firedog Total" card will be a static card rendered alongside DB challenges, with title "Firedog Total", description "Log your best lifts this month", navigating to `/programs` on click.
 
-**This is standard behavior** (same as Duolingo, Apple Fitness, etc.), but if you want a different approach, here are options:
+### 3. Mock Data Update (`src/data/mockData.ts`)
 
-- **Keep as-is** — standard streak, breaks on missed day (current)
-- **Add grace period** — allow 1 rest day without breaking streak
-- **Show "last active" date** — so users see when they last worked out even if streak is 0
-
-**Past workouts not showing**: This is likely a separate issue with the date strip or workout query filtering. The workouts exist in the DB — they may just not appear on the home screen for past dates. I can investigate if needed.
+Rename "INFERNO 45" → "ENGINE" in mock workout title.
 
 ### Files Changed
-- `src/components/SectionLogButton.tsx` — auto-format time input, remove friction
+- `src/pages/HomePage.tsx` — add program cards section + Firedog Total challenge card, reorder layout
+- `src/data/mockData.ts` — rename mock workout title
+
+### Manual Step (User)
+- Update program titles in Supabase `programs` table: "Inferno 45" → "Engine", "Station Strength" → "Firedog"
 
