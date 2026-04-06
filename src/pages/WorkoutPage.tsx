@@ -28,6 +28,7 @@ interface PerformanceSnapshot {
 }
 
 const WorkoutPage = () => {
+  
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -86,6 +87,16 @@ const WorkoutPage = () => {
     };
     fetchPerformance();
   }, [id, user]);
+
+  const isFiredogTotal = workout?.title === 'Firedog Total';
+
+  // Firedog Total month info
+  const challengeMonth = new Date().toLocaleString('default', { month: 'long' });
+  const daysLeft = (() => {
+    const now = new Date();
+    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    return Math.ceil((lastDay.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+  })();
 
   // Group exercises by section (deduplicate sections by name)
   const groupedSections = (() => {
@@ -200,6 +211,22 @@ const WorkoutPage = () => {
         <span className="text-sm font-body">Back</span>
       </button>
 
+      {/* === FIREDOG TOTAL CHALLENGE HEADER === */}
+      {isFiredogTotal && (
+        <div className="rounded-xl border border-primary/30 bg-primary/5 p-5 mb-4 text-center">
+          <p className="text-2xl font-bold font-display">🔥 FIREDOG TOTAL</p>
+          <p className="text-sm text-muted-foreground mt-1">Monthly Strength Challenge</p>
+          <p className="text-xs text-foreground mt-2">Test your max lifts and see where you rank.</p>
+          <div className="mt-3 flex items-center justify-center gap-2">
+            <span className="text-xs font-semibold text-primary">{challengeMonth} Challenge</span>
+            <span className="text-xs text-muted-foreground">• Ends in {daysLeft} days</span>
+          </div>
+          <p className="text-[10px] text-muted-foreground mt-2 italic">
+            Log your best lifts anytime this month. You can update your score as you improve.
+          </p>
+        </div>
+      )}
+
       {/* === WHITEBOARD CONTAINER === */}
       <div className="rounded-xl border border-border bg-card p-5 mb-4">
         {/* Title */}
@@ -239,20 +266,24 @@ const WorkoutPage = () => {
           </div>
         )}
 
-        {/* === WORKOUT TIMER === */}
-        <WorkoutTimer
-          workoutTitle={workout.title}
-          workoutDescription={workout.description || ''}
-          sectionNames={groupedSections.map(s => s.section_name)}
-          onTimerStop={setTimerResult}
-        />
+        {/* === WORKOUT TIMER (hidden for Firedog Total) === */}
+        {!isFiredogTotal && (
+          <WorkoutTimer
+            workoutTitle={workout.title}
+            workoutDescription={workout.description || ''}
+            sectionNames={groupedSections.map(s => s.section_name)}
+            onTimerStop={setTimerResult}
+          />
+        )}
 
         {/* === MOVEMENT LIST WITH PER-SECTION LOGGING === */}
         <div className="mt-5 space-y-5">
           {groupedSections.map((section) => (
             <div key={section.id}>
               {/* Section header */}
-              <p className="text-xs font-bold text-primary tracking-widest mb-2">{section.section_name.toUpperCase()}</p>
+              <p className="text-xs font-bold text-primary tracking-widest mb-2">
+                {isFiredogTotal ? `🏋️ MAX LIFT — ${section.section_name.toUpperCase()}` : section.section_name.toUpperCase()}
+              </p>
               <div className="space-y-1">
                 {section.exercises.map((ex) => (
                   <div key={ex.id} className="py-1">
@@ -291,7 +322,7 @@ const WorkoutPage = () => {
       <div className="rounded-xl border border-border bg-card p-4 mb-4">
         <div className="flex items-center gap-2 mb-3">
           <Trophy className="h-4 w-4 text-accent" />
-          <p className="text-xs font-bold tracking-widest">TOP CREW</p>
+          <p className="text-xs font-bold tracking-widest">{isFiredogTotal ? 'TOP PERFORMERS THIS MONTH' : 'TOP CREW'}</p>
         </div>
         {crew.length > 0 ? (
           <div className="space-y-1.5">

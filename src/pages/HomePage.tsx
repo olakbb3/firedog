@@ -71,18 +71,23 @@ const HomePage = () => {
     fetchData();
   }, [user]);
 
-  // Filter workout for selected date
+  // Find Firedog Total workout
+  const firedogTotal = allWorkouts.find(w => w.title === 'Firedog Total');
+
+  // Filter workout for selected date (exclude Firedog Total from daily WOD)
   const dateStr = format(selectedDate, 'yyyy-MM-dd');
   const todayWorkout = allWorkouts.find(w => {
+    if (w.title === 'Firedog Total') return false;
     const wd = w.workout_date || w.date;
     return wd === dateStr;
   });
 
-  // Fallback: if no workout for selected date but it's today, show latest
+  // Fallback: if no workout for selected date but it's today, show latest (excluding Firedog Total)
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const isSelectedToday = isSameDay(selectedDate, today);
-  const displayWorkout = todayWorkout || (isSelectedToday ? allWorkouts[0] : null);
+  const latestWod = allWorkouts.find(w => w.title !== 'Firedog Total');
+  const displayWorkout = todayWorkout || (isSelectedToday ? latestWod || null : null);
 
   const displayName = profile?.full_name?.split(' ')[0] || user?.user_metadata?.full_name?.split(' ')[0] || 'Athlete';
 
@@ -221,7 +226,7 @@ const HomePage = () => {
       </div>
 
       {/* Active Challenges */}
-      {challenges.length > 0 && (
+      {(challenges.length > 0 || firedogTotal) && (
         <div className="mb-6">
           <h2 className="text-lg font-bold mb-3">🔥 ACTIVE CHALLENGES</h2>
           <div className="space-y-3">
@@ -242,21 +247,23 @@ const HomePage = () => {
                 </div>
               </div>
             ))}
-            {/* Firedog Total static challenge */}
-            <div className="rounded-xl bg-card border border-border p-4 shadow-card">
-              <h3 className="font-bold font-display text-sm">FIREDOG TOTAL</h3>
-              <p className="text-xs text-muted-foreground mt-1">Log your best lifts this month</p>
-              <div className="mt-2 flex items-center justify-end">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="text-xs h-7 border-primary text-primary hover:bg-primary hover:text-primary-foreground"
-                  onClick={() => navigate('/programs')}
-                >
-                  View Details
-                </Button>
+            {/* Firedog Total — dynamic from DB */}
+            {firedogTotal && (
+              <div className="rounded-xl bg-card border border-border p-4 shadow-card">
+                <h3 className="font-bold font-display text-sm">🔥 FIREDOG TOTAL</h3>
+                <p className="text-xs text-muted-foreground mt-1">{firedogTotal.description}</p>
+                <div className="mt-2 flex items-center justify-end">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-xs h-7 border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+                    onClick={() => navigate(`/workout/${firedogTotal.id}`)}
+                  >
+                    View Challenge
+                  </Button>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       )}
