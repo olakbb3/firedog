@@ -266,13 +266,15 @@ const WorkoutPage = () => {
           </div>
         )}
 
-        {/* === WORKOUT TIMER === */}
-        <WorkoutTimer
-          workoutTitle={workout.title}
-          workoutDescription={workout.description || ''}
-          sectionNames={groupedSections.map(s => s.section_name)}
-          onTimerStop={setTimerResult}
-        />
+        {/* === WORKOUT TIMER (hidden for Firedog Total) === */}
+        {!isFiredogTotal && (
+          <WorkoutTimer
+            workoutTitle={workout.title}
+            workoutDescription={workout.description || ''}
+            sectionNames={groupedSections.map(s => s.section_name)}
+            onTimerStop={setTimerResult}
+          />
+        )}
 
         {/* === MOVEMENT LIST WITH PER-SECTION LOGGING === */}
         <div className="mt-5 space-y-5">
