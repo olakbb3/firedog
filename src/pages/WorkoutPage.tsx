@@ -281,7 +281,9 @@ const WorkoutPage = () => {
           {groupedSections.map((section) => (
             <div key={section.id}>
               {/* Section header */}
-              <p className="text-xs font-bold text-primary tracking-widest mb-2">{section.section_name.toUpperCase()}</p>
+              <p className="text-xs font-bold text-primary tracking-widest mb-2">
+                {isFiredogTotal ? `🏋️ MAX LIFT — ${section.section_name.toUpperCase()}` : section.section_name.toUpperCase()}
+              </p>
               <div className="space-y-1">
                 {section.exercises.map((ex) => (
                   <div key={ex.id} className="py-1">
