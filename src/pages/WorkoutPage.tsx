@@ -89,7 +89,7 @@ const WorkoutPage = () => {
     fetchPerformance();
   }, [id, user]);
 
-  const isFiredogTotal = workout?.title === 'Firedog Total';
+  // isFiredogTotal is declared above (line 43)
 
   // Firedog Total month info
   const challengeMonth = new Date().toLocaleString('default', { month: 'long' });
