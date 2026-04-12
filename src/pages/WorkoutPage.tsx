@@ -40,7 +40,8 @@ const WorkoutPage = () => {
   // Performance & leaderboard
   const [snapshot, setSnapshot] = useState<PerformanceSnapshot>({ lastDate: null, bestResult: null, completedCount: 0 });
   const [timerResult, setTimerResult] = useState<string | null>(null);
-  const { crew } = useLeaderboard(id, sections);
+  const isFiredogTotal = workout?.title === 'Firedog Total';
+  const { crew } = useLeaderboard(id, sections, isFiredogTotal);
 
   useEffect(() => {
     if (!id) return;
@@ -88,7 +89,7 @@ const WorkoutPage = () => {
     fetchPerformance();
   }, [id, user]);
 
-  const isFiredogTotal = workout?.title === 'Firedog Total';
+  // isFiredogTotal is declared above (line 43)
 
   // Firedog Total month info
   const challengeMonth = new Date().toLocaleString('default', { month: 'long' });
