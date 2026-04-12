@@ -9,6 +9,7 @@ import { parseTextWithLinks, extractLinkButtons, LinkButtons } from '@/lib/urlPa
 import SectionLogButton from '@/components/SectionLogButton';
 import WorkoutTimer from '@/components/WorkoutTimer';
 import { useLeaderboard } from '@/hooks/useLeaderboard';
+import FiredogLeaderboard from '@/components/FiredogLeaderboard';
 
 interface WorkoutData {
   id: string;
