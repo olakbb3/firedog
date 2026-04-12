@@ -115,12 +115,6 @@ export const useLeaderboard = (workoutId: string | undefined, sections: WorkoutS
         is_rx: u.allRx,
       }));
 
-      const entries: CrewEntry[] = userTotals.slice(0, 10).map(u => ({
-        user_name: nameMap.get(u.user_id) || 'Athlete',
-        result: `${u.total} lbs`,
-        result_type: 'weight',
-        is_rx: u.allRx,
-      }));
 
       setCrew(entries);
     };
