@@ -28,6 +28,7 @@ const formatCrewResult = (log: { result_type: string; time?: string | null; roun
 
 export const useLeaderboard = (workoutId: string | undefined, sections: WorkoutSection[], isFiredogTotal = false) => {
   const [crew, setCrew] = useState<CrewEntry[]>([]);
+  const [rawLogs, setRawLogs] = useState<any[]>([]);
 
   useEffect(() => {
     if (!workoutId) return;
