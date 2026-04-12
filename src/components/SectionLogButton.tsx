@@ -26,6 +26,7 @@ interface SectionLogEntry {
   meters?: number;
   weight?: number;
   notes?: string;
+  completion_date?: string;
 }
 
 interface Props {
