@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Trophy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -41,7 +41,7 @@ const WorkoutPage = () => {
   const [snapshot, setSnapshot] = useState<PerformanceSnapshot>({ lastDate: null, bestResult: null, completedCount: 0 });
   const [timerResult, setTimerResult] = useState<string | null>(null);
   const isFiredogTotal = workout?.title === 'Firedog Total';
-  const { crew } = useLeaderboard(id, sections, isFiredogTotal);
+  const { crew, rawLogs } = useLeaderboard(id, sections, isFiredogTotal);
 
   useEffect(() => {
     if (!id) return;
@@ -319,35 +319,39 @@ const WorkoutPage = () => {
         )}
       </div>
 
-      {/* === STATION CREW MINI-LEADERBOARD === */}
-      <div className="rounded-xl border border-border bg-card p-4 mb-4">
-        <div className="flex items-center gap-2 mb-3">
-          <Trophy className="h-4 w-4 text-accent" />
-          <p className="text-xs font-bold tracking-widest">{isFiredogTotal ? 'TOP PERFORMERS THIS MONTH' : 'TOP CREW'}</p>
-        </div>
-        {crew.length > 0 ? (
-          <div className="space-y-1.5">
-            {crew.map((entry, i) => (
-              <div key={i} className="flex items-center justify-between text-sm font-body">
-                <span className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground w-4 text-right">{i + 1}</span>
-                  <span className={i === 0 ? 'text-accent font-semibold' : 'text-foreground'}>{entry.user_name}</span>
-                </span>
-                <span className="flex items-center gap-2">
-                  <span className="text-muted-foreground text-xs">{entry.result}</span>
-                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${entry.is_rx ? 'bg-primary/15 text-primary' : 'bg-secondary text-muted-foreground'}`}>
-                    {entry.is_rx ? 'Rx' : 'SC'}
-                  </span>
-                </span>
-              </div>
-            ))}
+      {/* === LEADERBOARD === */}
+      {isFiredogTotal ? (
+        <FiredogLeaderboard crew={crew} rawLogs={rawLogs} sections={sections} />
+      ) : (
+        <div className="rounded-xl border border-border bg-card p-4 mb-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Trophy className="h-4 w-4 text-accent" />
+            <p className="text-xs font-bold tracking-widest">TOP CREW</p>
           </div>
-        ) : (
-          <p className="text-xs text-muted-foreground font-body text-center py-3 italic">
-            The leaderboard is empty. Be the first to set the pace!
-          </p>
-        )}
-      </div>
+          {crew.length > 0 ? (
+            <div className="space-y-1.5">
+              {crew.map((entry, i) => (
+                <div key={i} className="flex items-center justify-between text-sm font-body">
+                  <span className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground w-4 text-right">{i + 1}</span>
+                    <span className={i === 0 ? 'text-accent font-semibold' : 'text-foreground'}>{entry.user_name}</span>
+                  </span>
+                  <span className="flex items-center gap-2">
+                    <span className="text-muted-foreground text-xs">{entry.result}</span>
+                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${entry.is_rx ? 'bg-primary/15 text-primary' : 'bg-secondary text-muted-foreground'}`}>
+                      {entry.is_rx ? 'Rx' : 'SC'}
+                    </span>
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground font-body text-center py-3 italic">
+              The leaderboard is empty. Be the first to set the pace!
+            </p>
+          )}
+        </div>
+      )}
     </div>
   );
 };
