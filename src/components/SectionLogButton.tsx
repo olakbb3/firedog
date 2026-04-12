@@ -84,7 +84,7 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName, re
     if (!user || !sectionId) return;
     supabase
       .from('workout_logs')
-      .select('result_type, is_rx, time, rounds, reps, calories, meters, weight, notes')
+      .select('result_type, is_rx, time, rounds, reps, calories, meters, weight, notes, completion_date')
       .eq('workout_id', workoutId)
       .eq('workout_section_id', sectionId)
       .eq('user_id', user.id)
@@ -215,10 +215,13 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName, re
   };
 
   const latestLog = loggedResults[0];
+  const loggedToday = latestLog?.completion_date
+    ? new Date(latestLog.completion_date).toLocaleDateString() === new Date().toLocaleDateString()
+    : false;
 
   return (
     <>
-      {latestLog ? (
+      {loggedToday ? (
         <div className="mt-2 flex items-center justify-between">
           <div className="flex items-center gap-1.5 text-xs font-body text-primary">
             <CheckCircle2 className="h-3.5 w-3.5" />
