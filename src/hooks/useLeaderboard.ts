@@ -48,7 +48,7 @@ export const useLeaderboard = (workoutId: string | undefined, sections: WorkoutS
 
       const { data: logs } = await supabase
         .from('workout_logs')
-        .select('user_id, workout_section_id, weight, is_rx')
+        .select('user_id, workout_section_id, weight, is_rx, completion_date')
         .eq('workout_id', workoutId)
         .gte('completion_date', monthStart.toISOString())
         .lt('completion_date', monthEnd.toISOString())
@@ -56,8 +56,25 @@ export const useLeaderboard = (workoutId: string | undefined, sections: WorkoutS
 
       if (!logs || logs.length === 0) {
         setCrew([]);
+        setRawLogs([]);
         return;
       }
+
+      // Fetch user names for rawLogs
+      const allUserIds = [...new Set(logs.map(l => l.user_id))];
+      const { data: allProfiles } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .in('id', allUserIds);
+
+      const nameMap = new Map((allProfiles || []).map(p => [p.id, p.full_name || 'Athlete']));
+
+      // Attach names to logs
+      const logsWithNames = logs.map(log => ({
+        ...log,
+        user_name: nameMap.get(log.user_id) || 'Athlete'
+      }));
+      setRawLogs(logsWithNames);
 
       // Group by user, then by section, keep max weight per section
       const userSections = new Map<string, Map<string, { weight: number; is_rx: boolean }>>();
@@ -91,14 +108,12 @@ export const useLeaderboard = (workoutId: string | undefined, sections: WorkoutS
       // Sort descending by total
       userTotals.sort((a, b) => b.total - a.total);
 
-      // Fetch names
-      const userIds = userTotals.slice(0, 10).map(u => u.user_id);
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('id, full_name')
-        .in('id', userIds);
-
-      const nameMap = new Map((profiles || []).map(p => [p.id, p.full_name || 'Athlete']));
+      const entries: CrewEntry[] = userTotals.slice(0, 10).map(u => ({
+        user_name: nameMap.get(u.user_id) || 'Athlete',
+        result: `${u.total} lbs`,
+        result_type: 'weight',
+        is_rx: u.allRx,
+      }));
 
       const entries: CrewEntry[] = userTotals.slice(0, 10).map(u => ({
         user_name: nameMap.get(u.user_id) || 'Athlete',
@@ -184,5 +199,5 @@ export const useLeaderboard = (workoutId: string | undefined, sections: WorkoutS
     fetchLeaderboard();
   }, [workoutId, sections, isFiredogTotal]);
 
-  return { crew };
+  return { crew, rawLogs };
 };
