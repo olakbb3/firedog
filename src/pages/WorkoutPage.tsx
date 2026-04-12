@@ -40,6 +40,7 @@ const WorkoutPage = () => {
   // Performance & leaderboard
   const [snapshot, setSnapshot] = useState<PerformanceSnapshot>({ lastDate: null, bestResult: null, completedCount: 0 });
   const [timerResult, setTimerResult] = useState<string | null>(null);
+  const isFiredogTotal = workout?.title === 'Firedog Total';
   const { crew } = useLeaderboard(id, sections, isFiredogTotal);
 
   useEffect(() => {
