@@ -26,14 +26,90 @@ const formatCrewResult = (log: { result_type: string; time?: string | null; roun
   }
 };
 
-export const useLeaderboard = (workoutId: string | undefined, sections: WorkoutSection[]) => {
+export const useLeaderboard = (workoutId: string | undefined, sections: WorkoutSection[], isFiredogTotal = false) => {
   const [crew, setCrew] = useState<CrewEntry[]>([]);
 
   useEffect(() => {
     if (!workoutId) return;
 
     const fetchLeaderboard = async () => {
-      // Find "First-In" section IDs for this workout
+      if (isFiredogTotal) {
+        await fetchFiredogTotalLeaderboard();
+      } else {
+        await fetchStandardLeaderboard();
+      }
+    };
+
+    const fetchFiredogTotalLeaderboard = async () => {
+      const now = new Date();
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+
+      const { data: logs } = await supabase
+        .from('workout_logs')
+        .select('user_id, workout_section_id, weight, is_rx')
+        .eq('workout_id', workoutId)
+        .gte('completion_date', monthStart.toISOString())
+        .lt('completion_date', monthEnd.toISOString())
+        .not('weight', 'is', null);
+
+      if (!logs || logs.length === 0) {
+        setCrew([]);
+        return;
+      }
+
+      // Group by user, then by section, keep max weight per section
+      const userSections = new Map<string, Map<string, { weight: number; is_rx: boolean }>>();
+
+      for (const log of logs) {
+        if (!log.workout_section_id || log.weight == null) continue;
+
+        if (!userSections.has(log.user_id)) {
+          userSections.set(log.user_id, new Map());
+        }
+        const sectionMap = userSections.get(log.user_id)!;
+        const existing = sectionMap.get(log.workout_section_id);
+
+        if (!existing || log.weight > existing.weight) {
+          sectionMap.set(log.workout_section_id, { weight: log.weight, is_rx: log.is_rx ?? true });
+        }
+      }
+
+      // Sum max weights per user
+      const userTotals: { user_id: string; total: number; allRx: boolean }[] = [];
+      for (const [userId, sectionMap] of userSections) {
+        let total = 0;
+        let allRx = true;
+        for (const entry of sectionMap.values()) {
+          total += entry.weight;
+          if (!entry.is_rx) allRx = false;
+        }
+        userTotals.push({ user_id: userId, total, allRx });
+      }
+
+      // Sort descending by total
+      userTotals.sort((a, b) => b.total - a.total);
+
+      // Fetch names
+      const userIds = userTotals.slice(0, 10).map(u => u.user_id);
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .in('id', userIds);
+
+      const nameMap = new Map((profiles || []).map(p => [p.id, p.full_name || 'Athlete']));
+
+      const entries: CrewEntry[] = userTotals.slice(0, 10).map(u => ({
+        user_name: nameMap.get(u.user_id) || 'Athlete',
+        result: `${u.total} lbs`,
+        result_type: 'weight',
+        is_rx: u.allRx,
+      }));
+
+      setCrew(entries);
+    };
+
+    const fetchStandardLeaderboard = async () => {
       const firstInSectionIds: string[] = [];
       for (const s of sections) {
         if (s.section_name.toLowerCase().includes('first-in') || s.section_name.toLowerCase().includes('first in')) {
@@ -41,7 +117,6 @@ export const useLeaderboard = (workoutId: string | undefined, sections: WorkoutS
         }
       }
 
-      // Today's date range (UTC)
       const todayStart = new Date();
       todayStart.setHours(0, 0, 0, 0);
       const todayEnd = new Date();
@@ -56,7 +131,6 @@ export const useLeaderboard = (workoutId: string | undefined, sections: WorkoutS
         .order('completion_date', { ascending: false })
         .limit(50);
 
-      // Filter to First-In sections if they exist
       if (firstInSectionIds.length > 0) {
         query = query.in('workout_section_id', firstInSectionIds);
       }
@@ -64,7 +138,6 @@ export const useLeaderboard = (workoutId: string | undefined, sections: WorkoutS
       const { data: crewLogs } = await query;
 
       if (crewLogs && crewLogs.length > 0) {
-        // Deduplicate: keep latest log per user
         const latestByUser = new Map<string, typeof crewLogs[0]>();
         for (const log of crewLogs) {
           if (!latestByUser.has(log.user_id)) {
@@ -72,7 +145,6 @@ export const useLeaderboard = (workoutId: string | undefined, sections: WorkoutS
           }
         }
 
-        // Sort by result_type: time → ascending, reps/rounds/calories/meters/weight → descending
         const sorted = Array.from(latestByUser.values()).sort((a, b) => {
           if (a.result_type === 'time' && b.result_type === 'time') {
             return (a.time || '99:99').localeCompare(b.time || '99:99');
@@ -109,7 +181,7 @@ export const useLeaderboard = (workoutId: string | undefined, sections: WorkoutS
     };
 
     fetchLeaderboard();
-  }, [workoutId, sections]);
+  }, [workoutId, sections, isFiredogTotal]);
 
   return { crew };
 };
