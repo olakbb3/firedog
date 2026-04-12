@@ -1,33 +1,41 @@
 
 
-## Fix: Firedog Total Sections Not Rendering
+## Fix Firedog Total Leaderboard — Sum of Max Lifts
 
-### Root Cause
-`WorkoutPage.tsx` line in `groupedSections` logic: `.filter(g => g.exercises.length > 0)` removes all sections that have no exercises. Firedog Total sections (Deadlift, Back Squat, etc.) have no child exercises — each section itself represents a single lift.
+### Problem
+The `useLeaderboard` hook deduplicates by keeping only the **latest single log per user**, then displays that one weight. For Firedog Total, the score should be the **sum of max weights across all 5 sections**.
 
-### Fix
+### Current Bug Path
+1. Query fetches all `workout_logs` for this workout (no First-In filter applies since Firedog Total has no "First-In" sections)
+2. Date filter restricts to today only — but Firedog Total is a **monthly** challenge, so older logs are excluded too
+3. Deduplication keeps one log per user → shows only that single weight as the result
 
-**File: `src/pages/WorkoutPage.tsx`**
+### Fix — `src/hooks/useLeaderboard.ts`
 
-1. Change the final filter in `groupedSections` to keep sections even when they have no exercises IF the workout is Firedog Total (or more generally, if `result_type` is set on the section — meaning the section itself is loggable content):
+**Add a `isFiredogTotal` parameter** (boolean) to `useLeaderboard`. When true, use completely different aggregation logic:
 
+1. **Remove the today-only date filter** — instead filter to the current calendar month (`>= first day of month`, `< first day of next month`)
+2. **Also select `workout_section_id`** in the query
+3. **New aggregation logic**:
+   - Group all logs by `user_id`
+   - For each user, sub-group by `workout_section_id`
+   - For each section, keep only the **max weight**
+   - Sum those max weights across all sections → `combinedTotal`
+4. **Sort users by `combinedTotal` descending**
+5. **Format result** as `${combinedTotal} lbs`
+6. **Set `is_rx`** to true if all of the user's best-section logs are Rx
+
+**Callers updated**:
+- `WorkoutPage.tsx` — pass `isFiredogTotal` to `useLeaderboard`
+- `LeaderboardPage.tsx` — pass `false` (no change in behavior for regular workouts)
+
+### Hook Signature Change
 ```
-.filter(g => g.exercises.length > 0 || (g as any).result_type)
-```
-
-This preserves sections that have a `result_type` defined (like `weight`), even with no child exercises. The deduplication logic already handles the duplicate sections (SQL was run twice).
-
-2. No other changes needed — `SectionLogButton` already renders per section, and the section name displays as the header.
-
-### Cleanup (Manual Step)
-You have duplicate sections (SQL ran twice). Run this in Supabase to remove duplicates, keeping only the first set:
-
-```sql
-DELETE FROM workout_sections
-WHERE workout_id = '3a79ed4c-4842-4db8-8d1a-7bf63fd6688d'
-  AND created_at = '2026-04-06T22:13:47.885858+00:00';
+useLeaderboard(workoutId, sections, isFiredogTotal = false)
 ```
 
 ### Files Changed
-- `src/pages/WorkoutPage.tsx` — update `groupedSections` filter to allow sections with `result_type` but no exercises
+- `src/hooks/useLeaderboard.ts` — add Firedog Total branch with monthly date range + sum-of-max-per-section logic
+- `src/pages/WorkoutPage.tsx` — pass `isFiredogTotal` flag
+- `src/pages/LeaderboardPage.tsx` — pass `false` explicitly (optional, default handles it)
 
