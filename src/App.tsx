@@ -20,6 +20,7 @@ import LeaderboardPage from "@/pages/LeaderboardPage";
 import ProgramsPage from "@/pages/ProgramsPage";
 import ProfilePage from "@/pages/ProfilePage";
 import AdminDashboard from "@/pages/AdminDashboard";
+import AdminProgramPage from "@/pages/AdminProgramPage";
 import ConsentPage from "@/pages/ConsentPage";
 import NotFound from "@/pages/NotFound";
 
@@ -57,8 +58,9 @@ const App = () => {
                   <Route path="/leaderboard" element={<ProtectedRoute><LeaderboardPage /></ProtectedRoute>} />
                   <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
 
-                  {/* Admin-only route */}
+                  {/* Admin-only routes */}
                   <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+                  <Route path="/admin/programs/:programId" element={<AdminRoute><AdminProgramPage /></AdminRoute>} />
 
                   <Route path="*" element={<NotFound />} />
                 </Routes>
