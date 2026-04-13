@@ -18,7 +18,7 @@ import type { SectionResultType } from '@/types/index';
 const RESULT_TYPE_OPTIONS: { value: SectionResultType; label: string }[] = [
   { value: 'completed', label: 'Just Completed' },
   { value: 'time', label: 'Time' },
-  { value: 'rounds_reps', label: 'Rounds + Reps' },
+  { value: 'rounds_reps', label: 'AMRAP / rounds+reps' },
   { value: 'calories', label: 'Calories' },
   { value: 'meters', label: 'Meters' },
   { value: 'weight', label: 'Weight' },
