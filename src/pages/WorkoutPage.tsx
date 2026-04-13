@@ -7,7 +7,7 @@ import { supabase } from '@/lib/supabaseClient';
 import type { WorkoutSection, ExerciseRow } from '@/types/index';
 import { parseTextWithLinks, extractLinkButtons, LinkButtons } from '@/lib/urlParser';
 import SectionLogButton from '@/components/SectionLogButton';
-import WorkoutTimer from '@/components/WorkoutTimer';
+import WorkoutTimer from '@/components/workout/WorkoutTimer';
 import { useLeaderboard } from '@/hooks/useLeaderboard';
 import FiredogLeaderboard from '@/components/FiredogLeaderboard';
 
@@ -229,6 +229,18 @@ const WorkoutPage = () => {
         </div>
       )}
 
+      {/* === STICKY WORKOUT TIMER === */}
+      {!isFiredogTotal && (
+        <div className="sticky top-0 z-50 bg-card border-b border-border shadow-md rounded-b-xl px-5 py-3 mb-4">
+          <WorkoutTimer
+            workoutTitle={workout.title}
+            workoutDescription={workout.description || ''}
+            sectionNames={groupedSections.map(s => s.section_name)}
+            onTimerStop={setTimerResult}
+          />
+        </div>
+      )}
+
       {/* === WHITEBOARD CONTAINER === */}
       <div className="rounded-xl border border-border bg-card p-5 mb-4">
         {/* Title */}
@@ -264,15 +276,7 @@ const WorkoutPage = () => {
           </div>
         )}
 
-        {/* === WORKOUT TIMER (hidden for Firedog Total) === */}
-        {!isFiredogTotal && (
-          <WorkoutTimer
-            workoutTitle={workout.title}
-            workoutDescription={workout.description || ''}
-            sectionNames={groupedSections.map(s => s.section_name)}
-            onTimerStop={setTimerResult}
-          />
-        )}
+        {/* Timer moved to sticky wrapper above */}
 
         {/* === MOVEMENT LIST WITH PER-SECTION LOGGING === */}
         <div className="mt-5 space-y-5">
