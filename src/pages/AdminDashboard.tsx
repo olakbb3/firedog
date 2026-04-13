@@ -536,7 +536,11 @@ const ProgramsTab = () => {
       </div>
       <div className="space-y-3">
         {programs.map((p) => (
-          <div key={p.id} className="rounded-xl bg-card border border-border p-4 shadow-card">
+          <div
+            key={p.id}
+            className={cn("rounded-xl bg-card border border-border p-4 shadow-card", isEditable(p) && "cursor-pointer hover:border-primary/50 transition-colors")}
+            onClick={() => isEditable(p) && navigate(`/admin/programs/${p.id}`)}
+          >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3 flex-1 min-w-0">
                 {p.image_url ? (
