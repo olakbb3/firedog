@@ -27,13 +27,13 @@ const RESULT_TYPE_OPTIONS: { value: SectionResultType; label: string }[] = [
 interface SectionTemplate {
   section_name: string;
   result_type: SectionResultType;
-  locked?: boolean; // name cannot be edited
+  locked?: boolean;
 }
 
 const FIREDOG_TEMPLATE: SectionTemplate[] = [
   { section_name: 'Morning Meeting', result_type: 'completed', locked: true },
   { section_name: 'Dispatch', result_type: 'completed', locked: true },
-  { section_name: 'First-In', result_type: 'time', locked: true },
+  { section_name: 'First-In', result_type: 'rounds_reps', locked: true },
   { section_name: 'Overhaul', result_type: 'weight', locked: true },
   { section_name: 'Rehab', result_type: 'completed', locked: true },
 ];
@@ -60,6 +60,7 @@ interface ExerciseInput {
 }
 
 interface SectionInput {
+  id?: string; // existing DB id — preserved on edit
   section_name: string;
   result_type: SectionResultType;
   locked: boolean;
@@ -86,6 +87,7 @@ const AdminProgramPage = () => {
 
   const isFiredog = programSku?.toLowerCase().includes('firedog') || programTitle?.toLowerCase().includes('firedog');
   const isEngine = programSku?.toLowerCase().includes('engine') || programTitle?.toLowerCase().includes('engine');
+  const isStructuredProgram = isFiredog || isEngine;
 
   const getTemplate = (): SectionInput[] => {
     if (isFiredog) {
@@ -171,6 +173,7 @@ const AdminProgramPage = () => {
       setSections(dbSections.map(s => {
         const templateMatch = template.find(t => t.section_name === s.section_name);
         return {
+          id: s.id, // PRESERVE the DB id
           section_name: s.section_name,
           result_type: (s.result_type as SectionResultType) || 'completed',
           locked: templateMatch?.locked ?? false,
@@ -194,11 +197,22 @@ const AdminProgramPage = () => {
 
   const handleSave = async () => {
     if (!formTitle.trim() || !programId) return;
-    const workoutDate = formDate ? format(formDate, 'yyyy-MM-dd') : null;
 
+    // Safety check: enforce section count for structured programs
+    if (isFiredog && sections.length !== 5) {
+      toast({ title: 'Firedog requires exactly 5 sections', variant: 'destructive' });
+      return;
+    }
+    if (isEngine && sections.length !== 2) {
+      toast({ title: 'Engine requires exactly 2 sections', variant: 'destructive' });
+      return;
+    }
+
+    const workoutDate = formDate ? format(formDate, 'yyyy-MM-dd') : null;
     let workoutId = editingId;
 
     if (editingId) {
+      // UPDATE workout metadata
       const { error } = await supabase.from('workouts').update({
         title: formTitle,
         description: formDesc,
@@ -210,11 +224,68 @@ const AdminProgramPage = () => {
         return;
       }
 
-      await Promise.all([
-        supabase.from('exercises').delete().eq('workout_id', editingId),
-        supabase.from('workout_sections').delete().eq('workout_id', editingId),
-      ]);
+      // DELETE only exercises (safe — they have no external references)
+      await supabase.from('exercises').delete().eq('workout_id', editingId);
+
+      // UPDATE or INSERT sections — never delete them
+      const sectionMap: Record<number, string> = {};
+
+      for (let i = 0; i < sections.length; i++) {
+        const s = sections[i];
+        if (s.id) {
+          // UPDATE existing section (preserve id)
+          const updatePayload: any = { result_type: s.result_type || 'completed', order_index: i };
+          if (!s.locked) {
+            updatePayload.section_name = s.section_name;
+          }
+          await supabase.from('workout_sections').update(updatePayload).eq('id', s.id);
+          sectionMap[i] = s.id;
+        } else {
+          // INSERT new section
+          const { data: inserted, error: secErr } = await supabase
+            .from('workout_sections')
+            .insert({
+              workout_id: workoutId,
+              section_name: s.section_name,
+              result_type: s.result_type || 'completed',
+              order_index: i,
+            })
+            .select()
+            .single();
+
+          if (secErr) {
+            toast({ title: 'Error creating section', description: secErr.message, variant: 'destructive' });
+          }
+          if (inserted) {
+            sectionMap[i] = inserted.id;
+          }
+        }
+      }
+
+      // INSERT exercises with correct section_id
+      const exerciseRows: any[] = [];
+      sections.forEach((section, si) => {
+        section.exercises
+          .filter(ex => ex.exercise_name.trim())
+          .forEach((ex, ei) => {
+            exerciseRows.push({
+              workout_id: workoutId,
+              section_id: sectionMap[si] || null,
+              exercise_name: ex.exercise_name,
+              sets: ex.sets ? parseInt(ex.sets) : null,
+              reps: ex.reps ? parseInt(ex.reps) : null,
+              duration: ex.duration || null,
+              notes: ex.notes || null,
+              order_index: ei,
+            });
+          });
+      });
+
+      if (exerciseRows.length > 0) {
+        await supabase.from('exercises').insert(exerciseRows);
+      }
     } else {
+      // CREATE new workout
       const { data: workout, error } = await supabase
         .from('workouts')
         .insert({
@@ -233,56 +304,56 @@ const AdminProgramPage = () => {
         return;
       }
       workoutId = workout.id;
-    }
 
-    // Insert sections
-    const sectionRows = sections
-      .filter(s => s.section_name.trim())
-      .map((s, i) => ({
-        workout_id: workoutId,
-        section_name: s.section_name,
-        result_type: s.result_type || 'completed',
-        order_index: i,
-      }));
+      // Insert sections
+      const sectionRows = sections
+        .filter(s => s.section_name.trim())
+        .map((s, i) => ({
+          workout_id: workoutId,
+          section_name: s.section_name,
+          result_type: s.result_type || 'completed',
+          order_index: i,
+        }));
 
-    let sectionMap: Record<number, string> = {};
+      let sectionMap: Record<number, string> = {};
 
-    if (sectionRows.length > 0) {
-      const { data: insertedSections, error: secError } = await supabase
-        .from('workout_sections')
-        .insert(sectionRows)
-        .select();
+      if (sectionRows.length > 0) {
+        const { data: insertedSections, error: secError } = await supabase
+          .from('workout_sections')
+          .insert(sectionRows)
+          .select();
 
-      if (secError) {
-        toast({ title: 'Error creating sections', description: secError.message, variant: 'destructive' });
+        if (secError) {
+          toast({ title: 'Error creating sections', description: secError.message, variant: 'destructive' });
+        }
+
+        if (insertedSections) {
+          insertedSections.forEach((s, i) => { sectionMap[i] = s.id; });
+        }
       }
 
-      if (insertedSections) {
-        insertedSections.forEach((s, i) => { sectionMap[i] = s.id; });
-      }
-    }
-
-    // Insert exercises
-    const exerciseRows: any[] = [];
-    sections.forEach((section, si) => {
-      section.exercises
-        .filter(ex => ex.exercise_name.trim())
-        .forEach((ex, ei) => {
-          exerciseRows.push({
-            workout_id: workoutId,
-            section_id: sectionMap[si] || null,
-            exercise_name: ex.exercise_name,
-            sets: ex.sets ? parseInt(ex.sets) : null,
-            reps: ex.reps ? parseInt(ex.reps) : null,
-            duration: ex.duration || null,
-            notes: ex.notes || null,
-            order_index: ei,
+      // Insert exercises
+      const exerciseRows: any[] = [];
+      sections.forEach((section, si) => {
+        section.exercises
+          .filter(ex => ex.exercise_name.trim())
+          .forEach((ex, ei) => {
+            exerciseRows.push({
+              workout_id: workoutId,
+              section_id: sectionMap[si] || null,
+              exercise_name: ex.exercise_name,
+              sets: ex.sets ? parseInt(ex.sets) : null,
+              reps: ex.reps ? parseInt(ex.reps) : null,
+              duration: ex.duration || null,
+              notes: ex.notes || null,
+              order_index: ei,
+            });
           });
-        });
-    });
+      });
 
-    if (exerciseRows.length > 0) {
-      await supabase.from('exercises').insert(exerciseRows);
+      if (exerciseRows.length > 0) {
+        await supabase.from('exercises').insert(exerciseRows);
+      }
     }
 
     toast({ title: editingId ? 'Workout updated!' : 'Workout created!' });
@@ -340,7 +411,7 @@ const AdminProgramPage = () => {
             <div>
               <p className="text-xs text-muted-foreground font-display mb-2">SECTIONS</p>
               {sections.map((section, si) => (
-                <div key={si} className="mb-4 rounded-lg border border-border bg-secondary/50 p-3">
+                <div key={section.id || si} className="mb-4 rounded-lg border border-border bg-secondary/50 p-3">
                   <div className="flex items-center gap-2 mb-2">
                     {section.locked ? (
                       <span className="bg-background text-sm font-bold flex-1 px-3 py-2 rounded-md border border-input text-muted-foreground">
@@ -387,6 +458,18 @@ const AdminProgramPage = () => {
                   </Button>
                 </div>
               ))}
+
+              {/* Only allow adding sections for non-structured programs */}
+              {!isStructuredProgram && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSections(prev => [...prev, { section_name: '', result_type: 'completed', locked: false, exercises: [emptyExercise()] }])}
+                  className="text-xs"
+                >
+                  <Plus className="h-3 w-3 mr-1" /> Add Section
+                </Button>
+              )}
             </div>
 
             <Button onClick={handleSave} className="w-full gradient-fire text-primary-foreground shadow-fire">
