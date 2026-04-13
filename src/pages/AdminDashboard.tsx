@@ -482,6 +482,7 @@ const WorkoutsTab = () => {
 };
 
 const ProgramsTab = () => {
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [programs, setPrograms] = useState<ProgramRow[]>([]);
 
@@ -492,6 +493,10 @@ const ProgramsTab = () => {
 
   useEffect(() => { fetchPrograms(); }, []);
 
+  const isEditable = (p: ProgramRow) => {
+    const t = (p.title + ' ' + (p.sku || '')).toLowerCase();
+    return t.includes('firedog') || t.includes('engine');
+  };
   const handleImageUpload = async (programId: string, file: File) => {
     const ext = file.name.split('.').pop();
     const path = `programs/${programId}.${ext}`;
