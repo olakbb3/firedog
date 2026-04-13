@@ -229,6 +229,18 @@ const WorkoutPage = () => {
         </div>
       )}
 
+      {/* === STICKY WORKOUT TIMER === */}
+      {!isFiredogTotal && (
+        <div className="sticky top-0 z-50 bg-card border-b border-border shadow-md rounded-b-xl px-5 py-3 mb-4">
+          <WorkoutTimer
+            workoutTitle={workout.title}
+            workoutDescription={workout.description || ''}
+            sectionNames={groupedSections.map(s => s.section_name)}
+            onTimerStop={setTimerResult}
+          />
+        </div>
+      )}
+
       {/* === WHITEBOARD CONTAINER === */}
       <div className="rounded-xl border border-border bg-card p-5 mb-4">
         {/* Title */}
