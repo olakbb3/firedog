@@ -307,26 +307,30 @@ const WorkoutTimer = ({ workoutTitle, workoutDescription, sectionNames, onTimerS
   /* ================================================================ */
   /*  Render                                                           */
   /* ================================================================ */
+  const isCompact = timerState === 'preStart' || timerState === 'running' || timerState === 'paused' || timerState === 'finished';
+
   return (
-    <div className="flex flex-col items-center gap-3">
-      {/* Mode tabs */}
-      <Tabs value={mode} onValueChange={selectMode}>
-        <TabsList className="grid grid-cols-3 w-full">
-          <TabsTrigger value="stopwatch" disabled={isActive} className="text-xs font-bold tracking-wider uppercase">
-            For Time
-          </TabsTrigger>
-          <TabsTrigger value="countdown" disabled={isActive} className="text-xs font-bold tracking-wider uppercase">
-            Countdown
-          </TabsTrigger>
-          <TabsTrigger value="intervals" disabled={isActive} className="text-xs font-bold tracking-wider uppercase">
-            Intervals
-          </TabsTrigger>
-        </TabsList>
-      </Tabs>
+    <div className={`flex flex-col items-center ${isCompact ? 'gap-1' : 'gap-3'}`}>
+      {/* Mode tabs — hidden when active */}
+      {!isCompact && (
+        <Tabs value={mode} onValueChange={selectMode}>
+          <TabsList className="grid grid-cols-3 w-full">
+            <TabsTrigger value="stopwatch" disabled={isActive} className="text-xs font-bold tracking-wider uppercase">
+              For Time
+            </TabsTrigger>
+            <TabsTrigger value="countdown" disabled={isActive} className="text-xs font-bold tracking-wider uppercase">
+              Countdown
+            </TabsTrigger>
+            <TabsTrigger value="intervals" disabled={isActive} className="text-xs font-bold tracking-wider uppercase">
+              Intervals
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+      )}
 
       {/* Pre-start overlay text */}
       {isPreStart && (
-        <p className="text-xs font-bold text-primary tracking-widest uppercase animate-pulse">
+        <p className="text-[10px] font-bold text-primary tracking-widest uppercase animate-pulse">
           Starting in…
         </p>
       )}
@@ -334,23 +338,23 @@ const WorkoutTimer = ({ workoutTitle, workoutDescription, sectionNames, onTimerS
       {/* Main time display */}
       <p className={`font-mono font-bold tracking-wider text-center transition-all ${
         isPreStart
-          ? 'text-7xl text-primary'
-          : 'text-6xl text-foreground'
+          ? 'text-6xl text-primary'
+          : isCompact ? 'text-5xl text-foreground' : 'text-6xl text-foreground'
       }`}>
         {displayTime}
       </p>
 
       {/* Interval round & phase indicator */}
-      {mode === 'intervals' && timerState === 'running' && (
+      {mode === 'intervals' && (timerState === 'running' || timerState === 'paused') && (
         <div className="flex items-center gap-3">
-          <span className={`text-sm font-bold uppercase tracking-widest px-3 py-1 rounded-md ${
+          <span className={`text-xs font-bold uppercase tracking-widest px-2 py-0.5 rounded-md ${
             phase === 'work'
               ? 'bg-primary/15 text-primary'
               : 'bg-accent/15 text-accent'
           }`}>
             {phase === 'work' ? '🔥 Work' : '😮‍💨 Rest'}
           </span>
-          <span className="text-sm text-muted-foreground font-body">
+          <span className="text-xs text-muted-foreground font-body">
             Round {currentRound}/{totalRounds}
           </span>
         </div>
@@ -372,7 +376,6 @@ const WorkoutTimer = ({ workoutTitle, workoutDescription, sectionNames, onTimerS
 
       {timerState === 'idle' && mode === 'intervals' && (
         <div className="grid grid-cols-2 gap-3 w-full max-w-xs text-center">
-          {/* Work */}
           <div>
             <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1 font-body">Work</p>
             <div className="flex items-center justify-center gap-1">
@@ -385,7 +388,6 @@ const WorkoutTimer = ({ workoutTitle, workoutDescription, sectionNames, onTimerS
                 className="w-14 h-8 text-center text-sm" />
             </div>
           </div>
-          {/* Rest */}
           <div>
             <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1 font-body">Rest</p>
             <div className="flex items-center justify-center gap-1">
@@ -398,7 +400,6 @@ const WorkoutTimer = ({ workoutTitle, workoutDescription, sectionNames, onTimerS
                 className="w-14 h-8 text-center text-sm" />
             </div>
           </div>
-          {/* Rounds */}
           <div className="col-span-2">
             <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1 font-body">Rounds</p>
             <Input type="number" min={1} max={99} value={totalRounds}
