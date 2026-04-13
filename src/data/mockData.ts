@@ -33,6 +33,7 @@ export const mockWorkouts: Workout[] = [
       { name: 'Battle Ropes', duration: '30s', sets: 5 },
     ],
     coach_notes: 'This is a grind session. Focus on form over speed. Rest 60-90s between sets. Hydrate.',
+    workout_date: new Date().toISOString().split('T')[0],
     date: new Date().toISOString().split('T')[0],
   },
   {
@@ -46,6 +47,7 @@ export const mockWorkouts: Workout[] = [
       { name: 'Plank Hold', duration: '60s', sets: 3 },
     ],
     coach_notes: 'Build up slow. This is about progressive strength, not speed.',
+    workout_date: new Date(Date.now() - 86400000).toISOString().split('T')[0],
     date: new Date(Date.now() - 86400000).toISOString().split('T')[0],
   },
   {
@@ -59,6 +61,7 @@ export const mockWorkouts: Workout[] = [
       { name: 'Rope Climbs', reps: 3, sets: 3 },
     ],
     coach_notes: 'Pace yourself. This is about sustained output.',
+    workout_date: new Date(Date.now() - 172800000).toISOString().split('T')[0],
     date: new Date(Date.now() - 172800000).toISOString().split('T')[0],
   },
 ];
