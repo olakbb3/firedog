@@ -179,7 +179,7 @@ const WorkoutsTab = () => {
 
     setFormTitle(w.title);
     setFormDesc(w.description);
-    setFormDate(w.workout_date ? new Date(w.workout_date + 'T00:00:00') : new Date(w.date));
+    setFormDate(new Date(w.workout_date + 'T00:00:00'));
     setEditingId(workoutId);
 
     // Fetch sections and exercises for this workout
@@ -275,7 +275,6 @@ const WorkoutsTab = () => {
           title: formTitle,
           description: formDesc,
           exercises: [],
-          date: new Date().toISOString().split('T')[0],
           workout_date: workoutDate,
         })
         .select()
@@ -450,7 +449,7 @@ const WorkoutsTab = () => {
           <div key={w.id} className="rounded-xl bg-card border border-border p-4 shadow-card flex items-center justify-between">
             <div>
               <h3 className="font-bold font-display text-sm">{w.title}</h3>
-              <p className="text-xs text-muted-foreground">{w.workout_date || w.date}</p>
+              <p className="text-xs text-muted-foreground">{w.workout_date}</p>
             </div>
             <div className="flex items-center gap-2">
               <button onClick={() => handleEdit(w.id)} className="p-2 rounded-lg bg-secondary text-muted-foreground hover:text-foreground">
