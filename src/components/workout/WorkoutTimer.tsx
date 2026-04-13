@@ -42,9 +42,13 @@ const playBeep = (freq: number, durationMs: number, repeats: number) => {
   } catch { /* silent */ }
 };
 
-const shortBeeps = () => playBeep(660, 120, 1);
-const goBeep = () => playBeep(880, 350, 1);
-const finishBeeps = () => playBeep(800, 200, 3);
+const vibrate = (pattern: number | number[]) => {
+  try { navigator?.vibrate?.(pattern); } catch { /* unsupported */ }
+};
+
+const shortBeeps = () => { playBeep(660, 120, 1); vibrate(100); };
+const goBeep = () => { playBeep(880, 350, 1); vibrate([200, 100, 200]); };
+const finishBeeps = () => { playBeep(800, 200, 3); vibrate([200, 100, 200, 100, 400]); };
 
 /* ------------------------------------------------------------------ */
 /*  Format helpers                                                     */
@@ -309,8 +313,14 @@ const WorkoutTimer = ({ workoutTitle, workoutDescription, sectionNames, onTimerS
   /* ================================================================ */
   const isCompact = timerState === 'preStart' || timerState === 'running' || timerState === 'paused' || timerState === 'finished';
 
+  /* --- Dynamic background for interval phases --------------- */
+  const phaseBg = (() => {
+    if (mode !== 'intervals' || (timerState !== 'running' && timerState !== 'paused')) return '';
+    return phase === 'work' ? 'bg-red-600 text-white' : 'bg-slate-800 text-white';
+  })();
+
   return (
-    <div className={`flex flex-col items-center ${isCompact ? 'gap-1' : 'gap-3'}`}>
+    <div className={`flex flex-col items-center transition-colors duration-500 rounded-xl ${isCompact ? 'gap-1 px-4 py-2' : 'gap-3 px-4 py-3'} ${phaseBg}`}>
       {/* Mode tabs — hidden when active */}
       {!isCompact && (
         <Tabs value={mode} onValueChange={selectMode}>
