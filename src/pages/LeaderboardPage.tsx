@@ -99,7 +99,7 @@ const LeaderboardPage = () => {
         if (!latestByUser.has(log.user_id)) latestByUser.set(log.user_id, log);
       }
 
-      const userIds = [...latestByUser.keys()];
+      const userIds = Array.from(latestByUser.keys());
       const { data: profiles } = await supabase
         .from('profiles')
         .select('id, full_name')
@@ -107,7 +107,7 @@ const LeaderboardPage = () => {
       const nameMap = new Map((profiles || []).map(p => [p.id, p.full_name || 'Athlete']));
 
       const entries: LeaderboardRow[] = [];
-      for (const [uid, log] of latestByUser) {
+      for (const [uid, log] of Array.from(latestByUser.entries())) {
         let result = 'Logged';
         let sortValue = 0;
 
@@ -149,7 +149,7 @@ const LeaderboardPage = () => {
             break;
         }
 
-        entries.push({ user_id: uid, user_name: nameMap.get(uid) || 'Athlete', result, sort_value: sortValue, is_rx: log.is_rx ?? true });
+        entries.push({ user_id: uid, user_name: nameMap.get(uid) || 'Athlete', result, sort_value: sortValue, is_rx: log.is_rx ?? true } as LeaderboardRow);
       }
 
       // Sort: time ascending, everything else descending
