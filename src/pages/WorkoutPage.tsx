@@ -231,7 +231,7 @@ const WorkoutPage = () => {
 
       {/* === STICKY WORKOUT TIMER === */}
       {!isFiredogTotal && (
-        <div className="sticky top-0 z-50 bg-card border-b border-border shadow-md rounded-b-xl px-4 py-2 mb-4">
+        <div className="sticky top-0 z-50 bg-card border-b border-border shadow-md rounded-b-xl mb-4 overflow-hidden">
           <WorkoutTimer
             workoutTitle={workout.title}
             workoutDescription={workout.description || ''}
