@@ -7,7 +7,7 @@ import { supabase } from '@/lib/supabaseClient';
 import type { WorkoutSection, ExerciseRow } from '@/types/index';
 import { parseTextWithLinks, extractLinkButtons, LinkButtons } from '@/lib/urlParser';
 import SectionLogButton from '@/components/SectionLogButton';
-import WorkoutTimer from '@/components/WorkoutTimer';
+import WorkoutTimer from '@/components/workout/WorkoutTimer';
 import { useLeaderboard } from '@/hooks/useLeaderboard';
 import FiredogLeaderboard from '@/components/FiredogLeaderboard';
 
