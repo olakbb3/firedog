@@ -106,8 +106,45 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName, re
 
   const handleOpen = () => {
     if (!requireAuth('Log Result')) return;
+    if (!needsInput) {
+      // 'completed' — skip modal, submit immediately with Rx=true
+      handleSubmitCompleted();
+      return;
+    }
     resetModal();
     setOpen(true);
+  };
+
+  const handleSubmitCompleted = async () => {
+    if (!user || submittingRef.current) return;
+    submittingRef.current = true;
+    setSubmitting(true);
+    const payload: Record<string, any> = {
+      user_id: user.id,
+      workout_id: workoutId,
+      workout_section_id: sectionId,
+      result_type: 'completed',
+      is_rx: true,
+      completion_date: new Date().toISOString(),
+    };
+    const newEntry: SectionLogEntry = { result_type: 'completed', is_rx: true, completion_date: payload.completion_date };
+    try {
+      const { error } = await supabase.from('workout_logs').insert(payload);
+      if (error) throw error;
+      setLoggedResults(prev => [newEntry, ...prev]);
+      toast(
+        <div className="flex items-center gap-3">
+          <img src={dalmatianReward} alt="Got that dog in me" className="w-16 h-16 rounded-lg object-cover" />
+          <span className="font-semibold text-sm">You got that dog in you! 🐾</span>
+        </div>,
+        { duration: 3000 }
+      );
+    } catch {
+      toast.error('Failed to save. Please check your connection and try again.');
+    } finally {
+      setSubmitting(false);
+      submittingRef.current = false;
+    }
   };
 
   const handleRxChoice = (rx: boolean) => {
@@ -115,7 +152,6 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName, re
     if (needsInput) {
       setStep('input');
     } else {
-      // 'completed' — submit immediately
       handleSubmit(rx, true);
     }
   };
