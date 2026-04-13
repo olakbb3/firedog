@@ -237,12 +237,8 @@ const WorkoutPage = () => {
         {/* Metadata row */}
         <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground font-body">
           <span>{parseTextWithLinks(workout.description)}</span>
-          {workout.workout_date && (
-            <>
-              <span className="text-border">•</span>
-              <span>{workout.workout_date}</span>
-            </>
-          )}
+          <span className="text-border">•</span>
+          <span>{workout.workout_date}</span>
         </div>
         <LinkButtons links={extractLinkButtons(workout.description)} />
 

@@ -67,8 +67,7 @@ const HomePage = () => {
   const dateStr = format(selectedDate, 'yyyy-MM-dd');
   const todayWorkout = allWorkouts.find(w => {
     if (w.title === 'Firedog Total') return false;
-    const wd = w.workout_date || w.date;
-    return wd === dateStr;
+    return w.workout_date === dateStr;
   });
 
   // Fallback: if no workout for selected date but it's today, show latest (excluding Firedog Total)

@@ -46,8 +46,8 @@ export interface Workout {
   exercises: Exercise[];
   coach_notes?: string;
   video_url?: string;
-  date: string;
-  workout_date?: string;
+  date?: string;
+  workout_date: string;
   program_id?: string;
 }
 

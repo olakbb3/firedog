@@ -157,7 +157,7 @@ const AdminProgramPage = () => {
 
     setFormTitle(w.title);
     setFormDesc(w.description);
-    setFormDate(w.workout_date ? new Date(w.workout_date + 'T00:00:00') : new Date(w.date));
+    setFormDate(new Date(w.workout_date + 'T00:00:00'));
     setEditingId(workoutId);
 
     const [sectionsRes, exercisesRes] = await Promise.all([
@@ -292,7 +292,6 @@ const AdminProgramPage = () => {
           title: formTitle,
           description: formDesc,
           exercises: [],
-          date: new Date().toISOString().split('T')[0],
           workout_date: workoutDate,
           program_id: programId,
         })
@@ -483,7 +482,7 @@ const AdminProgramPage = () => {
             <div key={w.id} className="rounded-xl bg-card border border-border p-4 shadow-card flex items-center justify-between">
               <div>
                 <h3 className="font-bold font-display text-sm">{w.title}</h3>
-                <p className="text-xs text-muted-foreground">{w.workout_date || w.date}</p>
+                <p className="text-xs text-muted-foreground">{w.workout_date}</p>
               </div>
               <button onClick={() => handleEdit(w.id)} className="p-2 rounded-lg bg-secondary text-muted-foreground hover:text-foreground">
                 <Edit className="h-4 w-4" />
