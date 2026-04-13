@@ -1,43 +1,37 @@
 
 
-## Firedog Total Leaderboard Upgrade — Per-Lift Leaders + Live Feed
+## Standardize Workout Date Field (`workout_date`)
 
-### Summary
-Add `rawLogs` state to `useLeaderboard`, then render two new sections on the Firedog Total workout page: per-lift top 3 and a live activity feed.
+### Changes needed across 6 files
 
-### Files Changed
+**1. `src/types/index.ts`** — Make `workout_date` required, keep `date` as optional/deprecated
+- Change `date: string` → `date?: string` and `workout_date?: string` → `workout_date: string`
 
-**1. `src/hooks/useLeaderboard.ts`**
+**2. `src/pages/HomePage.tsx`**
+- Interface: `workout_date: string` (non-nullable)
+- Line 70: Remove fallback — use `w.workout_date` directly instead of `w.workout_date || w.date`
 
-- Add `rawLogs` state: `const [rawLogs, setRawLogs] = useState<any[]>([]);`
-- Update Firedog Total query to also select `completion_date`
-- After fetching logs, fetch profiles for all unique user IDs and attach `user_name` to each log
-- Set `setRawLogs(logsWithNames)` (with names attached)
-- On empty logs: also `setRawLogs([])`
-- Existing `crew` logic (grouping, totals, sorting) remains untouched
-- Update return: `return { crew, rawLogs }`
+**3. `src/pages/WorkoutPage.tsx`**
+- Interface: `workout_date: string` (non-nullable)
+- Line 240-244: Remove conditional — always show `workout.workout_date`
 
-**2. `src/pages/WorkoutPage.tsx`**
+**4. `src/pages/AdminDashboard.tsx`**
+- Interface: make `workout_date: string` (non-nullable)
+- Line 182: Use `new Date(w.workout_date + 'T00:00:00')` directly, drop `w.date` fallback
+- Line 278: Remove `date:` field from insert (keep only `workout_date`)
+- Line 453: Use `w.workout_date` directly, drop `|| w.date` fallback
 
-- Destructure: `const { crew, rawLogs } = useLeaderboard(id, sections, isFiredogTotal)`
-- Replace the existing leaderboard card (lines 322-350) with a conditional block:
+**5. `src/pages/AdminProgramPage.tsx`**
+- Interface: make `workout_date: string` (non-nullable)
+- Line 160: Use `w.workout_date` directly, drop `w.date` fallback
+- Line 295: Remove `date:` field from insert (keep only `workout_date`)
+- Line 486: Use `w.workout_date` directly, drop `|| w.date` fallback
 
-  **If `isFiredogTotal`**, render three cards:
+**6. `src/pages/ProgramsPage.tsx`** — Already uses `workout_date` exclusively. No changes needed.
 
-  **Card 1 — Overall Total**: Identical to current `crew` rendering (no changes)
-
-  **Card 2 — Per-Lift Leaderboard**: 
-  - Build `sectionMap` from `sections` array (id → section_name)
-  - Group `rawLogs` by `workout_section_id`
-  - For each section group: deduplicate by user (keep max weight), sort descending, take top 3
-  - Render each section as a mini-list with rank, name, and weight
-
-  **Card 3 — Live Activity Feed**:
-  - Sort `rawLogs` by `completion_date` descending, take top 10
-  - Render each as: `"{name} logged {weight} lbs on {section_name}"`
-  - Show relative time (e.g. "2h ago")
-
-  **If not Firedog Total**, render existing leaderboard card unchanged.
-
-### No other files changed. No database changes. No new API calls beyond the existing profiles lookup (reused for rawLogs).
+### What stays the same
+- Database schema untouched (`date` column remains)
+- All `.order('workout_date', ...)` queries already correct
+- LeaderboardPage already uses `workout_date` exclusively
+- No changes to AdminProgramPage section/exercise logic
 
