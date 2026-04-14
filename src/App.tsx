@@ -21,6 +21,7 @@ import ProgramsPage from "@/pages/ProgramsPage";
 import ProfilePage from "@/pages/ProfilePage";
 import AdminDashboard from "@/pages/AdminDashboard";
 import AdminProgramPage from "@/pages/AdminProgramPage";
+import ProgramDetailPage from "@/pages/ProgramDetailPage";
 import ConsentPage from "@/pages/ConsentPage";
 import NotFound from "@/pages/NotFound";
 
