@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useRef, useState, ReactNode } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabaseClient';
+import { toast } from 'sonner';
 
 type AppRole = 'athlete' | 'coach' | 'admin';
 
