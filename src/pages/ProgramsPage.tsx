@@ -87,6 +87,9 @@ const ProgramsPage = () => {
           const isFree = program.is_free;
           const isOwned = ownedSkus.has(program.sku);
 
+          const canNavigate = isFree || isOwned;
+          const handleNavigate = () => navigate(`/program/${program.id}`);
+
           return (
             <div
               key={program.id}
@@ -94,7 +97,10 @@ const ProgramsPage = () => {
             >
               {/* Program Image */}
               {(program.image_url || LOCAL_COVERS[program.sku]) && (
-                <div className="w-full h-40 overflow-hidden">
+                <div
+                  className={`w-full h-40 overflow-hidden ${canNavigate ? 'cursor-pointer' : ''}`}
+                  onClick={canNavigate ? handleNavigate : undefined}
+                >
                   <img
                     src={program.image_url || LOCAL_COVERS[program.sku]}
                     alt={program.title}
@@ -108,7 +114,12 @@ const ProgramsPage = () => {
 
               <div className="p-5">
                 <div className="flex items-start justify-between mb-2">
-                  <h2 className="font-bold font-display text-lg">{program.title}</h2>
+                  <h2
+                    className={`font-bold font-display text-lg ${canNavigate ? 'cursor-pointer hover:underline' : ''}`}
+                    onClick={canNavigate ? handleNavigate : undefined}
+                  >
+                    {program.title}
+                  </h2>
                   {isFree ? (
                     <span className="flex items-center gap-1 text-xs text-accent bg-accent/10 px-2 py-1 rounded-full shrink-0">
                       <CheckCircle2 className="h-3 w-3" />
@@ -144,7 +155,10 @@ const ProgramsPage = () => {
                     START WORKOUT
                   </Button>
                 ) : isOwned ? (
-                  <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-display">
+                  <Button
+                    onClick={handleNavigate}
+                    className="w-full bg-destructive text-destructive-foreground hover:bg-destructive/90 font-display"
+                  >
                     VIEW PROGRAM
                   </Button>
                 ) : (
