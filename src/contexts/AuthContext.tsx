@@ -82,7 +82,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(nextSession?.user ?? null);
 
       if (nextSession?.user) {
-        setTimeout(() => fetchProfile(nextSession.user.id), 0);
+        setTimeout(() => fetchProfile(nextSession.user.id, nextSession.user.email), 0);
       } else {
         setRole(null);
         setAcceptedTerms(false);
