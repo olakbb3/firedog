@@ -53,6 +53,7 @@ const App = () => {
                   <Route path="/" element={<HomePage />} />
                   <Route path="/workout/:id" element={<WorkoutPage />} />
                   <Route path="/programs" element={<ProgramsPage />} />
+                  <Route path="/program/:id" element={<ProgramDetailPage />} />
 
                   {/* Auth-required routes */}
                   <Route path="/progress" element={<ProtectedRoute><ProgressPage /></ProtectedRoute>} />
