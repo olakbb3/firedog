@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useRef, useState, ReactNode } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabaseClient';
+import { toast } from 'sonner';
 
 type AppRole = 'athlete' | 'coach' | 'admin';
 
@@ -26,7 +27,37 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const isInitializedRef = useRef(false);
 
-  const fetchProfile = async (userId: string) => {
+  const claimPendingPurchases = async (userId: string, email: string) => {
+    try {
+      const { data: pending } = await supabase
+        .from('pending_purchases')
+        .select('id, program_sku')
+        .eq('processed', false)
+        .ilike('email', email.toLowerCase());
+
+      if (!pending || pending.length === 0) return;
+
+      for (const row of pending) {
+        await supabase
+          .from('user_programs')
+          .upsert(
+            { user_id: userId, program_sku: row.program_sku, source: 'auto_claim' },
+            { onConflict: 'user_id,program_sku' }
+          );
+
+        await supabase
+          .from('pending_purchases')
+          .update({ processed: true })
+          .eq('id', row.id);
+      }
+
+      toast.success('We found your purchase and unlocked your program! 🔥');
+    } catch (err) {
+      console.warn('Auto-claim failed:', err);
+    }
+  };
+
+  const fetchProfile = async (userId: string, email?: string) => {
     try {
       const { data } = await supabase
         .from('profiles')
@@ -39,6 +70,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setRole('athlete');
       setAcceptedTerms(false);
     }
+
+    if (email) {
+      claimPendingPurchases(userId, email);
+    }
   };
 
   useEffect(() => {
@@ -47,7 +82,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(nextSession?.user ?? null);
 
       if (nextSession?.user) {
-        setTimeout(() => fetchProfile(nextSession.user.id), 0);
+        setTimeout(() => fetchProfile(nextSession.user.id, nextSession.user.email), 0);
       } else {
         setRole(null);
         setAcceptedTerms(false);
