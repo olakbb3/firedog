@@ -122,7 +122,7 @@ export const useLeaderboard = (workoutId: string | undefined, sections: WorkoutS
     const fetchStandardLeaderboard = async () => {
       // Exclude per_exercise and completed-only sections from leaderboard
       const leaderboardSections = sections.filter(s => {
-        const mode = s.input_mode || ((s as any).exercises?.length > 1 ? 'per_exercise' : 'single');
+        const mode = s.input_mode || 'single';
         return mode !== 'per_exercise' && s.result_type !== 'completed';
       });
 
