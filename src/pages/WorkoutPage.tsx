@@ -4,9 +4,10 @@ import { ArrowLeft, Trophy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabaseClient';
-import type { WorkoutSection, ExerciseRow } from '@/types/index';
+import type { WorkoutSection, ExerciseRow, SectionInputMode } from '@/types/index';
 import { parseTextWithLinks, extractLinkButtons, LinkButtons } from '@/lib/urlParser';
 import SectionLogButton from '@/components/SectionLogButton';
+import PerExerciseLogButton from '@/components/PerExerciseLogButton';
 import WorkoutTimer from '@/components/workout/WorkoutTimer';
 import { useLeaderboard } from '@/hooks/useLeaderboard';
 import FiredogLeaderboard from '@/components/FiredogLeaderboard';
@@ -299,13 +300,31 @@ const WorkoutPage = () => {
                   </div>
                 ))}
               </div>
-              {/* Per-section Log Result button */}
-              <SectionLogButton
-                workoutId={workout.id}
-                sectionId={section.id}
-                sectionName={section.section_name}
-                resultType={(section as any).result_type || 'completed'}
-              />
+              {/* Per-section Log Result button — route by input_mode */}
+              {(() => {
+                const inputMode: SectionInputMode = (section as any).input_mode ||
+                  (section.exercises.length > 1 ? 'per_exercise' : 'single');
+                
+                if (inputMode === 'per_exercise') {
+                  return (
+                    <PerExerciseLogButton
+                      workoutId={workout.id}
+                      sectionId={section.id}
+                      sectionName={section.section_name}
+                      exercises={section.exercises}
+                      resultType={(section as any).result_type || 'weight'}
+                    />
+                  );
+                }
+                return (
+                  <SectionLogButton
+                    workoutId={workout.id}
+                    sectionId={section.id}
+                    sectionName={section.section_name}
+                    resultType={(section as any).result_type || 'completed'}
+                  />
+                );
+              })()}
             </div>
           ))}
         </div>
