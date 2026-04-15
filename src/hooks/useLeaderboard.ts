@@ -120,10 +120,10 @@ export const useLeaderboard = (workoutId: string | undefined, sections: WorkoutS
     };
 
     const fetchStandardLeaderboard = async () => {
-      // Only include sections with input_mode = 'single' (or unset) in leaderboard
+      // Exclude per_exercise and completed-only sections from leaderboard
       const leaderboardSections = sections.filter(s => {
-        const mode = (s as any).input_mode || (sections.length > 0 ? 'single' : 'single');
-        return mode !== 'per_exercise';
+        const mode = s.input_mode || 'single';
+        return mode !== 'per_exercise' && s.result_type !== 'completed';
       });
 
       const firstInSectionIds: string[] = [];
