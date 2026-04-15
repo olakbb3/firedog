@@ -179,9 +179,10 @@ const AdminProgramPage = () => {
       setSections(dbSections.map(s => {
         const templateMatch = template.find(t => t.section_name === s.section_name);
         return {
-          id: s.id, // PRESERVE the DB id
+          id: s.id,
           section_name: s.section_name,
           result_type: (s.result_type as SectionResultType) || 'completed',
+          input_mode: (s.input_mode as SectionInputMode) || 'single',
           locked: templateMatch?.locked ?? false,
           exercises: dbExercises
             .filter((e: any) => e.section_id === s.id)
@@ -469,7 +470,7 @@ const AdminProgramPage = () => {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setSections(prev => [...prev, { section_name: '', result_type: 'completed', locked: false, exercises: [emptyExercise()] }])}
+                  onClick={() => setSections(prev => [...prev, { section_name: '', result_type: 'completed', input_mode: 'single' as SectionInputMode, locked: false, exercises: [emptyExercise()] }])}
                   className="text-xs"
                 >
                   <Plus className="h-3 w-3 mr-1" /> Add Section
