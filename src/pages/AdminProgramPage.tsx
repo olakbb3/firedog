@@ -13,7 +13,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
-import type { SectionResultType } from '@/types/index';
+import type { SectionResultType, SectionInputMode } from '@/types/index';
 
 const RESULT_TYPE_OPTIONS: { value: SectionResultType; label: string }[] = [
   { value: 'completed', label: 'Just Completed' },
@@ -22,6 +22,11 @@ const RESULT_TYPE_OPTIONS: { value: SectionResultType; label: string }[] = [
   { value: 'calories', label: 'Calories' },
   { value: 'meters', label: 'Meters' },
   { value: 'weight', label: 'Weight' },
+];
+
+const INPUT_MODE_OPTIONS: { value: SectionInputMode; label: string }[] = [
+  { value: 'single', label: 'Single Score' },
+  { value: 'per_exercise', label: 'Per Exercise' },
 ];
 
 interface SectionTemplate {
@@ -60,9 +65,10 @@ interface ExerciseInput {
 }
 
 interface SectionInput {
-  id?: string; // existing DB id — preserved on edit
+  id?: string;
   section_name: string;
   result_type: SectionResultType;
+  input_mode: SectionInputMode;
   locked: boolean;
   exercises: ExerciseInput[];
 }
@@ -91,12 +97,12 @@ const AdminProgramPage = () => {
 
   const getTemplate = (): SectionInput[] => {
     if (isFiredog) {
-      return FIREDOG_TEMPLATE.map(t => ({ ...t, locked: true, exercises: [emptyExercise()] }));
+      return FIREDOG_TEMPLATE.map(t => ({ ...t, input_mode: 'single' as SectionInputMode, locked: true, exercises: [emptyExercise()] }));
     }
     if (isEngine) {
-      return ENGINE_TEMPLATE.map(t => ({ ...t, locked: true, exercises: [emptyExercise()] }));
+      return ENGINE_TEMPLATE.map(t => ({ ...t, input_mode: 'single' as SectionInputMode, locked: true, exercises: [emptyExercise()] }));
     }
-    return [{ section_name: '', result_type: 'completed', locked: false, exercises: [emptyExercise()] }];
+    return [{ section_name: '', result_type: 'completed', input_mode: 'single' as SectionInputMode, locked: false, exercises: [emptyExercise()] }];
   };
 
   useEffect(() => {
@@ -173,9 +179,10 @@ const AdminProgramPage = () => {
       setSections(dbSections.map(s => {
         const templateMatch = template.find(t => t.section_name === s.section_name);
         return {
-          id: s.id, // PRESERVE the DB id
+          id: s.id,
           section_name: s.section_name,
           result_type: (s.result_type as SectionResultType) || 'completed',
+          input_mode: (s.input_mode as SectionInputMode) || 'single',
           locked: templateMatch?.locked ?? false,
           exercises: dbExercises
             .filter((e: any) => e.section_id === s.id)
@@ -234,7 +241,7 @@ const AdminProgramPage = () => {
         const s = sections[i];
         if (s.id) {
           // UPDATE existing section (preserve id)
-          const updatePayload: any = { result_type: s.result_type || 'completed', order_index: i };
+          const updatePayload: any = { result_type: s.result_type || 'completed', input_mode: s.input_mode || 'single', order_index: i };
           if (!s.locked) {
             updatePayload.section_name = s.section_name;
           }
@@ -248,6 +255,7 @@ const AdminProgramPage = () => {
               workout_id: workoutId,
               section_name: s.section_name,
               result_type: s.result_type || 'completed',
+              input_mode: s.input_mode || 'single',
               order_index: i,
             })
             .select()
@@ -311,6 +319,7 @@ const AdminProgramPage = () => {
           workout_id: workoutId,
           section_name: s.section_name,
           result_type: s.result_type || 'completed',
+          input_mode: s.input_mode || 'single',
           order_index: i,
         }));
 
@@ -426,18 +435,33 @@ const AdminProgramPage = () => {
                     )}
                   </div>
 
-                  <div className="mb-2">
-                    <label className="text-[10px] text-muted-foreground font-display uppercase tracking-wider mb-1 block">Result Type</label>
-                    <Select value={section.result_type} onValueChange={(v) => updateSectionResultType(si, v as SectionResultType)}>
-                      <SelectTrigger className="bg-background text-xs h-8">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {RESULT_TYPE_OPTIONS.map(opt => (
-                          <SelectItem key={opt.value} value={opt.value} className="text-xs">{opt.label}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                  <div className="mb-2 grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-[10px] text-muted-foreground font-display uppercase tracking-wider mb-1 block">Result Type</label>
+                      <Select value={section.result_type} onValueChange={(v) => updateSectionResultType(si, v as SectionResultType)}>
+                        <SelectTrigger className="bg-background text-xs h-8">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {RESULT_TYPE_OPTIONS.map(opt => (
+                            <SelectItem key={opt.value} value={opt.value} className="text-xs">{opt.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-muted-foreground font-display uppercase tracking-wider mb-1 block">Input Mode</label>
+                      <Select value={section.input_mode} onValueChange={(v) => setSections(prev => prev.map((s, i) => i === si ? { ...s, input_mode: v as SectionInputMode } : s))}>
+                        <SelectTrigger className="bg-background text-xs h-8">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {INPUT_MODE_OPTIONS.map(opt => (
+                            <SelectItem key={opt.value} value={opt.value} className="text-xs">{opt.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
 
                   {section.exercises.map((ex, ei) => (
@@ -463,7 +487,7 @@ const AdminProgramPage = () => {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setSections(prev => [...prev, { section_name: '', result_type: 'completed', locked: false, exercises: [emptyExercise()] }])}
+                  onClick={() => setSections(prev => [...prev, { section_name: '', result_type: 'completed', input_mode: 'single' as SectionInputMode, locked: false, exercises: [emptyExercise()] }])}
                   className="text-xs"
                 >
                   <Plus className="h-3 w-3 mr-1" /> Add Section
