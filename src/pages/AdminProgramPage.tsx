@@ -241,7 +241,7 @@ const AdminProgramPage = () => {
         const s = sections[i];
         if (s.id) {
           // UPDATE existing section (preserve id)
-          const updatePayload: any = { result_type: s.result_type || 'completed', order_index: i };
+          const updatePayload: any = { result_type: s.result_type || 'completed', input_mode: s.input_mode || 'single', order_index: i };
           if (!s.locked) {
             updatePayload.section_name = s.section_name;
           }
@@ -255,6 +255,7 @@ const AdminProgramPage = () => {
               workout_id: workoutId,
               section_name: s.section_name,
               result_type: s.result_type || 'completed',
+              input_mode: s.input_mode || 'single',
               order_index: i,
             })
             .select()
@@ -318,6 +319,7 @@ const AdminProgramPage = () => {
           workout_id: workoutId,
           section_name: s.section_name,
           result_type: s.result_type || 'completed',
+          input_mode: s.input_mode || 'single',
           order_index: i,
         }));
 
@@ -433,18 +435,33 @@ const AdminProgramPage = () => {
                     )}
                   </div>
 
-                  <div className="mb-2">
-                    <label className="text-[10px] text-muted-foreground font-display uppercase tracking-wider mb-1 block">Result Type</label>
-                    <Select value={section.result_type} onValueChange={(v) => updateSectionResultType(si, v as SectionResultType)}>
-                      <SelectTrigger className="bg-background text-xs h-8">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {RESULT_TYPE_OPTIONS.map(opt => (
-                          <SelectItem key={opt.value} value={opt.value} className="text-xs">{opt.label}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                  <div className="mb-2 grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-[10px] text-muted-foreground font-display uppercase tracking-wider mb-1 block">Result Type</label>
+                      <Select value={section.result_type} onValueChange={(v) => updateSectionResultType(si, v as SectionResultType)}>
+                        <SelectTrigger className="bg-background text-xs h-8">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {RESULT_TYPE_OPTIONS.map(opt => (
+                            <SelectItem key={opt.value} value={opt.value} className="text-xs">{opt.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-muted-foreground font-display uppercase tracking-wider mb-1 block">Input Mode</label>
+                      <Select value={section.input_mode} onValueChange={(v) => setSections(prev => prev.map((s, i) => i === si ? { ...s, input_mode: v as SectionInputMode } : s))}>
+                        <SelectTrigger className="bg-background text-xs h-8">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {INPUT_MODE_OPTIONS.map(opt => (
+                            <SelectItem key={opt.value} value={opt.value} className="text-xs">{opt.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
 
                   {section.exercises.map((ex, ei) => (
