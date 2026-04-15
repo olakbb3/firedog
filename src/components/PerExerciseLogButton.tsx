@@ -52,17 +52,18 @@ export default function PerExerciseLogButton({ workoutId, sectionId, sectionName
 
     supabase
       .from('workout_logs')
-      .select('notes, weight, reps, time, completion_date')
+      .select('exercise_name, notes, weight, reps, time, completion_date')
       .eq('workout_id', workoutId)
       .eq('workout_section_id', sectionId)
       .eq('user_id', user.id)
       .gte('completion_date', todayStart.toISOString())
       .then(({ data }) => {
         if (data && data.length > 0) {
-          // Extract exercise names from notes field (we store exercise_name there)
           const logged = new Set<string>();
           for (const log of data) {
-            if (log.notes) logged.add(log.notes);
+            // Backward compat: old logs used notes, new logs use exercise_name
+            const name = (log as any).exercise_name || log.notes;
+            if (name) logged.add(name);
           }
           setLoggedExercises(logged);
         }
@@ -113,7 +114,8 @@ export default function PerExerciseLogButton({ workoutId, sectionId, sectionName
           result_type: resultType,
           is_rx: true,
           completion_date: new Date().toISOString(),
-          notes: ex.exercise_name, // Store exercise name in notes for identification
+          exercise_name: ex.exercise_name,
+          notes: ex.notes || null,
         };
 
         // Store value in the appropriate column based on result_type
