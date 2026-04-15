@@ -17,6 +17,7 @@ export interface Exercise {
 }
 
 export type SectionResultType = 'completed' | 'time' | 'rounds_reps' | 'calories' | 'meters' | 'weight';
+export type SectionInputMode = 'single' | 'per_exercise';
 
 export interface WorkoutSection {
   id: string;
@@ -24,6 +25,7 @@ export interface WorkoutSection {
   section_name: string;
   order_index: number;
   result_type?: SectionResultType;
+  input_mode?: SectionInputMode;
   created_at?: string;
 }
 
