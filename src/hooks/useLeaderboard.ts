@@ -120,8 +120,14 @@ export const useLeaderboard = (workoutId: string | undefined, sections: WorkoutS
     };
 
     const fetchStandardLeaderboard = async () => {
+      // Only include sections with input_mode = 'single' (or unset) in leaderboard
+      const leaderboardSections = sections.filter(s => {
+        const mode = (s as any).input_mode || (sections.length > 0 ? 'single' : 'single');
+        return mode !== 'per_exercise';
+      });
+
       const firstInSectionIds: string[] = [];
-      for (const s of sections) {
+      for (const s of leaderboardSections) {
         if (s.section_name.toLowerCase().includes('first-in') || s.section_name.toLowerCase().includes('first in')) {
           firstInSectionIds.push(s.id);
         }
