@@ -13,7 +13,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
-import type { SectionResultType } from '@/types/index';
+import type { SectionResultType, SectionInputMode } from '@/types/index';
 
 const RESULT_TYPE_OPTIONS: { value: SectionResultType; label: string }[] = [
   { value: 'completed', label: 'Just Completed' },
@@ -22,6 +22,11 @@ const RESULT_TYPE_OPTIONS: { value: SectionResultType; label: string }[] = [
   { value: 'calories', label: 'Calories' },
   { value: 'meters', label: 'Meters' },
   { value: 'weight', label: 'Weight' },
+];
+
+const INPUT_MODE_OPTIONS: { value: SectionInputMode; label: string }[] = [
+  { value: 'single', label: 'Single Score' },
+  { value: 'per_exercise', label: 'Per Exercise' },
 ];
 
 interface SectionTemplate {
@@ -60,9 +65,10 @@ interface ExerciseInput {
 }
 
 interface SectionInput {
-  id?: string; // existing DB id — preserved on edit
+  id?: string;
   section_name: string;
   result_type: SectionResultType;
+  input_mode: SectionInputMode;
   locked: boolean;
   exercises: ExerciseInput[];
 }
@@ -91,12 +97,12 @@ const AdminProgramPage = () => {
 
   const getTemplate = (): SectionInput[] => {
     if (isFiredog) {
-      return FIREDOG_TEMPLATE.map(t => ({ ...t, locked: true, exercises: [emptyExercise()] }));
+      return FIREDOG_TEMPLATE.map(t => ({ ...t, input_mode: 'single' as SectionInputMode, locked: true, exercises: [emptyExercise()] }));
     }
     if (isEngine) {
-      return ENGINE_TEMPLATE.map(t => ({ ...t, locked: true, exercises: [emptyExercise()] }));
+      return ENGINE_TEMPLATE.map(t => ({ ...t, input_mode: 'single' as SectionInputMode, locked: true, exercises: [emptyExercise()] }));
     }
-    return [{ section_name: '', result_type: 'completed', locked: false, exercises: [emptyExercise()] }];
+    return [{ section_name: '', result_type: 'completed', input_mode: 'single' as SectionInputMode, locked: false, exercises: [emptyExercise()] }];
   };
 
   useEffect(() => {
