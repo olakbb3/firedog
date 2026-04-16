@@ -207,6 +207,7 @@ const WorkoutsTab = () => {
       setSections(dbSections.map(s => ({
         section_name: s.section_name,
         result_type: (s.result_type as SectionResultType) || 'completed',
+        input_mode: (s.input_mode as SectionInputMode) || 'single',
         exercises: dbExercises
           .filter((e: any) => e.section_id === s.id)
           .map((e: any) => ({
@@ -224,6 +225,7 @@ const WorkoutsTab = () => {
         setSections([{
           section_name: 'Workout',
           result_type: 'completed' as SectionResultType,
+          input_mode: 'single' as SectionInputMode,
           exercises: jsonExercises.map((e: any) => ({
             exercise_name: e.name || e.exercise_name || '',
             sets: e.sets?.toString() || '',
@@ -233,7 +235,7 @@ const WorkoutsTab = () => {
           })),
         }]);
       } else {
-        setSections(DEFAULT_SECTIONS.map(name => ({ section_name: name, result_type: 'completed' as SectionResultType, exercises: [emptyExercise()] })));
+        setSections(DEFAULT_SECTIONS.map(name => ({ section_name: name, result_type: 'completed' as SectionResultType, input_mode: 'single' as SectionInputMode, exercises: [emptyExercise()] })));
       }
     }
 
