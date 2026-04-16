@@ -359,6 +359,36 @@ const WorkoutsTab = () => {
     fetchWorkouts();
   };
 
+  const handleSave = async () => {
+    if (!formTitle.trim()) {
+      toast({ title: 'Please add a Workout Title.', variant: 'destructive' });
+      return;
+    }
+
+    // Duplicate date check (only for new workouts)
+    if (!editingId && formDate) {
+      const workoutDate = format(formDate, 'yyyy-MM-dd');
+      const { data: existing } = await supabase
+        .from('workouts')
+        .select('id')
+        .eq('workout_date', workoutDate)
+        .is('program_id', null)
+        .limit(1);
+
+      if (existing && existing.length > 0) {
+        setShowDuplicateDialog(true);
+        return;
+      }
+    }
+
+    await executeSave();
+  };
+
+  const confirmDuplicateSave = async () => {
+    setShowDuplicateDialog(false);
+    await executeSave();
+  };
+
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
