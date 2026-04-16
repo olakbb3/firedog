@@ -257,8 +257,7 @@ const WorkoutsTab = () => {
     }
   };
 
-  const handleSave = async () => {
-    if (!formTitle.trim()) return;
+  const executeSave = async () => {
     const workoutDate = formDate ? format(formDate, 'yyyy-MM-dd') : null;
 
     let workoutId = editingId;
@@ -308,6 +307,7 @@ const WorkoutsTab = () => {
         workout_id: workoutId,
         section_name: s.section_name,
         result_type: s.result_type || 'completed',
+        input_mode: s.input_mode || 'single',
         order_index: i,
       }));
 
@@ -418,29 +418,44 @@ const WorkoutsTab = () => {
                   </button>
                 </div>
 
-                {/* Result Type Selector */}
-                <div className="mb-2">
-                  <label className="text-[10px] text-muted-foreground font-display uppercase tracking-wider mb-1 block">Result Type</label>
-                  <Select value={section.result_type} onValueChange={(v) => updateSectionResultType(si, v as SectionResultType)}>
-                    <SelectTrigger className="bg-background text-xs h-8">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {RESULT_TYPE_OPTIONS.map(opt => (
-                        <SelectItem key={opt.value} value={opt.value} className="text-xs">{opt.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                {/* Result Type & Input Mode */}
+                <div className="mb-2 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-[10px] text-muted-foreground font-display uppercase tracking-wider mb-1 block">Result Type</label>
+                    <Select value={section.result_type} onValueChange={(v) => updateSectionResultType(si, v as SectionResultType)}>
+                      <SelectTrigger className="bg-background text-xs h-8">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {RESULT_TYPE_OPTIONS.map(opt => (
+                          <SelectItem key={opt.value} value={opt.value} className="text-xs">{opt.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-muted-foreground font-display uppercase tracking-wider mb-1 block">Input Mode</label>
+                    <Select value={section.input_mode || 'single'} onValueChange={(v) => updateSectionInputMode(si, v as SectionInputMode)}>
+                      <SelectTrigger className="bg-background text-xs h-8">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {INPUT_MODE_OPTIONS.map(opt => (
+                          <SelectItem key={opt.value} value={opt.value} className="text-xs">{opt.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
 
                 {section.exercises.map((ex, ei) => (
-                  <div key={ei} className="grid grid-cols-12 gap-1.5 mb-1.5 items-start">
-                    <Input placeholder="Exercise" value={ex.exercise_name} onChange={e => updateExercise(si, ei, 'exercise_name', e.target.value)} className="col-span-3 bg-background text-xs" />
+                  <div key={ei} className="grid grid-cols-2 sm:grid-cols-12 gap-1.5 mb-1.5 items-start">
+                    <Input placeholder="Exercise" value={ex.exercise_name} onChange={e => updateExercise(si, ei, 'exercise_name', e.target.value)} className="col-span-2 sm:col-span-3 bg-background text-xs" />
                     <Input placeholder="Sets" value={ex.sets} onChange={e => updateExercise(si, ei, 'sets', e.target.value)} className="col-span-1 bg-background text-xs" />
                     <Input placeholder="Reps" value={ex.reps} onChange={e => updateExercise(si, ei, 'reps', e.target.value)} className="col-span-1 bg-background text-xs" />
-                    <Input placeholder="Duration" value={ex.duration} onChange={e => updateExercise(si, ei, 'duration', e.target.value)} className="col-span-2 bg-background text-xs" />
-                    <Input placeholder="Coach note" value={ex.notes} onChange={e => updateExercise(si, ei, 'notes', e.target.value)} className="col-span-4 bg-background text-xs" />
-                    <button onClick={() => removeExercise(si, ei)} className="col-span-1 p-2 text-destructive hover:bg-destructive/10 rounded">
+                    <Input placeholder="Duration" value={ex.duration} onChange={e => updateExercise(si, ei, 'duration', e.target.value)} className="col-span-1 sm:col-span-2 bg-background text-xs" />
+                    <Input placeholder="Coach note" value={ex.notes} onChange={e => updateExercise(si, ei, 'notes', e.target.value)} className="col-span-1 sm:col-span-4 bg-background text-xs" />
+                    <button onClick={() => removeExercise(si, ei)} className="col-span-2 sm:col-span-1 p-2 text-destructive hover:bg-destructive/10 rounded flex items-center justify-center">
                       <X className="h-3 w-3" />
                     </button>
                   </div>
