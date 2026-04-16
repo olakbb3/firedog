@@ -503,6 +503,22 @@ const WorkoutsTab = () => {
         </div>
       )}
 
+      {/* Duplicate Date Confirmation Dialog */}
+      <AlertDialog open={showDuplicateDialog} onOpenChange={setShowDuplicateDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Duplicate Workout Date</AlertDialogTitle>
+            <AlertDialogDescription>
+              A workout already exists for this day. Do you want to save anyway?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDuplicateSave}>Save Anyway</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <div className="space-y-3">
         {workouts.map((w) => (
           <div key={w.id} className="rounded-xl bg-card border border-border p-4 shadow-card flex items-center justify-between">

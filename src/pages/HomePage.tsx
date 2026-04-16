@@ -165,12 +165,16 @@ const HomePage = () => {
           </button>
         </div>
       ) : (
-        <div className="mb-6 rounded-xl bg-card border border-border p-6 text-center shadow-card">
-          <p className="text-muted-foreground text-sm">No workout scheduled for {format(selectedDate, 'MMMM d')}.</p>
+        <div className="mb-6 rounded-xl bg-card border border-border p-8 text-center shadow-card">
+          <p className="text-3xl mb-2">🐾</p>
+          <h3 className="text-lg font-bold font-display">Rest Day</h3>
+          <p className="text-sm text-muted-foreground mt-1">
+            Enjoy your recovery. No workout scheduled for {format(selectedDate, 'MMMM d')}.
+          </p>
           {!isSelectedToday && (
             <button
               onClick={() => setSelectedDate(today)}
-              className="mt-2 text-xs text-primary font-semibold hover:underline"
+              className="mt-3 text-xs text-primary font-semibold hover:underline"
             >
               ← Back to today
             </button>
