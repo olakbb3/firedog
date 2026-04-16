@@ -13,7 +13,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabaseClient';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import type { SectionResultType } from '@/types/index';
+import type { SectionResultType, SectionInputMode } from '@/types/index';
 
 type Tab = 'workouts' | 'programs' | 'challenges' | 'media' | 'home';
 
@@ -30,11 +30,17 @@ const RESULT_TYPE_OPTIONS: { value: SectionResultType; label: string }[] = [
   { value: 'weight', label: 'Weight' },
 ];
 
+const INPUT_MODE_OPTIONS: { value: SectionInputMode; label: string }[] = [
+  { value: 'single', label: 'Single Score' },
+  { value: 'per_exercise', label: 'Per Exercise' },
+];
+
 const DEFAULT_SECTIONS = ['Morning Meeting', 'Dispatch', 'First-In', 'Overhaul', 'Rehab'];
 
 interface SectionInput {
   section_name: string;
   result_type: SectionResultType;
+  input_mode: SectionInputMode;
   exercises: ExerciseInput[];
 }
 
@@ -113,8 +119,10 @@ const WorkoutsTab = () => {
   const [formDesc, setFormDesc] = useState('');
   const [formDate, setFormDate] = useState<Date | undefined>(new Date());
   const [sections, setSections] = useState<SectionInput[]>(
-    DEFAULT_SECTIONS.map(name => ({ section_name: name, result_type: 'completed' as SectionResultType, exercises: [emptyExercise()] }))
+    DEFAULT_SECTIONS.map(name => ({ section_name: name, result_type: 'completed' as SectionResultType, input_mode: 'single' as SectionInputMode, exercises: [emptyExercise()] }))
   );
+  const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
+  const [pendingSave, setPendingSave] = useState(false);
 
   const fetchWorkouts = async () => {
     const { data } = await supabase.from('workouts').select('*').order('workout_date', { ascending: false, nullsFirst: false });
@@ -128,11 +136,11 @@ const WorkoutsTab = () => {
     setFormDesc('');
     setFormDate(new Date());
     setEditingId(null);
-    setSections(DEFAULT_SECTIONS.map(name => ({ section_name: name, result_type: 'completed' as SectionResultType, exercises: [emptyExercise()] })));
+    setSections(DEFAULT_SECTIONS.map(name => ({ section_name: name, result_type: 'completed' as SectionResultType, input_mode: 'single' as SectionInputMode, exercises: [emptyExercise()] })));
   };
 
   const addSection = () => {
-    setSections(prev => [...prev, { section_name: '', result_type: 'completed' as SectionResultType, exercises: [emptyExercise()] }]);
+    setSections(prev => [...prev, { section_name: '', result_type: 'completed' as SectionResultType, input_mode: 'single' as SectionInputMode, exercises: [emptyExercise()] }]);
   };
 
   const removeSection = (idx: number) => {
@@ -145,6 +153,10 @@ const WorkoutsTab = () => {
 
   const updateSectionResultType = (idx: number, rt: SectionResultType) => {
     setSections(prev => prev.map((s, i) => i === idx ? { ...s, result_type: rt } : s));
+  };
+
+  const updateSectionInputMode = (idx: number, mode: SectionInputMode) => {
+    setSections(prev => prev.map((s, i) => i === idx ? { ...s, input_mode: mode } : s));
   };
 
   const moveSection = (idx: number, dir: -1 | 1) => {
