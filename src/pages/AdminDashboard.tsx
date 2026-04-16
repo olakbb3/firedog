@@ -13,7 +13,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabaseClient';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import type { SectionResultType } from '@/types/index';
+import type { SectionResultType, SectionInputMode } from '@/types/index';
 
 type Tab = 'workouts' | 'programs' | 'challenges' | 'media' | 'home';
 
@@ -30,11 +30,17 @@ const RESULT_TYPE_OPTIONS: { value: SectionResultType; label: string }[] = [
   { value: 'weight', label: 'Weight' },
 ];
 
+const INPUT_MODE_OPTIONS: { value: SectionInputMode; label: string }[] = [
+  { value: 'single', label: 'Single Score' },
+  { value: 'per_exercise', label: 'Per Exercise' },
+];
+
 const DEFAULT_SECTIONS = ['Morning Meeting', 'Dispatch', 'First-In', 'Overhaul', 'Rehab'];
 
 interface SectionInput {
   section_name: string;
   result_type: SectionResultType;
+  input_mode: SectionInputMode;
   exercises: ExerciseInput[];
 }
 
@@ -113,8 +119,10 @@ const WorkoutsTab = () => {
   const [formDesc, setFormDesc] = useState('');
   const [formDate, setFormDate] = useState<Date | undefined>(new Date());
   const [sections, setSections] = useState<SectionInput[]>(
-    DEFAULT_SECTIONS.map(name => ({ section_name: name, result_type: 'completed' as SectionResultType, exercises: [emptyExercise()] }))
+    DEFAULT_SECTIONS.map(name => ({ section_name: name, result_type: 'completed' as SectionResultType, input_mode: 'single' as SectionInputMode, exercises: [emptyExercise()] }))
   );
+  const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
+  const [pendingSave, setPendingSave] = useState(false);
 
   const fetchWorkouts = async () => {
     const { data } = await supabase.from('workouts').select('*').order('workout_date', { ascending: false, nullsFirst: false });
@@ -128,11 +136,11 @@ const WorkoutsTab = () => {
     setFormDesc('');
     setFormDate(new Date());
     setEditingId(null);
-    setSections(DEFAULT_SECTIONS.map(name => ({ section_name: name, result_type: 'completed' as SectionResultType, exercises: [emptyExercise()] })));
+    setSections(DEFAULT_SECTIONS.map(name => ({ section_name: name, result_type: 'completed' as SectionResultType, input_mode: 'single' as SectionInputMode, exercises: [emptyExercise()] })));
   };
 
   const addSection = () => {
-    setSections(prev => [...prev, { section_name: '', result_type: 'completed' as SectionResultType, exercises: [emptyExercise()] }]);
+    setSections(prev => [...prev, { section_name: '', result_type: 'completed' as SectionResultType, input_mode: 'single' as SectionInputMode, exercises: [emptyExercise()] }]);
   };
 
   const removeSection = (idx: number) => {
@@ -145,6 +153,10 @@ const WorkoutsTab = () => {
 
   const updateSectionResultType = (idx: number, rt: SectionResultType) => {
     setSections(prev => prev.map((s, i) => i === idx ? { ...s, result_type: rt } : s));
+  };
+
+  const updateSectionInputMode = (idx: number, mode: SectionInputMode) => {
+    setSections(prev => prev.map((s, i) => i === idx ? { ...s, input_mode: mode } : s));
   };
 
   const moveSection = (idx: number, dir: -1 | 1) => {
@@ -195,6 +207,7 @@ const WorkoutsTab = () => {
       setSections(dbSections.map(s => ({
         section_name: s.section_name,
         result_type: (s.result_type as SectionResultType) || 'completed',
+        input_mode: (s.input_mode as SectionInputMode) || 'single',
         exercises: dbExercises
           .filter((e: any) => e.section_id === s.id)
           .map((e: any) => ({
@@ -212,6 +225,7 @@ const WorkoutsTab = () => {
         setSections([{
           section_name: 'Workout',
           result_type: 'completed' as SectionResultType,
+          input_mode: 'single' as SectionInputMode,
           exercises: jsonExercises.map((e: any) => ({
             exercise_name: e.name || e.exercise_name || '',
             sets: e.sets?.toString() || '',
@@ -221,7 +235,7 @@ const WorkoutsTab = () => {
           })),
         }]);
       } else {
-        setSections(DEFAULT_SECTIONS.map(name => ({ section_name: name, result_type: 'completed' as SectionResultType, exercises: [emptyExercise()] })));
+        setSections(DEFAULT_SECTIONS.map(name => ({ section_name: name, result_type: 'completed' as SectionResultType, input_mode: 'single' as SectionInputMode, exercises: [emptyExercise()] })));
       }
     }
 
@@ -243,8 +257,7 @@ const WorkoutsTab = () => {
     }
   };
 
-  const handleSave = async () => {
-    if (!formTitle.trim()) return;
+  const executeSave = async () => {
     const workoutDate = formDate ? format(formDate, 'yyyy-MM-dd') : null;
 
     let workoutId = editingId;
@@ -294,6 +307,7 @@ const WorkoutsTab = () => {
         workout_id: workoutId,
         section_name: s.section_name,
         result_type: s.result_type || 'completed',
+        input_mode: s.input_mode || 'single',
         order_index: i,
       }));
 
@@ -343,6 +357,36 @@ const WorkoutsTab = () => {
     setShowForm(false);
     resetForm();
     fetchWorkouts();
+  };
+
+  const handleSave = async () => {
+    if (!formTitle.trim()) {
+      toast({ title: 'Please add a Workout Title.', variant: 'destructive' });
+      return;
+    }
+
+    // Duplicate date check (only for new workouts)
+    if (!editingId && formDate) {
+      const workoutDate = format(formDate, 'yyyy-MM-dd');
+      const { data: existing } = await supabase
+        .from('workouts')
+        .select('id')
+        .eq('workout_date', workoutDate)
+        .is('program_id', null)
+        .limit(1);
+
+      if (existing && existing.length > 0) {
+        setShowDuplicateDialog(true);
+        return;
+      }
+    }
+
+    await executeSave();
+  };
+
+  const confirmDuplicateSave = async () => {
+    setShowDuplicateDialog(false);
+    await executeSave();
   };
 
   return (
@@ -404,29 +448,44 @@ const WorkoutsTab = () => {
                   </button>
                 </div>
 
-                {/* Result Type Selector */}
-                <div className="mb-2">
-                  <label className="text-[10px] text-muted-foreground font-display uppercase tracking-wider mb-1 block">Result Type</label>
-                  <Select value={section.result_type} onValueChange={(v) => updateSectionResultType(si, v as SectionResultType)}>
-                    <SelectTrigger className="bg-background text-xs h-8">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {RESULT_TYPE_OPTIONS.map(opt => (
-                        <SelectItem key={opt.value} value={opt.value} className="text-xs">{opt.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                {/* Result Type & Input Mode */}
+                <div className="mb-2 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-[10px] text-muted-foreground font-display uppercase tracking-wider mb-1 block">Result Type</label>
+                    <Select value={section.result_type} onValueChange={(v) => updateSectionResultType(si, v as SectionResultType)}>
+                      <SelectTrigger className="bg-background text-xs h-8">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {RESULT_TYPE_OPTIONS.map(opt => (
+                          <SelectItem key={opt.value} value={opt.value} className="text-xs">{opt.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-muted-foreground font-display uppercase tracking-wider mb-1 block">Input Mode</label>
+                    <Select value={section.input_mode || 'single'} onValueChange={(v) => updateSectionInputMode(si, v as SectionInputMode)}>
+                      <SelectTrigger className="bg-background text-xs h-8">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {INPUT_MODE_OPTIONS.map(opt => (
+                          <SelectItem key={opt.value} value={opt.value} className="text-xs">{opt.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
 
                 {section.exercises.map((ex, ei) => (
-                  <div key={ei} className="grid grid-cols-12 gap-1.5 mb-1.5 items-start">
-                    <Input placeholder="Exercise" value={ex.exercise_name} onChange={e => updateExercise(si, ei, 'exercise_name', e.target.value)} className="col-span-3 bg-background text-xs" />
+                  <div key={ei} className="grid grid-cols-2 sm:grid-cols-12 gap-1.5 mb-1.5 items-start">
+                    <Input placeholder="Exercise" value={ex.exercise_name} onChange={e => updateExercise(si, ei, 'exercise_name', e.target.value)} className="col-span-2 sm:col-span-3 bg-background text-xs" />
                     <Input placeholder="Sets" value={ex.sets} onChange={e => updateExercise(si, ei, 'sets', e.target.value)} className="col-span-1 bg-background text-xs" />
                     <Input placeholder="Reps" value={ex.reps} onChange={e => updateExercise(si, ei, 'reps', e.target.value)} className="col-span-1 bg-background text-xs" />
-                    <Input placeholder="Duration" value={ex.duration} onChange={e => updateExercise(si, ei, 'duration', e.target.value)} className="col-span-2 bg-background text-xs" />
-                    <Input placeholder="Coach note" value={ex.notes} onChange={e => updateExercise(si, ei, 'notes', e.target.value)} className="col-span-4 bg-background text-xs" />
-                    <button onClick={() => removeExercise(si, ei)} className="col-span-1 p-2 text-destructive hover:bg-destructive/10 rounded">
+                    <Input placeholder="Duration" value={ex.duration} onChange={e => updateExercise(si, ei, 'duration', e.target.value)} className="col-span-1 sm:col-span-2 bg-background text-xs" />
+                    <Input placeholder="Coach note" value={ex.notes} onChange={e => updateExercise(si, ei, 'notes', e.target.value)} className="col-span-1 sm:col-span-4 bg-background text-xs" />
+                    <button onClick={() => removeExercise(si, ei)} className="col-span-2 sm:col-span-1 p-2 text-destructive hover:bg-destructive/10 rounded flex items-center justify-center">
                       <X className="h-3 w-3" />
                     </button>
                   </div>
@@ -443,6 +502,22 @@ const WorkoutsTab = () => {
           </Button>
         </div>
       )}
+
+      {/* Duplicate Date Confirmation Dialog */}
+      <AlertDialog open={showDuplicateDialog} onOpenChange={setShowDuplicateDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Duplicate Workout Date</AlertDialogTitle>
+            <AlertDialogDescription>
+              A workout already exists for this day. Do you want to save anyway?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDuplicateSave}>Save Anyway</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <div className="space-y-3">
         {workouts.map((w) => (
