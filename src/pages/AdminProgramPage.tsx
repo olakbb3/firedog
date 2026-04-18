@@ -69,6 +69,7 @@ interface SectionInput {
   section_name: string;
   result_type: SectionResultType;
   input_mode: SectionInputMode;
+  time_cap_minutes?: string;
   locked: boolean;
   exercises: ExerciseInput[];
 }
@@ -183,6 +184,7 @@ const AdminProgramPage = () => {
           section_name: s.section_name,
           result_type: (s.result_type as SectionResultType) || 'completed',
           input_mode: (s.input_mode as SectionInputMode) || 'single',
+          time_cap_minutes: (s as any).time_cap_minutes != null ? String((s as any).time_cap_minutes) : '',
           locked: templateMatch?.locked ?? false,
           exercises: dbExercises
             .filter((e: any) => e.section_id === s.id)
@@ -239,9 +241,12 @@ const AdminProgramPage = () => {
 
       for (let i = 0; i < sections.length; i++) {
         const s = sections[i];
+        const timeCap = s.time_cap_minutes && s.time_cap_minutes.trim() !== ''
+          ? Math.max(0, parseInt(s.time_cap_minutes))
+          : null;
         if (s.id) {
           // UPDATE existing section (preserve id)
-          const updatePayload: any = { result_type: s.result_type || 'completed', input_mode: s.input_mode || 'single', order_index: i };
+          const updatePayload: any = { result_type: s.result_type || 'completed', input_mode: s.input_mode || 'single', time_cap_minutes: timeCap, order_index: i };
           if (!s.locked) {
             updatePayload.section_name = s.section_name;
           }
@@ -256,6 +261,7 @@ const AdminProgramPage = () => {
               section_name: s.section_name,
               result_type: s.result_type || 'completed',
               input_mode: s.input_mode || 'single',
+              time_cap_minutes: timeCap,
               order_index: i,
             })
             .select()
@@ -320,6 +326,9 @@ const AdminProgramPage = () => {
           section_name: s.section_name,
           result_type: s.result_type || 'completed',
           input_mode: s.input_mode || 'single',
+          time_cap_minutes: s.time_cap_minutes && s.time_cap_minutes.trim() !== ''
+            ? Math.max(0, parseInt(s.time_cap_minutes))
+            : null,
           order_index: i,
         }));
 
