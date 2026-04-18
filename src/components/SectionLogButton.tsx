@@ -14,7 +14,7 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { useAuthGate } from '@/hooks/useAuthGate';
 import { supabase } from '@/lib/supabaseClient';
-import type { SectionResultType } from '@/types/index';
+import type { SectionResultType, ExerciseRow } from '@/types/index';
 
 interface SectionLogEntry {
   result_type: SectionResultType;
@@ -34,6 +34,7 @@ interface Props {
   sectionId: string;
   sectionName: string;
   resultType?: SectionResultType;
+  exercises?: ExerciseRow[];
 }
 
 const RESULT_TYPE_LABELS: Record<SectionResultType, string> = {
@@ -50,10 +51,10 @@ function formatLogSummary(entry: SectionLogEntry): string {
     case 'completed': return 'Completed';
     case 'time': return entry.time || 'Timed';
     case 'rounds_reps': {
-      const parts: string[] = [];
-      if (entry.rounds !== null && entry.rounds !== undefined) parts.push(`${entry.rounds} Rounds`);
-      if (entry.reps !== null && entry.reps !== undefined) parts.push(`${entry.reps} Reps`);
-      return parts.join(' + ') || 'Logged';
+      const r = entry.rounds ?? 0;
+      const reps = entry.reps ?? 0;
+      if (reps === 0) return `${r}`;
+      return `${r} + ${reps}`;
     }
     case 'calories': return (entry.calories !== null && entry.calories !== undefined) ? `${entry.calories} cal` : 'Logged';
     case 'meters': return (entry.meters !== null && entry.meters !== undefined) ? `${entry.meters} m` : 'Logged';
@@ -62,7 +63,10 @@ function formatLogSummary(entry: SectionLogEntry): string {
   }
 }
 
-export default function SectionLogButton({ workoutId, sectionId, sectionName, resultType = 'completed' }: Props) {
+export default function SectionLogButton({ workoutId, sectionId, sectionName, resultType = 'completed', exercises = [] }: Props) {
+  const isAmrap = resultType === 'rounds_reps';
+  // Total reps required to complete one full round across all movements (AMRAP)
+  const totalRoundReps = exercises.reduce((sum, ex) => sum + (ex.reps || 0), 0);
   const { user } = useAuth();
   const { requireAuth } = useAuthGate();
   const submittingRef = useRef(false);
@@ -171,9 +175,19 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName, re
         if (!formData.time.trim()) { setValidationError('Time is required'); return false; }
         if (!validateTimeFormat(formData.time.trim())) { setValidationError('Enter a valid time'); return false; }
         return true;
-      case 'rounds_reps':
-        if (formData.rounds === '' && formData.reps === '') { setValidationError('Enter rounds or reps'); return false; }
+      case 'rounds_reps': {
+        const roundsNum = formData.rounds === '' ? NaN : parseInt(formData.rounds);
+        const repsNum = formData.reps === '' ? 0 : parseInt(formData.reps);
+        if (isNaN(roundsNum) && formData.reps === '') {
+          setValidationError('Enter rounds or reps');
+          return false;
+        }
+        if (totalRoundReps > 0 && repsNum >= totalRoundReps) {
+          setValidationError('Remaining reps exceed one full round. Add another round instead.');
+          return false;
+        }
         return true;
+      }
       case 'calories':
         if (formData.calories === '') { setValidationError('Enter calories'); return false; }
         return true;
@@ -198,19 +212,30 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName, re
     submittingRef.current = true;
     setSubmitting(true);
     setSubmitError('');
+    // Normalize completion_date to start-of-day for AMRAP (one score per day)
+    const completionDate = (() => {
+      if (resultType === 'rounds_reps') {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        return today.toISOString();
+      }
+      return new Date().toISOString();
+    })();
+
     const payload: Record<string, any> = {
       user_id: user.id,
       workout_id: workoutId,
       workout_section_id: sectionId,
       result_type: resultType,
       is_rx: rx,
-      completion_date: new Date().toISOString(),
+      completion_date: completionDate,
     };
 
     if (resultType === 'time' && formData.time) payload.time = formData.time.trim();
     if (resultType === 'rounds_reps') {
-      if (formData.rounds !== '') payload.rounds = Math.max(0, parseInt(formData.rounds));
-      if (formData.reps !== '') payload.reps = Math.max(0, parseInt(formData.reps));
+      payload.rounds = formData.rounds === '' ? 0 : Math.max(0, parseInt(formData.rounds));
+      payload.reps = formData.reps === '' ? 0 : Math.max(0, parseInt(formData.reps));
+      payload.exercise_name = null; // AMRAP is a section-level score
     }
     if (resultType === 'calories' && formData.calories !== '') payload.calories = Math.max(0, parseInt(formData.calories));
     if (resultType === 'meters' && formData.meters !== '') payload.meters = Math.max(0, parseInt(formData.meters));
@@ -227,10 +252,19 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName, re
       meters: payload.meters,
       weight: payload.weight,
       notes: payload.notes,
+      completion_date: completionDate,
     };
 
     try {
-      const { error } = await supabase.from('workout_logs').insert(payload);
+      let error;
+      if (resultType === 'rounds_reps') {
+        // Upsert prevents duplicate AMRAP scores per user/section/day
+        ({ error } = await supabase
+          .from('workout_logs')
+          .upsert(payload, { onConflict: 'user_id,workout_section_id,completion_date' }));
+      } else {
+        ({ error } = await supabase.from('workout_logs').insert(payload));
+      }
       if (error) throw error;
       setLoggedResults(prev => [newEntry, ...prev]);
       setOpen(false);
@@ -339,30 +373,38 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName, re
                   </div>
                 )}
                 {resultType === 'rounds_reps' && (
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-[10px] text-muted-foreground mb-1 block font-body uppercase tracking-wider">Rounds</label>
-                      <Input
-                        type="number"
-                        min="0"
-                        value={formData.rounds}
-                        onChange={e => { setFormData(d => ({ ...d, rounds: e.target.value })); setSubmitError(''); }}
-                        className="bg-secondary"
-                        placeholder="0"
-                      />
+                  <>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-[10px] text-muted-foreground mb-1 block font-body uppercase tracking-wider">Total Full Rounds</label>
+                        <Input
+                          type="number"
+                          min="0"
+                          value={formData.rounds}
+                          onChange={e => { setFormData(d => ({ ...d, rounds: e.target.value })); setSubmitError(''); setValidationError(''); }}
+                          className="bg-secondary"
+                          placeholder="0"
+                          inputMode="numeric"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] text-muted-foreground mb-1 block font-body uppercase tracking-wider">Remaining Reps</label>
+                        <Input
+                          type="number"
+                          min="0"
+                          value={formData.reps}
+                          onChange={e => { setFormData(d => ({ ...d, reps: e.target.value })); setSubmitError(''); setValidationError(''); }}
+                          className="bg-secondary"
+                          placeholder="0"
+                          inputMode="numeric"
+                        />
+                      </div>
                     </div>
-                    <div>
-                      <label className="text-[10px] text-muted-foreground mb-1 block font-body uppercase tracking-wider">Reps</label>
-                      <Input
-                        type="number"
-                        min="0"
-                        value={formData.reps}
-                        onChange={e => { setFormData(d => ({ ...d, reps: e.target.value })); setSubmitError(''); }}
-                        className="bg-secondary"
-                        placeholder="0"
-                      />
-                    </div>
-                  </div>
+                    <p className="text-[10px] text-muted-foreground font-body italic">
+                      Total reps completed into the next round (across all movements)
+                      {totalRoundReps > 0 && ` — one full round = ${totalRoundReps} reps`}
+                    </p>
+                  </>
                 )}
                 {resultType === 'calories' && (
                   <div>
