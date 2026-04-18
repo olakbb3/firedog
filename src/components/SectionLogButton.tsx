@@ -14,7 +14,7 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { useAuthGate } from '@/hooks/useAuthGate';
 import { supabase } from '@/lib/supabaseClient';
-import type { SectionResultType } from '@/types/index';
+import type { SectionResultType, ExerciseRow } from '@/types/index';
 
 interface SectionLogEntry {
   result_type: SectionResultType;
@@ -34,6 +34,7 @@ interface Props {
   sectionId: string;
   sectionName: string;
   resultType?: SectionResultType;
+  exercises?: ExerciseRow[];
 }
 
 const RESULT_TYPE_LABELS: Record<SectionResultType, string> = {
