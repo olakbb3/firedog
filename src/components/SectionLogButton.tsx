@@ -123,18 +123,46 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName, re
     if (!user || submittingRef.current) return;
     submittingRef.current = true;
     setSubmitting(true);
+    const completionDateIso = new Date().toISOString();
     const payload: Record<string, any> = {
       user_id: user.id,
       workout_id: workoutId,
       workout_section_id: sectionId,
       result_type: 'completed',
       is_rx: true,
-      completion_date: new Date().toISOString(),
+      completion_date: completionDateIso,
     };
-    const newEntry: SectionLogEntry = { result_type: 'completed', is_rx: true, completion_date: payload.completion_date };
+    const newEntry: SectionLogEntry = { result_type: 'completed', is_rx: true, completion_date: completionDateIso };
     try {
-      const { error } = await supabase.from('workout_logs').insert(payload);
-      if (error) throw error;
+      // Check-then-save: avoid duplicate "completed" log for the same day
+      const dayStart = new Date();
+      dayStart.setHours(0, 0, 0, 0);
+      const dayEnd = new Date(dayStart);
+      dayEnd.setDate(dayEnd.getDate() + 1);
+
+      const { data: existing, error: findErr } = await supabase
+        .from('workout_logs')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('workout_section_id', sectionId)
+        .gte('completion_date', dayStart.toISOString())
+        .lt('completion_date', dayEnd.toISOString())
+        .limit(1)
+        .maybeSingle();
+      if (findErr) throw findErr;
+
+      if (existing?.id) {
+        const { error: updateErr } = await supabase
+          .from('workout_logs')
+          .update(payload)
+          .eq('id', existing.id);
+        if (updateErr) throw updateErr;
+      } else {
+        const { error: insertErr } = await supabase.from('workout_logs').insert(payload);
+        if (insertErr) throw insertErr;
+      }
+
+      // Only update UI AFTER the database confirms a successful save
       setLoggedResults(prev => [newEntry, ...prev]);
       toast(
         <div className="flex items-center gap-3">
