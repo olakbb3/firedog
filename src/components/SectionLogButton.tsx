@@ -63,7 +63,10 @@ function formatLogSummary(entry: SectionLogEntry): string {
   }
 }
 
-export default function SectionLogButton({ workoutId, sectionId, sectionName, resultType = 'completed' }: Props) {
+export default function SectionLogButton({ workoutId, sectionId, sectionName, resultType = 'completed', exercises = [] }: Props) {
+  const isAmrap = resultType === 'rounds_reps';
+  // Total reps required to complete one full round across all movements (AMRAP)
+  const totalRoundReps = exercises.reduce((sum, ex) => sum + (ex.reps || 0), 0);
   const { user } = useAuth();
   const { requireAuth } = useAuthGate();
   const submittingRef = useRef(false);
