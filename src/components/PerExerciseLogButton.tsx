@@ -105,7 +105,25 @@ export default function PerExerciseLogButton({ workoutId, sectionId, sectionName
     setSubmitting(true);
 
     try {
-      const rows = entries.map(ex => {
+      // Day window for "already logged today?" check
+      const dayStart = new Date();
+      dayStart.setHours(0, 0, 0, 0);
+      const dayEnd = new Date(dayStart);
+      dayEnd.setDate(dayEnd.getDate() + 1);
+      const completionDateIso = new Date().toISOString();
+
+      // Fetch existing logs for this user/section in today's window
+      const { data: existingLogs, error: findErr } = await supabase
+        .from('workout_logs')
+        .select('id, exercise_name, notes')
+        .eq('user_id', user.id)
+        .eq('workout_section_id', sectionId)
+        .gte('completion_date', dayStart.toISOString())
+        .lt('completion_date', dayEnd.toISOString());
+      if (findErr) throw findErr;
+
+      // Process each exercise: update if a log exists for it today, otherwise insert
+      for (const ex of entries) {
         const value = formValues[ex.exercise_name].trim();
         const payload: Record<string, any> = {
           user_id: user.id,
@@ -113,26 +131,37 @@ export default function PerExerciseLogButton({ workoutId, sectionId, sectionName
           workout_section_id: sectionId,
           result_type: resultType,
           is_rx: true,
-          completion_date: new Date().toISOString(),
+          completion_date: completionDateIso,
           exercise_name: ex.exercise_name,
           notes: ex.notes || null,
         };
 
-        // Store value in the appropriate column based on result_type
         const numVal = parseFloat(value);
         if (resultType === 'weight' && !isNaN(numVal)) payload.weight = numVal;
         else if (resultType === 'time') payload.time = value;
         else if (resultType === 'calories' && !isNaN(numVal)) payload.calories = Math.round(numVal);
         else if (resultType === 'meters' && !isNaN(numVal)) payload.meters = Math.round(numVal);
         else if (resultType === 'rounds_reps' && !isNaN(numVal)) payload.reps = Math.round(numVal);
-        else payload.weight = numVal || 0; // fallback
+        else payload.weight = numVal || 0;
 
-        return payload;
-      });
+        // Backward-compat: older logs stored the exercise name in `notes`
+        const existing = existingLogs?.find(
+          (l: any) => (l.exercise_name || l.notes) === ex.exercise_name
+        );
 
-      const { error } = await supabase.from('workout_logs').insert(rows);
-      if (error) throw error;
+        if (existing?.id) {
+          const { error: updateErr } = await supabase
+            .from('workout_logs')
+            .update(payload)
+            .eq('id', existing.id);
+          if (updateErr) throw updateErr;
+        } else {
+          const { error: insertErr } = await supabase.from('workout_logs').insert(payload);
+          if (insertErr) throw insertErr;
+        }
+      }
 
+      // Only mark as logged in the UI AFTER the database confirms success
       setLoggedExercises(prev => {
         const next = new Set(prev);
         entries.forEach(ex => next.add(ex.exercise_name));
