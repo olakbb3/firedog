@@ -256,16 +256,35 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName, re
     };
 
     try {
-      let error;
-      if (resultType === 'rounds_reps') {
-        // Upsert prevents duplicate AMRAP scores per user/section/day
-        ({ error } = await supabase
+      // Check-then-save: find an existing log for this user/section on this date
+      const dayStart = new Date(completionDate);
+      dayStart.setHours(0, 0, 0, 0);
+      const dayEnd = new Date(dayStart);
+      dayEnd.setDate(dayEnd.getDate() + 1);
+
+      const { data: existing, error: findErr } = await supabase
+        .from('workout_logs')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('workout_section_id', sectionId)
+        .gte('completion_date', dayStart.toISOString())
+        .lt('completion_date', dayEnd.toISOString())
+        .limit(1)
+        .maybeSingle();
+      if (findErr) throw findErr;
+
+      if (existing?.id) {
+        const { error: updateErr } = await supabase
           .from('workout_logs')
-          .upsert(payload, { onConflict: 'user_id,workout_section_id,completion_date' }));
+          .update(payload)
+          .eq('id', existing.id);
+        if (updateErr) throw updateErr;
       } else {
-        ({ error } = await supabase.from('workout_logs').insert(payload));
+        const { error: insertErr } = await supabase.from('workout_logs').insert(payload);
+        if (insertErr) throw insertErr;
       }
-      if (error) throw error;
+
+      // Only update UI AFTER the database confirms a successful save
       setLoggedResults(prev => [newEntry, ...prev]);
       setOpen(false);
       toast(
