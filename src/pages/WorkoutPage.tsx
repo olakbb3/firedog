@@ -300,11 +300,16 @@ const WorkoutPage = () => {
                   </div>
                 ))}
               </div>
-              {/* Per-section Log Result button — route by input_mode */}
+              {/* Per-section Log Result button — route by input_mode.
+                  AMRAP (rounds_reps) ALWAYS uses single-score UI regardless of exercise count. */}
               {(() => {
-                const inputMode: SectionInputMode = (section as any).input_mode ||
-                  (section.exercises.length > 1 ? 'per_exercise' : 'single');
-                
+                const sectionResultType = (section as any).result_type || 'completed';
+                const isAmrap = sectionResultType === 'rounds_reps';
+                const inputMode: SectionInputMode = isAmrap
+                  ? 'single'
+                  : ((section as any).input_mode ||
+                      (section.exercises.length > 1 ? 'per_exercise' : 'single'));
+
                 if (inputMode === 'per_exercise') {
                   return (
                     <PerExerciseLogButton
@@ -312,7 +317,7 @@ const WorkoutPage = () => {
                       sectionId={section.id}
                       sectionName={section.section_name}
                       exercises={section.exercises}
-                      resultType={(section as any).result_type || 'weight'}
+                      resultType={sectionResultType}
                     />
                   );
                 }
@@ -321,7 +326,8 @@ const WorkoutPage = () => {
                     workoutId={workout.id}
                     sectionId={section.id}
                     sectionName={section.section_name}
-                    resultType={(section as any).result_type || 'completed'}
+                    resultType={sectionResultType}
+                    exercises={section.exercises}
                   />
                 );
               })()}
