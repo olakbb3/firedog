@@ -51,10 +51,10 @@ function formatLogSummary(entry: SectionLogEntry): string {
     case 'completed': return 'Completed';
     case 'time': return entry.time || 'Timed';
     case 'rounds_reps': {
-      const parts: string[] = [];
-      if (entry.rounds !== null && entry.rounds !== undefined) parts.push(`${entry.rounds} Rounds`);
-      if (entry.reps !== null && entry.reps !== undefined) parts.push(`${entry.reps} Reps`);
-      return parts.join(' + ') || 'Logged';
+      const r = entry.rounds ?? 0;
+      const reps = entry.reps ?? 0;
+      if (reps === 0) return `${r}`;
+      return `${r} + ${reps}`;
     }
     case 'calories': return (entry.calories !== null && entry.calories !== undefined) ? `${entry.calories} cal` : 'Logged';
     case 'meters': return (entry.meters !== null && entry.meters !== undefined) ? `${entry.meters} m` : 'Logged';
