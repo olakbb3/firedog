@@ -496,7 +496,7 @@ const AdminProgramPage = () => {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setSections(prev => [...prev, { section_name: '', result_type: 'completed', input_mode: 'single' as SectionInputMode, locked: false, exercises: [emptyExercise()] }])}
+                  onClick={() => setSections(prev => [...prev, { section_name: '', result_type: 'completed', input_mode: 'single' as SectionInputMode, time_cap_minutes: '', locked: false, exercises: [emptyExercise()] }])}
                   className="text-xs"
                 >
                   <Plus className="h-3 w-3 mr-1" /> Add Section
