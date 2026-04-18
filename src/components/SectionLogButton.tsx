@@ -175,9 +175,19 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName, re
         if (!formData.time.trim()) { setValidationError('Time is required'); return false; }
         if (!validateTimeFormat(formData.time.trim())) { setValidationError('Enter a valid time'); return false; }
         return true;
-      case 'rounds_reps':
-        if (formData.rounds === '' && formData.reps === '') { setValidationError('Enter rounds or reps'); return false; }
+      case 'rounds_reps': {
+        const roundsNum = formData.rounds === '' ? NaN : parseInt(formData.rounds);
+        const repsNum = formData.reps === '' ? 0 : parseInt(formData.reps);
+        if (isNaN(roundsNum) && formData.reps === '') {
+          setValidationError('Enter rounds or reps');
+          return false;
+        }
+        if (totalRoundReps > 0 && repsNum >= totalRoundReps) {
+          setValidationError('Remaining reps exceed one full round. Add another round instead.');
+          return false;
+        }
         return true;
+      }
       case 'calories':
         if (formData.calories === '') { setValidationError('Enter calories'); return false; }
         return true;
