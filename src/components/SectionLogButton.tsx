@@ -373,30 +373,38 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName, re
                   </div>
                 )}
                 {resultType === 'rounds_reps' && (
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-[10px] text-muted-foreground mb-1 block font-body uppercase tracking-wider">Rounds</label>
-                      <Input
-                        type="number"
-                        min="0"
-                        value={formData.rounds}
-                        onChange={e => { setFormData(d => ({ ...d, rounds: e.target.value })); setSubmitError(''); }}
-                        className="bg-secondary"
-                        placeholder="0"
-                      />
+                  <>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-[10px] text-muted-foreground mb-1 block font-body uppercase tracking-wider">Total Full Rounds</label>
+                        <Input
+                          type="number"
+                          min="0"
+                          value={formData.rounds}
+                          onChange={e => { setFormData(d => ({ ...d, rounds: e.target.value })); setSubmitError(''); setValidationError(''); }}
+                          className="bg-secondary"
+                          placeholder="0"
+                          inputMode="numeric"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] text-muted-foreground mb-1 block font-body uppercase tracking-wider">Remaining Reps</label>
+                        <Input
+                          type="number"
+                          min="0"
+                          value={formData.reps}
+                          onChange={e => { setFormData(d => ({ ...d, reps: e.target.value })); setSubmitError(''); setValidationError(''); }}
+                          className="bg-secondary"
+                          placeholder="0"
+                          inputMode="numeric"
+                        />
+                      </div>
                     </div>
-                    <div>
-                      <label className="text-[10px] text-muted-foreground mb-1 block font-body uppercase tracking-wider">Reps</label>
-                      <Input
-                        type="number"
-                        min="0"
-                        value={formData.reps}
-                        onChange={e => { setFormData(d => ({ ...d, reps: e.target.value })); setSubmitError(''); }}
-                        className="bg-secondary"
-                        placeholder="0"
-                      />
-                    </div>
-                  </div>
+                    <p className="text-[10px] text-muted-foreground font-body italic">
+                      Total reps completed into the next round (across all movements)
+                      {totalRoundReps > 0 && ` — one full round = ${totalRoundReps} reps`}
+                    </p>
+                  </>
                 )}
                 {resultType === 'calories' && (
                   <div>
