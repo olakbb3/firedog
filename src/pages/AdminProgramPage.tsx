@@ -473,6 +473,19 @@ const AdminProgramPage = () => {
                     </div>
                   </div>
 
+                  {/* Optional Time Cap (minutes) */}
+                  <div className="mb-2">
+                    <label className="text-[10px] text-muted-foreground font-display uppercase tracking-wider mb-1 block">Time Cap (min, optional)</label>
+                    <Input
+                      type="number"
+                      min="0"
+                      placeholder="—"
+                      value={section.time_cap_minutes || ''}
+                      onChange={e => setSections(prev => prev.map((s, i) => i === si ? { ...s, time_cap_minutes: e.target.value } : s))}
+                      className="bg-background text-xs h-8 max-w-[120px]"
+                    />
+                  </div>
+
                   {section.exercises.map((ex, ei) => (
                     <div key={ei} className="grid grid-cols-12 gap-1.5 mb-1.5 items-start">
                       <Input placeholder="Exercise" value={ex.exercise_name} onChange={e => updateExercise(si, ei, 'exercise_name', e.target.value)} className="col-span-3 bg-background text-xs" />
