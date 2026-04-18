@@ -69,6 +69,7 @@ interface SectionInput {
   section_name: string;
   result_type: SectionResultType;
   input_mode: SectionInputMode;
+  time_cap_minutes?: string;
   locked: boolean;
   exercises: ExerciseInput[];
 }
@@ -97,12 +98,12 @@ const AdminProgramPage = () => {
 
   const getTemplate = (): SectionInput[] => {
     if (isFiredog) {
-      return FIREDOG_TEMPLATE.map(t => ({ ...t, input_mode: 'single' as SectionInputMode, locked: true, exercises: [emptyExercise()] }));
+      return FIREDOG_TEMPLATE.map(t => ({ ...t, input_mode: 'single' as SectionInputMode, time_cap_minutes: '', locked: true, exercises: [emptyExercise()] }));
     }
     if (isEngine) {
-      return ENGINE_TEMPLATE.map(t => ({ ...t, input_mode: 'single' as SectionInputMode, locked: true, exercises: [emptyExercise()] }));
+      return ENGINE_TEMPLATE.map(t => ({ ...t, input_mode: 'single' as SectionInputMode, time_cap_minutes: '', locked: true, exercises: [emptyExercise()] }));
     }
-    return [{ section_name: '', result_type: 'completed', input_mode: 'single' as SectionInputMode, locked: false, exercises: [emptyExercise()] }];
+    return [{ section_name: '', result_type: 'completed', input_mode: 'single' as SectionInputMode, time_cap_minutes: '', locked: false, exercises: [emptyExercise()] }];
   };
 
   useEffect(() => {
@@ -183,6 +184,7 @@ const AdminProgramPage = () => {
           section_name: s.section_name,
           result_type: (s.result_type as SectionResultType) || 'completed',
           input_mode: (s.input_mode as SectionInputMode) || 'single',
+          time_cap_minutes: (s as any).time_cap_minutes != null ? String((s as any).time_cap_minutes) : '',
           locked: templateMatch?.locked ?? false,
           exercises: dbExercises
             .filter((e: any) => e.section_id === s.id)
@@ -239,9 +241,12 @@ const AdminProgramPage = () => {
 
       for (let i = 0; i < sections.length; i++) {
         const s = sections[i];
+        const timeCap = s.time_cap_minutes && s.time_cap_minutes.trim() !== ''
+          ? Math.max(0, parseInt(s.time_cap_minutes))
+          : null;
         if (s.id) {
           // UPDATE existing section (preserve id)
-          const updatePayload: any = { result_type: s.result_type || 'completed', input_mode: s.input_mode || 'single', order_index: i };
+          const updatePayload: any = { result_type: s.result_type || 'completed', input_mode: s.input_mode || 'single', time_cap_minutes: timeCap, order_index: i };
           if (!s.locked) {
             updatePayload.section_name = s.section_name;
           }
@@ -256,6 +261,7 @@ const AdminProgramPage = () => {
               section_name: s.section_name,
               result_type: s.result_type || 'completed',
               input_mode: s.input_mode || 'single',
+              time_cap_minutes: timeCap,
               order_index: i,
             })
             .select()
@@ -320,6 +326,9 @@ const AdminProgramPage = () => {
           section_name: s.section_name,
           result_type: s.result_type || 'completed',
           input_mode: s.input_mode || 'single',
+          time_cap_minutes: s.time_cap_minutes && s.time_cap_minutes.trim() !== ''
+            ? Math.max(0, parseInt(s.time_cap_minutes))
+            : null,
           order_index: i,
         }));
 
@@ -464,6 +473,19 @@ const AdminProgramPage = () => {
                     </div>
                   </div>
 
+                  {/* Optional Time Cap (minutes) */}
+                  <div className="mb-2">
+                    <label className="text-[10px] text-muted-foreground font-display uppercase tracking-wider mb-1 block">Time Cap (min, optional)</label>
+                    <Input
+                      type="number"
+                      min="0"
+                      placeholder="—"
+                      value={section.time_cap_minutes || ''}
+                      onChange={e => setSections(prev => prev.map((s, i) => i === si ? { ...s, time_cap_minutes: e.target.value } : s))}
+                      className="bg-background text-xs h-8 max-w-[120px]"
+                    />
+                  </div>
+
                   {section.exercises.map((ex, ei) => (
                     <div key={ei} className="grid grid-cols-12 gap-1.5 mb-1.5 items-start">
                       <Input placeholder="Exercise" value={ex.exercise_name} onChange={e => updateExercise(si, ei, 'exercise_name', e.target.value)} className="col-span-3 bg-background text-xs" />
@@ -487,7 +509,7 @@ const AdminProgramPage = () => {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setSections(prev => [...prev, { section_name: '', result_type: 'completed', input_mode: 'single' as SectionInputMode, locked: false, exercises: [emptyExercise()] }])}
+                  onClick={() => setSections(prev => [...prev, { section_name: '', result_type: 'completed', input_mode: 'single' as SectionInputMode, time_cap_minutes: '', locked: false, exercises: [emptyExercise()] }])}
                   className="text-xs"
                 >
                   <Plus className="h-3 w-3 mr-1" /> Add Section

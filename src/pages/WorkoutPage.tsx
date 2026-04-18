@@ -180,14 +180,24 @@ const WorkoutPage = () => {
   })();
 
   const formatExLine = (ex: ExerciseRow) => {
-    const parts: string[] = [];
-    if (ex.reps && ex.sets) parts.push(`${ex.sets} x ${ex.reps}`);
-    else if (ex.reps) parts.push(`${ex.reps}`);
-    else if (ex.sets) parts.push(`${ex.sets} sets`);
-    if (ex.duration) parts.push(ex.duration);
-    const prefix = parts.length > 0 ? `${parts.join(' • ')} ` : '';
-    return `${prefix}${ex.exercise_name}`;
+    const hasSets = ex.sets && ex.sets > 0;
+    const prefix = hasSets ? `${ex.sets} x ` : '';
+    let value = '';
+    if ((ex as any).calories) value = `${(ex as any).calories} cals`;
+    else if ((ex as any).meters) value = `${(ex as any).meters} m`;
+    else if (ex.reps) value = `${ex.reps} reps`;
+    else if (ex.duration) value = `${ex.duration}`;
+    else value = '';
+    const metric = value ? `${prefix}${value}` : '—';
+    return `${metric} ${ex.exercise_name}`.trim();
   };
+
+  // Unified rest-day detection: ghost-proof.
+  const isRestDay =
+    !workout ||
+    !groupedSections ||
+    groupedSections.length === 0 ||
+    groupedSections.every(s => !s.exercises || s.exercises.length === 0);
 
   if (loading) {
     return (
@@ -202,6 +212,35 @@ const WorkoutPage = () => {
       <div className="px-4 pt-6 text-center">
         <p className="text-muted-foreground">Workout not found.</p>
         <Button variant="outline" onClick={() => navigate('/')} className="mt-4">Go Home</Button>
+      </div>
+    );
+  }
+
+  if (isRestDay) {
+    return (
+      <div className="px-4 pt-4 pb-4 max-w-lg mx-auto">
+        <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-muted-foreground hover:text-foreground mb-4">
+          <ArrowLeft className="h-5 w-5" />
+          <span className="text-sm font-body">Back</span>
+        </button>
+        <div className="rounded-xl border border-border bg-card p-8 text-center">
+          {workout.title ? (
+            <>
+              <h1 className="text-2xl font-bold tracking-tight">{workout.title}</h1>
+              {workout.description && (
+                <p className="mt-2 text-sm text-muted-foreground font-body">{workout.description}</p>
+              )}
+            </>
+          ) : (
+            <>
+              <p className="text-3xl mb-2">🐾</p>
+              <h1 className="text-xl font-bold font-display">Rest Day</h1>
+              <p className="mt-1 text-sm text-muted-foreground font-body">
+                Enjoy your recovery. No workout scheduled for today.
+              </p>
+            </>
+          )}
+        </div>
       </div>
     );
   }
@@ -284,9 +323,14 @@ const WorkoutPage = () => {
           {groupedSections.map((section) => (
             <div key={section.id}>
               {/* Section header */}
-              <p className="text-xs font-bold text-primary tracking-widest mb-2">
+              <p className="text-xs font-bold text-primary tracking-widest mb-1">
                 {isFiredogTotal ? `🏋️ MAX LIFT — ${section.section_name.toUpperCase()}` : section.section_name.toUpperCase()}
               </p>
+              {(section as any).time_cap_minutes && (section as any).time_cap_minutes > 0 && (
+                <p className="text-[10px] text-muted-foreground font-body italic mb-2">
+                  ⏱ Time Cap: {(section as any).time_cap_minutes} min
+                </p>
+              )}
               <div className="space-y-1">
                 {section.exercises.map((ex) => (
                   <div key={ex.id} className="py-1">

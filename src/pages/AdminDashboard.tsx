@@ -41,6 +41,7 @@ interface SectionInput {
   section_name: string;
   result_type: SectionResultType;
   input_mode: SectionInputMode;
+  time_cap_minutes?: string;
   exercises: ExerciseInput[];
 }
 
@@ -159,6 +160,10 @@ const WorkoutsTab = () => {
     setSections(prev => prev.map((s, i) => i === idx ? { ...s, input_mode: mode } : s));
   };
 
+  const updateSectionTimeCap = (idx: number, value: string) => {
+    setSections(prev => prev.map((s, i) => i === idx ? { ...s, time_cap_minutes: value } : s));
+  };
+
   const moveSection = (idx: number, dir: -1 | 1) => {
     const target = idx + dir;
     if (target < 0 || target >= sections.length) return;
@@ -208,6 +213,7 @@ const WorkoutsTab = () => {
         section_name: s.section_name,
         result_type: (s.result_type as SectionResultType) || 'completed',
         input_mode: (s.input_mode as SectionInputMode) || 'single',
+        time_cap_minutes: (s as any).time_cap_minutes != null ? String((s as any).time_cap_minutes) : '',
         exercises: dbExercises
           .filter((e: any) => e.section_id === s.id)
           .map((e: any) => ({
@@ -308,6 +314,9 @@ const WorkoutsTab = () => {
         section_name: s.section_name,
         result_type: s.result_type || 'completed',
         input_mode: s.input_mode || 'single',
+        time_cap_minutes: s.time_cap_minutes && s.time_cap_minutes.trim() !== ''
+          ? Math.max(0, parseInt(s.time_cap_minutes))
+          : null,
         order_index: i,
       }));
 
@@ -476,6 +485,19 @@ const WorkoutsTab = () => {
                       </SelectContent>
                     </Select>
                   </div>
+                </div>
+
+                {/* Optional Time Cap (minutes) */}
+                <div className="mb-2">
+                  <label className="text-[10px] text-muted-foreground font-display uppercase tracking-wider mb-1 block">Time Cap (min, optional)</label>
+                  <Input
+                    type="number"
+                    min="0"
+                    placeholder="—"
+                    value={section.time_cap_minutes || ''}
+                    onChange={e => updateSectionTimeCap(si, e.target.value)}
+                    className="bg-background text-xs h-8 max-w-[120px]"
+                  />
                 </div>
 
                 {section.exercises.map((ex, ei) => (

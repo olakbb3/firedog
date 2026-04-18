@@ -26,6 +26,7 @@ export interface WorkoutSection {
   order_index: number;
   result_type?: SectionResultType;
   input_mode?: SectionInputMode;
+  time_cap_minutes?: number | null;
   created_at?: string;
 }
 
