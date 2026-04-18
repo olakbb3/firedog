@@ -41,7 +41,7 @@ interface SectionInput {
   section_name: string;
   result_type: SectionResultType;
   input_mode: SectionInputMode;
-  time_cap_minutes: string;
+  time_cap_minutes?: string;
   exercises: ExerciseInput[];
 }
 
