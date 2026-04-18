@@ -323,9 +323,14 @@ const WorkoutPage = () => {
           {groupedSections.map((section) => (
             <div key={section.id}>
               {/* Section header */}
-              <p className="text-xs font-bold text-primary tracking-widest mb-2">
+              <p className="text-xs font-bold text-primary tracking-widest mb-1">
                 {isFiredogTotal ? `🏋️ MAX LIFT — ${section.section_name.toUpperCase()}` : section.section_name.toUpperCase()}
               </p>
+              {(section as any).time_cap_minutes && (section as any).time_cap_minutes > 0 && (
+                <p className="text-[10px] text-muted-foreground font-body italic mb-2">
+                  ⏱ Time Cap: {(section as any).time_cap_minutes} min
+                </p>
+              )}
               <div className="space-y-1">
                 {section.exercises.map((ex) => (
                   <div key={ex.id} className="py-1">
