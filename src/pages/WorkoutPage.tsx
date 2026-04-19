@@ -179,17 +179,49 @@ const WorkoutPage = () => {
     return [];
   })();
 
-  const formatExLine = (ex: ExerciseRow) => {
+  // Detect exercise type from prescribed metrics
+  const getExerciseType = (ex: ExerciseRow): 'cardio' | 'time' | 'strength' => {
+    if ((ex as any).calories || (ex as any).meters) return 'cardio';
+    if (ex.duration) return 'time';
+    return 'strength';
+  };
+
+  // Smart formatting based on exercise type
+  const formatExLine = (ex: ExerciseRow): string => {
     const hasSets = ex.sets && ex.sets > 0;
-    const prefix = hasSets ? `${ex.sets} x ` : '';
-    let value = '';
-    if ((ex as any).calories) value = `${(ex as any).calories} cals`;
-    else if ((ex as any).meters) value = `${(ex as any).meters} m`;
-    else if (ex.reps) value = `${ex.reps} reps`;
-    else if (ex.duration) value = `${ex.duration}`;
-    else value = '';
-    const metric = value ? `${prefix}${value}` : '—';
-    return `${metric} ${ex.exercise_name}`.trim();
+    const prefix = hasSets ? `${ex.sets} × ` : '';
+    const type = getExerciseType(ex);
+    const cals = (ex as any).calories;
+    const meters = (ex as any).meters;
+    let metrics: string[] = [];
+
+    if (type === 'cardio') {
+      if (cals && meters) metrics = [`${cals} cals`, `${meters} m`];
+      else if (cals) metrics = [`${cals} cals`];
+      else if (meters) metrics = [`${meters} m`];
+    } else if (type === 'time') {
+      if (ex.duration) metrics = [`${ex.duration}`];
+    } else {
+      if (ex.reps) metrics = [`${ex.reps} reps`];
+    }
+
+    const metricString = metrics.length ? metrics.join(' / ') : '—';
+    return `${prefix}${metricString} ${ex.exercise_name}`.trim();
+  };
+
+  // Unit chips matching type
+  const getExerciseChips = (ex: ExerciseRow): string[] => {
+    const type = getExerciseType(ex);
+    const chips: string[] = [];
+    if (type === 'cardio') {
+      if ((ex as any).calories) chips.push('CAL');
+      if ((ex as any).meters) chips.push('M');
+    } else if (type === 'time') {
+      if (ex.duration) chips.push('TIME');
+    } else {
+      if (ex.reps) chips.push('REPS');
+    }
+    return chips.slice(0, 3);
   };
 
   // Unified rest-day detection: ghost-proof.
@@ -332,17 +364,34 @@ const WorkoutPage = () => {
                 </p>
               )}
               <div className="space-y-1">
-                {section.exercises.map((ex) => (
-                  <div key={ex.id} className="py-1">
-                    <p className="text-sm font-body text-foreground leading-snug">
-                      {formatExLine(ex)}
-                    </p>
-                    {ex.notes && (
-                      <p className="text-xs text-muted-foreground italic mt-0.5 font-body">{parseTextWithLinks(ex.notes)}</p>
-                    )}
-                    <LinkButtons links={extractLinkButtons(ex.notes)} />
-                  </div>
-                ))}
+                {section.exercises.map((ex) => {
+                  const chips = getExerciseChips(ex);
+                  return (
+                    <div key={ex.id} className="py-1">
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                        <p className="text-sm font-body text-foreground leading-snug">
+                          {formatExLine(ex)}
+                        </p>
+                        {chips.length > 0 && (
+                          <div className="flex flex-wrap gap-1">
+                            {chips.map((chip) => (
+                              <span
+                                key={chip}
+                                className="text-[9px] font-bold tracking-wider px-1.5 py-0.5 rounded bg-secondary text-muted-foreground"
+                              >
+                                {chip}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      {ex.notes && (
+                        <p className="text-xs text-muted-foreground italic mt-0.5 font-body">{parseTextWithLinks(ex.notes)}</p>
+                      )}
+                      <LinkButtons links={extractLinkButtons(ex.notes)} />
+                    </div>
+                  );
+                })}
               </div>
               {/* Per-section Log Result button — route by input_mode.
                   AMRAP (rounds_reps) ALWAYS uses single-score UI regardless of exercise count. */}
