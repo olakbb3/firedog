@@ -211,6 +211,9 @@ const LeaderboardPage = () => {
       }
 
       setRows(entries);
+      } finally {
+        setIsLoadingLeaderboard(false);
+      }
     };
 
     fetchBoard();
