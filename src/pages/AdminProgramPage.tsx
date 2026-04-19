@@ -61,6 +61,8 @@ interface ExerciseInput {
   sets: string;
   reps: string;
   duration: string;
+  calories: string;
+  meters: string;
   notes: string;
 }
 
@@ -74,7 +76,7 @@ interface SectionInput {
   exercises: ExerciseInput[];
 }
 
-const emptyExercise = (): ExerciseInput => ({ exercise_name: '', sets: '', reps: '', duration: '', notes: '' });
+const emptyExercise = (): ExerciseInput => ({ exercise_name: '', sets: '', reps: '', duration: '', calories: '', meters: '', notes: '' });
 
 const AdminProgramPage = () => {
   const { programId } = useParams<{ programId: string }>();
@@ -193,6 +195,8 @@ const AdminProgramPage = () => {
               sets: e.sets?.toString() || '',
               reps: e.reps?.toString() || '',
               duration: e.duration || '',
+              calories: e.calories != null ? String(e.calories) : '',
+              meters: e.meters != null ? String(e.meters) : '',
               notes: e.notes || '',
             })),
         };
