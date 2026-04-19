@@ -61,6 +61,8 @@ interface ExerciseInput {
   sets: string;
   reps: string;
   duration: string;
+  calories: string;
+  meters: string;
   notes: string;
 }
 
@@ -74,7 +76,7 @@ interface SectionInput {
   exercises: ExerciseInput[];
 }
 
-const emptyExercise = (): ExerciseInput => ({ exercise_name: '', sets: '', reps: '', duration: '', notes: '' });
+const emptyExercise = (): ExerciseInput => ({ exercise_name: '', sets: '', reps: '', duration: '', calories: '', meters: '', notes: '' });
 
 const AdminProgramPage = () => {
   const { programId } = useParams<{ programId: string }>();
@@ -193,6 +195,8 @@ const AdminProgramPage = () => {
               sets: e.sets?.toString() || '',
               reps: e.reps?.toString() || '',
               duration: e.duration || '',
+              calories: e.calories != null ? String(e.calories) : '',
+              meters: e.meters != null ? String(e.meters) : '',
               notes: e.notes || '',
             })),
         };
@@ -289,6 +293,8 @@ const AdminProgramPage = () => {
               sets: ex.sets ? parseInt(ex.sets) : null,
               reps: ex.reps ? parseInt(ex.reps) : null,
               duration: ex.duration || null,
+              calories: ex.calories.trim() !== '' ? parseInt(ex.calories) : null,
+              meters: ex.meters.trim() !== '' ? parseInt(ex.meters) : null,
               notes: ex.notes || null,
               order_index: ei,
             });
@@ -362,6 +368,8 @@ const AdminProgramPage = () => {
               sets: ex.sets ? parseInt(ex.sets) : null,
               reps: ex.reps ? parseInt(ex.reps) : null,
               duration: ex.duration || null,
+              calories: ex.calories.trim() !== '' ? parseInt(ex.calories) : null,
+              meters: ex.meters.trim() !== '' ? parseInt(ex.meters) : null,
               notes: ex.notes || null,
               order_index: ei,
             });
@@ -487,15 +495,23 @@ const AdminProgramPage = () => {
                   </div>
 
                   {section.exercises.map((ex, ei) => (
-                    <div key={ei} className="grid grid-cols-12 gap-1.5 mb-1.5 items-start">
-                      <Input placeholder="Exercise" value={ex.exercise_name} onChange={e => updateExercise(si, ei, 'exercise_name', e.target.value)} className="col-span-3 bg-background text-xs" />
-                      <Input placeholder="Sets" value={ex.sets} onChange={e => updateExercise(si, ei, 'sets', e.target.value)} className="col-span-1 bg-background text-xs" />
-                      <Input placeholder="Reps" value={ex.reps} onChange={e => updateExercise(si, ei, 'reps', e.target.value)} className="col-span-1 bg-background text-xs" />
-                      <Input placeholder="Duration" value={ex.duration} onChange={e => updateExercise(si, ei, 'duration', e.target.value)} className="col-span-2 bg-background text-xs" />
-                      <Input placeholder="Coach note" value={ex.notes} onChange={e => updateExercise(si, ei, 'notes', e.target.value)} className="col-span-4 bg-background text-xs" />
-                      <button onClick={() => removeExercise(si, ei)} className="col-span-1 p-2 text-destructive hover:bg-destructive/10 rounded">
-                        <X className="h-3 w-3" />
-                      </button>
+                    <div key={ei} className="mb-3 p-2 rounded-md bg-background/40 border border-border/60 space-y-1.5">
+                      <div className="flex items-start gap-1.5">
+                        <Input placeholder="Exercise name" value={ex.exercise_name} onChange={e => updateExercise(si, ei, 'exercise_name', e.target.value)} className="bg-background text-xs flex-1" />
+                        <button onClick={() => removeExercise(si, ei)} className="p-2 text-destructive hover:bg-destructive/10 rounded shrink-0">
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-3 gap-1.5">
+                        <Input placeholder="Sets" type="number" min="0" value={ex.sets} onChange={e => updateExercise(si, ei, 'sets', e.target.value)} className="bg-background text-xs" />
+                        <Input placeholder="Reps" type="number" min="0" value={ex.reps} onChange={e => updateExercise(si, ei, 'reps', e.target.value)} className="bg-background text-xs" />
+                        <Input placeholder="Time" value={ex.duration} onChange={e => updateExercise(si, ei, 'duration', e.target.value)} className="bg-background text-xs" />
+                      </div>
+                      <div className="grid grid-cols-2 gap-1.5">
+                        <Input placeholder="Cals" type="number" min="0" value={ex.calories} onChange={e => updateExercise(si, ei, 'calories', e.target.value)} className="bg-background text-xs" />
+                        <Input placeholder="Meters" type="number" min="0" value={ex.meters} onChange={e => updateExercise(si, ei, 'meters', e.target.value)} className="bg-background text-xs" />
+                      </div>
+                      <Input placeholder="Coach note" value={ex.notes} onChange={e => updateExercise(si, ei, 'notes', e.target.value)} className="bg-background text-xs" />
                     </div>
                   ))}
                   <Button variant="ghost" size="sm" onClick={() => addExercise(si)} className="text-xs h-6 text-muted-foreground">
