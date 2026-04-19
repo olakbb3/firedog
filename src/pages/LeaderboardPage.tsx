@@ -115,7 +115,8 @@ const LeaderboardPage = () => {
     if (!selectedWorkoutId) { setRows([]); return; }
 
     const fetchBoard = async () => {
-      // Get sections for this workout to determine result_type
+      setIsLoadingLeaderboard(true);
+      try {
       const { data: sections } = await supabase
         .from('workout_sections')
         .select('id, section_name, result_type')
