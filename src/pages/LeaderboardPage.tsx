@@ -30,29 +30,79 @@ const LeaderboardPage = () => {
   const [selectedWorkoutId, setSelectedWorkoutId] = useState<string>('');
   const [rxFilter, setRxFilter] = useState<RxFilter>('all');
   const [rows, setRows] = useState<LeaderboardRow[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [isLoadingWorkouts, setIsLoadingWorkouts] = useState(true);
+  const [isLoadingLeaderboard, setIsLoadingLeaderboard] = useState(false);
 
-  // Fetch recent workouts for dropdown
+  // Today (local timezone) — computed once on mount
+  const todayLocal = useMemo(() => new Date().toLocaleDateString('en-CA'), []);
+
+  // Fetch valid past workouts for dropdown (once on mount)
   useEffect(() => {
-    const fetch = async () => {
-      const { data } = await supabase
+    const fetchWorkouts = async () => {
+      setIsLoadingWorkouts(true);
+      const { data: rawWorkouts } = await supabase
         .from('workouts')
         .select('id, title, workout_date')
+        .lte('workout_date', todayLocal)
         .order('workout_date', { ascending: false })
-        .limit(30);
-      if (data) {
-        setWorkouts(data);
-        const urlWid = searchParams.get('workout');
-        if (urlWid && data.some(w => w.id === urlWid)) {
-          setSelectedWorkoutId(urlWid);
-        } else if (data.length > 0) {
-          setSelectedWorkoutId(data[0].id);
-        }
+        .limit(50);
+
+      if (!rawWorkouts || rawWorkouts.length === 0) {
+        setWorkouts([]);
+        setIsLoadingWorkouts(false);
+        return;
       }
-      setLoading(false);
+
+      // Fetch sections + exercises in parallel to filter Rest Days client-side
+      const ids = rawWorkouts.map(w => w.id);
+      const [sectionsRes, exercisesRes] = await Promise.all([
+        supabase.from('workout_sections').select('id, workout_id').in('workout_id', ids),
+        supabase.from('exercises').select('section_id, workout_id').in('workout_id', ids),
+      ]);
+
+      const sectionsByWorkout = new Map<string, string[]>();
+      for (const s of sectionsRes.data || []) {
+        const arr = sectionsByWorkout.get(s.workout_id) || [];
+        arr.push(s.id);
+        sectionsByWorkout.set(s.workout_id, arr);
+      }
+      const sectionsWithExercises = new Set<string>();
+      const workoutsWithLooseExercises = new Set<string>();
+      for (const e of exercisesRes.data || []) {
+        if (e.section_id) sectionsWithExercises.add(e.section_id);
+        if (e.workout_id) workoutsWithLooseExercises.add(e.workout_id);
+      }
+
+      const valid = rawWorkouts.filter(w => {
+        const secIds = sectionsByWorkout.get(w.id) || [];
+        const hasSectionWithExercises = secIds.some(id => sectionsWithExercises.has(id));
+        return hasSectionWithExercises || workoutsWithLooseExercises.has(w.id);
+      });
+
+      setWorkouts(valid);
+
+      // Smart default: URL → today → most recent past
+      const urlWid = searchParams.get('workout');
+      if (urlWid && valid.some(w => w.id === urlWid)) {
+        setSelectedWorkoutId(urlWid);
+      } else if (valid.length > 0) {
+        const todayMatch = valid.find(w => w.workout_date === todayLocal);
+        setSelectedWorkoutId(todayMatch?.id || valid[0].id);
+      }
+      setIsLoadingWorkouts(false);
     };
-    fetch();
+    fetchWorkouts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Safety: if selection becomes invalid after refresh, fall back to first valid
+  useEffect(() => {
+    if (!isLoadingWorkouts && workouts.length > 0 && selectedWorkoutId) {
+      if (!workouts.find(w => w.id === selectedWorkoutId)) {
+        setSelectedWorkoutId(workouts[0].id);
+      }
+    }
+  }, [workouts, selectedWorkoutId, isLoadingWorkouts]);
 
   // Update URL when workout changes
   const handleWorkoutChange = (wid: string) => {
@@ -65,7 +115,8 @@ const LeaderboardPage = () => {
     if (!selectedWorkoutId) { setRows([]); return; }
 
     const fetchBoard = async () => {
-      // Get sections for this workout to determine result_type
+      setIsLoadingLeaderboard(true);
+      try {
       const { data: sections } = await supabase
         .from('workout_sections')
         .select('id, section_name, result_type')
@@ -160,6 +211,9 @@ const LeaderboardPage = () => {
       }
 
       setRows(entries);
+      } finally {
+        setIsLoadingLeaderboard(false);
+      }
     };
 
     fetchBoard();
@@ -182,9 +236,21 @@ const LeaderboardPage = () => {
 
       {/* Workout Selector */}
       <div className="mb-3">
-        <Select value={selectedWorkoutId} onValueChange={handleWorkoutChange}>
+        <Select
+          value={selectedWorkoutId}
+          onValueChange={handleWorkoutChange}
+          disabled={isLoadingWorkouts || workouts.length === 0}
+        >
           <SelectTrigger className="bg-card border-border text-sm">
-            <SelectValue placeholder="Select a workout" />
+            <SelectValue
+              placeholder={
+                isLoadingWorkouts
+                  ? 'Loading...'
+                  : workouts.length === 0
+                  ? 'No past workouts available'
+                  : 'Select a workout'
+              }
+            />
           </SelectTrigger>
           <SelectContent>
             {workouts.map(w => (
@@ -214,46 +280,52 @@ const LeaderboardPage = () => {
       </div>
 
       {/* Results */}
-      <div className="rounded-xl border border-border bg-card p-4">
-        <div className="flex items-center gap-2 mb-3">
-          <Trophy className="h-4 w-4 text-accent" />
-          <p className="text-xs font-bold tracking-widest">TOP CREW</p>
-        </div>
-
-        {filteredRows.length > 0 ? (
-          <div className="space-y-1.5">
-            {filteredRows.map((entry, i) => {
-              const isCurrentUser = entry.user_id === user?.id;
-              return (
-                <div
-                  key={entry.user_id}
-                  className={`flex items-center justify-between text-sm font-body rounded-lg px-2 py-1.5 ${
-                    isCurrentUser ? 'bg-primary/10 ring-1 ring-primary/30' : ''
-                  }`}
-                >
-                  <span className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground w-4 text-right">{i + 1}</span>
-                    <span className={`${i === 0 ? 'text-accent font-semibold' : 'text-foreground'} ${isCurrentUser ? 'font-semibold' : ''}`}>
-                      {entry.user_name}
-                      {isCurrentUser && <span className="text-[10px] text-muted-foreground ml-1">(You)</span>}
-                    </span>
-                  </span>
-                  <span className="flex items-center gap-2">
-                    <span className="text-muted-foreground text-xs font-mono">{entry.result}</span>
-                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${entry.is_rx ? 'bg-primary/15 text-primary' : 'bg-secondary text-muted-foreground'}`}>
-                      {entry.is_rx ? 'Rx' : 'SC'}
-                    </span>
-                  </span>
-                </div>
-              );
-            })}
+      {selectedWorkoutId && (
+        <div className="rounded-xl border border-border bg-card p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Trophy className="h-4 w-4 text-accent" />
+            <p className="text-xs font-bold tracking-widest">TOP CREW</p>
           </div>
-        ) : (
-          <p className="text-xs text-muted-foreground font-body text-center py-3 italic">
-            No scores yet for this WOD. Set the pace! 🐾
-          </p>
-        )}
-      </div>
+
+          {isLoadingLeaderboard ? (
+            <div className="flex justify-center py-6">
+              <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+            </div>
+          ) : filteredRows.length > 0 ? (
+            <div className="space-y-1.5">
+              {filteredRows.map((entry, i) => {
+                const isCurrentUser = entry.user_id === user?.id;
+                return (
+                  <div
+                    key={entry.user_id}
+                    className={`flex items-center justify-between text-sm font-body rounded-lg px-2 py-1.5 ${
+                      isCurrentUser ? 'bg-primary/10 ring-1 ring-primary/30' : ''
+                    }`}
+                  >
+                    <span className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground w-4 text-right">{i + 1}</span>
+                      <span className={`${i === 0 ? 'text-accent font-semibold' : 'text-foreground'} ${isCurrentUser ? 'font-semibold' : ''}`}>
+                        {entry.user_name}
+                        {isCurrentUser && <span className="text-[10px] text-muted-foreground ml-1">(You)</span>}
+                      </span>
+                    </span>
+                    <span className="flex items-center gap-2">
+                      <span className="text-muted-foreground text-xs font-mono">{entry.result}</span>
+                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${entry.is_rx ? 'bg-primary/15 text-primary' : 'bg-secondary text-muted-foreground'}`}>
+                        {entry.is_rx ? 'Rx' : 'SC'}
+                      </span>
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground font-body text-center py-3 italic">
+              No scores yet for this WOD. Set the pace! 🐾
+            </p>
+          )}
+        </div>
+      )}
     </div>
   );
 };
