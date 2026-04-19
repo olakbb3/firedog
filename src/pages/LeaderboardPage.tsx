@@ -30,29 +30,79 @@ const LeaderboardPage = () => {
   const [selectedWorkoutId, setSelectedWorkoutId] = useState<string>('');
   const [rxFilter, setRxFilter] = useState<RxFilter>('all');
   const [rows, setRows] = useState<LeaderboardRow[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [isLoadingWorkouts, setIsLoadingWorkouts] = useState(true);
+  const [isLoadingLeaderboard, setIsLoadingLeaderboard] = useState(false);
 
-  // Fetch recent workouts for dropdown
+  // Today (local timezone) — computed once on mount
+  const todayLocal = useMemo(() => new Date().toLocaleDateString('en-CA'), []);
+
+  // Fetch valid past workouts for dropdown (once on mount)
   useEffect(() => {
-    const fetch = async () => {
-      const { data } = await supabase
+    const fetchWorkouts = async () => {
+      setIsLoadingWorkouts(true);
+      const { data: rawWorkouts } = await supabase
         .from('workouts')
         .select('id, title, workout_date')
+        .lte('workout_date', todayLocal)
         .order('workout_date', { ascending: false })
-        .limit(30);
-      if (data) {
-        setWorkouts(data);
-        const urlWid = searchParams.get('workout');
-        if (urlWid && data.some(w => w.id === urlWid)) {
-          setSelectedWorkoutId(urlWid);
-        } else if (data.length > 0) {
-          setSelectedWorkoutId(data[0].id);
-        }
+        .limit(50);
+
+      if (!rawWorkouts || rawWorkouts.length === 0) {
+        setWorkouts([]);
+        setIsLoadingWorkouts(false);
+        return;
       }
-      setLoading(false);
+
+      // Fetch sections + exercises in parallel to filter Rest Days client-side
+      const ids = rawWorkouts.map(w => w.id);
+      const [sectionsRes, exercisesRes] = await Promise.all([
+        supabase.from('workout_sections').select('id, workout_id').in('workout_id', ids),
+        supabase.from('exercises').select('section_id, workout_id').in('workout_id', ids),
+      ]);
+
+      const sectionsByWorkout = new Map<string, string[]>();
+      for (const s of sectionsRes.data || []) {
+        const arr = sectionsByWorkout.get(s.workout_id) || [];
+        arr.push(s.id);
+        sectionsByWorkout.set(s.workout_id, arr);
+      }
+      const sectionsWithExercises = new Set<string>();
+      const workoutsWithLooseExercises = new Set<string>();
+      for (const e of exercisesRes.data || []) {
+        if (e.section_id) sectionsWithExercises.add(e.section_id);
+        if (e.workout_id) workoutsWithLooseExercises.add(e.workout_id);
+      }
+
+      const valid = rawWorkouts.filter(w => {
+        const secIds = sectionsByWorkout.get(w.id) || [];
+        const hasSectionWithExercises = secIds.some(id => sectionsWithExercises.has(id));
+        return hasSectionWithExercises || workoutsWithLooseExercises.has(w.id);
+      });
+
+      setWorkouts(valid);
+
+      // Smart default: URL → today → most recent past
+      const urlWid = searchParams.get('workout');
+      if (urlWid && valid.some(w => w.id === urlWid)) {
+        setSelectedWorkoutId(urlWid);
+      } else if (valid.length > 0) {
+        const todayMatch = valid.find(w => w.workout_date === todayLocal);
+        setSelectedWorkoutId(todayMatch?.id || valid[0].id);
+      }
+      setIsLoadingWorkouts(false);
     };
-    fetch();
+    fetchWorkouts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Safety: if selection becomes invalid after refresh, fall back to first valid
+  useEffect(() => {
+    if (!isLoadingWorkouts && workouts.length > 0 && selectedWorkoutId) {
+      if (!workouts.find(w => w.id === selectedWorkoutId)) {
+        setSelectedWorkoutId(workouts[0].id);
+      }
+    }
+  }, [workouts, selectedWorkoutId, isLoadingWorkouts]);
 
   // Update URL when workout changes
   const handleWorkoutChange = (wid: string) => {
