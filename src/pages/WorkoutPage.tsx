@@ -11,6 +11,8 @@ import PerExerciseLogButton from '@/components/PerExerciseLogButton';
 import WorkoutTimer from '@/components/workout/WorkoutTimer';
 import { useLeaderboard } from '@/hooks/useLeaderboard';
 import FiredogLeaderboard from '@/components/FiredogLeaderboard';
+import { ScalingGuideDrawer } from '@/components/ScalingGuideDrawer';
+import { BookOpen } from 'lucide-react';
 
 interface WorkoutData {
   id: string;
@@ -325,6 +327,19 @@ const WorkoutPage = () => {
           <span>{workout.workout_date}</span>
         </div>
         <LinkButtons links={extractLinkButtons(workout.description)} />
+
+        {/* === SCALING GUIDE TRIGGER === */}
+        <div className="mt-3">
+          <ScalingGuideDrawer>
+            <button
+              type="button"
+              className="inline-flex items-center gap-2 rounded-md border border-border bg-secondary/60 px-3 py-1.5 text-xs font-semibold font-body text-foreground hover:bg-secondary transition-colors"
+            >
+              <BookOpen className="h-3.5 w-3.5 text-primary" />
+              View Scaling Guide
+            </button>
+          </ScalingGuideDrawer>
+        </div>
 
         {/* === ATHLETE SNAPSHOT === */}
         {user && (snapshot.lastDate || snapshot.completedCount > 0) && (
