@@ -364,17 +364,34 @@ const WorkoutPage = () => {
                 </p>
               )}
               <div className="space-y-1">
-                {section.exercises.map((ex) => (
-                  <div key={ex.id} className="py-1">
-                    <p className="text-sm font-body text-foreground leading-snug">
-                      {formatExLine(ex)}
-                    </p>
-                    {ex.notes && (
-                      <p className="text-xs text-muted-foreground italic mt-0.5 font-body">{parseTextWithLinks(ex.notes)}</p>
-                    )}
-                    <LinkButtons links={extractLinkButtons(ex.notes)} />
-                  </div>
-                ))}
+                {section.exercises.map((ex) => {
+                  const chips = getExerciseChips(ex);
+                  return (
+                    <div key={ex.id} className="py-1">
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                        <p className="text-sm font-body text-foreground leading-snug">
+                          {formatExLine(ex)}
+                        </p>
+                        {chips.length > 0 && (
+                          <div className="flex flex-wrap gap-1">
+                            {chips.map((chip) => (
+                              <span
+                                key={chip}
+                                className="text-[9px] font-bold tracking-wider px-1.5 py-0.5 rounded bg-secondary text-muted-foreground"
+                              >
+                                {chip}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      {ex.notes && (
+                        <p className="text-xs text-muted-foreground italic mt-0.5 font-body">{parseTextWithLinks(ex.notes)}</p>
+                      )}
+                      <LinkButtons links={extractLinkButtons(ex.notes)} />
+                    </div>
+                  );
+                })}
               </div>
               {/* Per-section Log Result button — route by input_mode.
                   AMRAP (rounds_reps) ALWAYS uses single-score UI regardless of exercise count. */}
