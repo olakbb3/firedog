@@ -280,46 +280,52 @@ const LeaderboardPage = () => {
       </div>
 
       {/* Results */}
-      <div className="rounded-xl border border-border bg-card p-4">
-        <div className="flex items-center gap-2 mb-3">
-          <Trophy className="h-4 w-4 text-accent" />
-          <p className="text-xs font-bold tracking-widest">TOP CREW</p>
-        </div>
-
-        {filteredRows.length > 0 ? (
-          <div className="space-y-1.5">
-            {filteredRows.map((entry, i) => {
-              const isCurrentUser = entry.user_id === user?.id;
-              return (
-                <div
-                  key={entry.user_id}
-                  className={`flex items-center justify-between text-sm font-body rounded-lg px-2 py-1.5 ${
-                    isCurrentUser ? 'bg-primary/10 ring-1 ring-primary/30' : ''
-                  }`}
-                >
-                  <span className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground w-4 text-right">{i + 1}</span>
-                    <span className={`${i === 0 ? 'text-accent font-semibold' : 'text-foreground'} ${isCurrentUser ? 'font-semibold' : ''}`}>
-                      {entry.user_name}
-                      {isCurrentUser && <span className="text-[10px] text-muted-foreground ml-1">(You)</span>}
-                    </span>
-                  </span>
-                  <span className="flex items-center gap-2">
-                    <span className="text-muted-foreground text-xs font-mono">{entry.result}</span>
-                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${entry.is_rx ? 'bg-primary/15 text-primary' : 'bg-secondary text-muted-foreground'}`}>
-                      {entry.is_rx ? 'Rx' : 'SC'}
-                    </span>
-                  </span>
-                </div>
-              );
-            })}
+      {selectedWorkoutId && (
+        <div className="rounded-xl border border-border bg-card p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Trophy className="h-4 w-4 text-accent" />
+            <p className="text-xs font-bold tracking-widest">TOP CREW</p>
           </div>
-        ) : (
-          <p className="text-xs text-muted-foreground font-body text-center py-3 italic">
-            No scores yet for this WOD. Set the pace! 🐾
-          </p>
-        )}
-      </div>
+
+          {isLoadingLeaderboard ? (
+            <div className="flex justify-center py-6">
+              <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+            </div>
+          ) : filteredRows.length > 0 ? (
+            <div className="space-y-1.5">
+              {filteredRows.map((entry, i) => {
+                const isCurrentUser = entry.user_id === user?.id;
+                return (
+                  <div
+                    key={entry.user_id}
+                    className={`flex items-center justify-between text-sm font-body rounded-lg px-2 py-1.5 ${
+                      isCurrentUser ? 'bg-primary/10 ring-1 ring-primary/30' : ''
+                    }`}
+                  >
+                    <span className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground w-4 text-right">{i + 1}</span>
+                      <span className={`${i === 0 ? 'text-accent font-semibold' : 'text-foreground'} ${isCurrentUser ? 'font-semibold' : ''}`}>
+                        {entry.user_name}
+                        {isCurrentUser && <span className="text-[10px] text-muted-foreground ml-1">(You)</span>}
+                      </span>
+                    </span>
+                    <span className="flex items-center gap-2">
+                      <span className="text-muted-foreground text-xs font-mono">{entry.result}</span>
+                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${entry.is_rx ? 'bg-primary/15 text-primary' : 'bg-secondary text-muted-foreground'}`}>
+                        {entry.is_rx ? 'Rx' : 'SC'}
+                      </span>
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground font-body text-center py-3 italic">
+              No scores yet for this WOD. Set the pace! 🐾
+            </p>
+          )}
+        </div>
+      )}
     </div>
   );
 };
