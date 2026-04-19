@@ -236,9 +236,21 @@ const LeaderboardPage = () => {
 
       {/* Workout Selector */}
       <div className="mb-3">
-        <Select value={selectedWorkoutId} onValueChange={handleWorkoutChange}>
+        <Select
+          value={selectedWorkoutId}
+          onValueChange={handleWorkoutChange}
+          disabled={isLoadingWorkouts || workouts.length === 0}
+        >
           <SelectTrigger className="bg-card border-border text-sm">
-            <SelectValue placeholder="Select a workout" />
+            <SelectValue
+              placeholder={
+                isLoadingWorkouts
+                  ? 'Loading...'
+                  : workouts.length === 0
+                  ? 'No past workouts available'
+                  : 'Select a workout'
+              }
+            />
           </SelectTrigger>
           <SelectContent>
             {workouts.map(w => (
