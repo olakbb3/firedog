@@ -1,16 +1,26 @@
 import { useState, useEffect } from 'react';
-import { Calendar, Dumbbell, TrendingUp, Clock, Flame } from 'lucide-react';
+import { Calendar, Dumbbell, TrendingUp, Flame } from 'lucide-react';
+import { format, isToday, isYesterday, parseISO } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabaseClient';
 import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
+import { Badge } from '@/components/ui/badge';
+
+type ResultType = 'completed' | 'time' | 'rounds_reps' | 'calories' | 'meters' | 'weight';
 
 interface WorkoutLog {
   id: string;
   workout_id: string;
-  reps?: number;
-  weight?: number;
-  time?: string;
-  notes?: string;
+  workout_section_id?: string | null;
+  result_type?: ResultType | null;
+  reps?: number | null;
+  rounds?: number | null;
+  weight?: number | null;
+  calories?: number | null;
+  meters?: number | null;
+  time?: string | null;
+  is_rx?: boolean | null;
+  notes?: string | null;
   completion_date: string;
 }
 
@@ -19,10 +29,56 @@ interface WorkoutBasic {
   title: string;
 }
 
+const formatScore = (log: WorkoutLog): string => {
+  const rt = log.result_type;
+  switch (rt) {
+    case 'weight':
+      return log.weight != null ? `${log.weight} lbs` : '—';
+    case 'time':
+      return log.time ? log.time : '—';
+    case 'rounds_reps': {
+      if (log.rounds == null && log.reps == null) return '—';
+      const r = log.rounds ?? 0;
+      const reps = log.reps ?? 0;
+      return reps > 0 ? `${r}R+${reps}r` : `${r}R`;
+    }
+    case 'calories':
+      return log.calories != null ? `${log.calories} cals` : '—';
+    case 'meters':
+      return log.meters != null ? `${log.meters} m` : '—';
+    case 'completed':
+      return '✓ Completed';
+    default:
+      // No result_type — try to derive
+      if (log.weight != null) return `${log.weight} lbs`;
+      if (log.time) return log.time;
+      if (log.rounds != null || log.reps != null) {
+        const r = log.rounds ?? 0;
+        const reps = log.reps ?? 0;
+        return reps > 0 ? `${r}R+${reps}r` : `${r}R`;
+      }
+      if (log.calories != null) return `${log.calories} cals`;
+      if (log.meters != null) return `${log.meters} m`;
+      return '—';
+  }
+};
+
+const formatLogDate = (dateStr: string): string => {
+  try {
+    const d = parseISO(dateStr);
+    if (isToday(d)) return 'Today';
+    if (isYesterday(d)) return 'Yesterday';
+    return format(d, 'MMM d');
+  } catch {
+    return '';
+  }
+};
+
 const ProgressPage = () => {
   const { user } = useAuth();
   const [logs, setLogs] = useState<WorkoutLog[]>([]);
   const [workouts, setWorkouts] = useState<Record<string, string>>({});
+  const [workoutHasContent, setWorkoutHasContent] = useState<Record<string, boolean>>({});
   const [points, setPoints] = useState(0);
   const [loading, setLoading] = useState(true);
 
@@ -31,18 +87,28 @@ const ProgressPage = () => {
 
     const fetchData = async () => {
       setLoading(true);
-      const [logsRes, profileRes, workoutsRes] = await Promise.all([
-        supabase.from('workout_logs').select('*').eq('user_id', user.id).order('completion_date', { ascending: false }),
+      const [logsRes, profileRes, workoutsRes, sectionsRes] = await Promise.all([
+        supabase
+          .from('workout_logs')
+          .select('id, workout_id, workout_section_id, result_type, reps, rounds, weight, calories, meters, time, is_rx, notes, completion_date')
+          .eq('user_id', user.id)
+          .order('completion_date', { ascending: false }),
         supabase.from('profiles').select('points').eq('id', user.id).maybeSingle(),
         supabase.from('workouts').select('id, title'),
+        supabase.from('workout_sections').select('workout_id'),
       ]);
 
-      if (logsRes.data) setLogs(logsRes.data);
+      if (logsRes.data) setLogs(logsRes.data as WorkoutLog[]);
       if (profileRes.data) setPoints(profileRes.data.points ?? 0);
       if (workoutsRes.data) {
         const map: Record<string, string> = {};
         workoutsRes.data.forEach((w: WorkoutBasic) => { map[w.id] = w.title; });
         setWorkouts(map);
+      }
+      if (sectionsRes.data) {
+        const has: Record<string, boolean> = {};
+        sectionsRes.data.forEach((s: { workout_id: string }) => { has[s.workout_id] = true; });
+        setWorkoutHasContent(has);
       }
       setLoading(false);
     };
@@ -154,27 +220,31 @@ const ProgressPage = () => {
       ) : (
         <div className="space-y-3">
           {logs.map((log) => {
-            const date = new Date(log.completion_date);
+            const title = workouts[log.workout_id] || 'Workout';
+            const isRestDay = !workoutHasContent[log.workout_id];
+            const score = isRestDay ? 'Rest Day 🐾' : formatScore(log);
+            const showBadge = !isRestDay && log.result_type !== 'completed';
+            const isRx = log.is_rx ?? true;
+            const dateLabel = formatLogDate(log.completion_date);
+
             return (
               <div key={log.id} className="rounded-xl bg-card border border-border p-4 shadow-card">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="font-bold font-display text-sm">{workouts[log.workout_id] || 'Workout'}</h3>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                    {(log.weight !== null && log.weight !== undefined) && <span>{log.weight}</span>}
-                    {log.time && (
-                      <span className="flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        {log.time}
-                      </span>
+                <div className="flex items-center justify-between gap-3">
+                  <h3 className="flex-1 min-w-0 truncate font-bold font-display text-sm">{title}</h3>
+                  <div className="shrink-0 flex items-center gap-2">
+                    <span className="text-xs font-semibold tabular-nums">{score}</span>
+                    {showBadge && (
+                      <Badge
+                        variant={isRx ? 'default' : 'secondary'}
+                        className="text-[10px] px-1.5 py-0 h-5"
+                      >
+                        {isRx ? 'Rx' : 'SC'}
+                      </Badge>
                     )}
+                    <span className="text-[11px] text-muted-foreground whitespace-nowrap">{dateLabel}</span>
                   </div>
                 </div>
-                {log.notes && <p className="text-xs text-muted-foreground mt-2 italic">{log.notes}</p>}
+                {log.notes && <p className="text-xs text-muted-foreground mt-2 italic truncate">{log.notes}</p>}
               </div>
             );
           })}
