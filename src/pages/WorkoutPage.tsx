@@ -329,7 +329,7 @@ const WorkoutPage = () => {
         <LinkButtons links={extractLinkButtons(workout.description)} />
 
         {/* === SCALING GUIDE TRIGGER === */}
-        <div className="mt-3">
+        <div className={workout.description ? 'mt-3' : 'mt-4'}>
           <ScalingGuideDrawer>
             <button
               type="button"
