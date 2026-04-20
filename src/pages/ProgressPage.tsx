@@ -1,16 +1,26 @@
 import { useState, useEffect } from 'react';
-import { Calendar, Dumbbell, TrendingUp, Clock, Flame } from 'lucide-react';
+import { Calendar, Dumbbell, TrendingUp, Flame } from 'lucide-react';
+import { format, isToday, isYesterday, parseISO } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabaseClient';
 import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
+import { Badge } from '@/components/ui/badge';
+
+type ResultType = 'completed' | 'time' | 'rounds_reps' | 'calories' | 'meters' | 'weight';
 
 interface WorkoutLog {
   id: string;
   workout_id: string;
-  reps?: number;
-  weight?: number;
-  time?: string;
-  notes?: string;
+  workout_section_id?: string | null;
+  result_type?: ResultType | null;
+  reps?: number | null;
+  rounds?: number | null;
+  weight?: number | null;
+  calories?: number | null;
+  meters?: number | null;
+  time?: string | null;
+  is_rx?: boolean | null;
+  notes?: string | null;
   completion_date: string;
 }
 
@@ -18,6 +28,51 @@ interface WorkoutBasic {
   id: string;
   title: string;
 }
+
+const formatScore = (log: WorkoutLog): string => {
+  const rt = log.result_type;
+  switch (rt) {
+    case 'weight':
+      return log.weight != null ? `${log.weight} lbs` : '—';
+    case 'time':
+      return log.time ? log.time : '—';
+    case 'rounds_reps': {
+      if (log.rounds == null && log.reps == null) return '—';
+      const r = log.rounds ?? 0;
+      const reps = log.reps ?? 0;
+      return reps > 0 ? `${r}R+${reps}r` : `${r}R`;
+    }
+    case 'calories':
+      return log.calories != null ? `${log.calories} cals` : '—';
+    case 'meters':
+      return log.meters != null ? `${log.meters} m` : '—';
+    case 'completed':
+      return '✓ Completed';
+    default:
+      // No result_type — try to derive
+      if (log.weight != null) return `${log.weight} lbs`;
+      if (log.time) return log.time;
+      if (log.rounds != null || log.reps != null) {
+        const r = log.rounds ?? 0;
+        const reps = log.reps ?? 0;
+        return reps > 0 ? `${r}R+${reps}r` : `${r}R`;
+      }
+      if (log.calories != null) return `${log.calories} cals`;
+      if (log.meters != null) return `${log.meters} m` : '—';
+      return '—';
+  }
+};
+
+const formatLogDate = (dateStr: string): string => {
+  try {
+    const d = parseISO(dateStr);
+    if (isToday(d)) return 'Today';
+    if (isYesterday(d)) return 'Yesterday';
+    return format(d, 'MMM d');
+  } catch {
+    return '';
+  }
+};
 
 const ProgressPage = () => {
   const { user } = useAuth();
