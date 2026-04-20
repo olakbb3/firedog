@@ -78,6 +78,7 @@ const ProgressPage = () => {
   const { user } = useAuth();
   const [logs, setLogs] = useState<WorkoutLog[]>([]);
   const [workouts, setWorkouts] = useState<Record<string, string>>({});
+  const [workoutHasContent, setWorkoutHasContent] = useState<Record<string, boolean>>({});
   const [points, setPoints] = useState(0);
   const [loading, setLoading] = useState(true);
 
@@ -86,18 +87,28 @@ const ProgressPage = () => {
 
     const fetchData = async () => {
       setLoading(true);
-      const [logsRes, profileRes, workoutsRes] = await Promise.all([
-        supabase.from('workout_logs').select('*').eq('user_id', user.id).order('completion_date', { ascending: false }),
+      const [logsRes, profileRes, workoutsRes, sectionsRes] = await Promise.all([
+        supabase
+          .from('workout_logs')
+          .select('id, workout_id, workout_section_id, result_type, reps, rounds, weight, calories, meters, time, is_rx, notes, completion_date')
+          .eq('user_id', user.id)
+          .order('completion_date', { ascending: false }),
         supabase.from('profiles').select('points').eq('id', user.id).maybeSingle(),
         supabase.from('workouts').select('id, title'),
+        supabase.from('workout_sections').select('workout_id'),
       ]);
 
-      if (logsRes.data) setLogs(logsRes.data);
+      if (logsRes.data) setLogs(logsRes.data as WorkoutLog[]);
       if (profileRes.data) setPoints(profileRes.data.points ?? 0);
       if (workoutsRes.data) {
         const map: Record<string, string> = {};
         workoutsRes.data.forEach((w: WorkoutBasic) => { map[w.id] = w.title; });
         setWorkouts(map);
+      }
+      if (sectionsRes.data) {
+        const has: Record<string, boolean> = {};
+        sectionsRes.data.forEach((s: { workout_id: string }) => { has[s.workout_id] = true; });
+        setWorkoutHasContent(has);
       }
       setLoading(false);
     };
