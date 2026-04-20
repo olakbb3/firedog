@@ -159,7 +159,60 @@ const ProfilePage = () => {
         </button>
         <h1 className="text-xl font-bold">{displayName}</h1>
         <p className="text-sm text-muted-foreground">{user?.email}</p>
+
+        {(profile?.gym_affiliation || profile?.fd_affiliation) && (
+          <div className="flex flex-wrap justify-center gap-2 mt-3">
+            {profile?.gym_affiliation && (
+              <span className="text-xs px-2.5 py-1 rounded-full bg-secondary text-secondary-foreground">
+                🏋️ {profile.gym_affiliation}
+              </span>
+            )}
+            {profile?.fd_affiliation && (
+              <span className="text-xs px-2.5 py-1 rounded-full bg-secondary text-secondary-foreground">
+                🚒 {profile.fd_affiliation}{profile.fd_career_volunteer ? ` - ${profile.fd_career_volunteer}` : ''}
+              </span>
+            )}
+          </div>
+        )}
+
+        {(() => {
+          const stats = [
+            profile?.weight_lbs ? `${profile.weight_lbs} lbs` : null,
+            profile?.height_inches ? formatHeight(profile.height_inches) : null,
+            profile?.fd_rank || null,
+          ].filter(Boolean);
+          return stats.length > 0 ? (
+            <p className="text-xs text-muted-foreground mt-2">{stats.join(' • ')}</p>
+          ) : null;
+        })()}
+
+        <Button
+          variant="outline"
+          size="sm"
+          className="mt-4 font-display"
+          onClick={() => setEditOpen(true)}
+        >
+          <Pencil className="h-3.5 w-3.5 mr-1.5" />
+          EDIT PROFILE
+        </Button>
       </div>
+
+      {user && profile && (
+        <EditProfileModal
+          open={editOpen}
+          onOpenChange={setEditOpen}
+          userId={user.id}
+          initial={{
+            weight_lbs: profile.weight_lbs,
+            height_inches: profile.height_inches,
+            gym_affiliation: profile.gym_affiliation,
+            fd_affiliation: profile.fd_affiliation,
+            fd_career_volunteer: profile.fd_career_volunteer,
+            fd_rank: profile.fd_rank,
+          }}
+          onSaved={(fields) => setProfile(prev => prev ? { ...prev, ...fields } : prev)}
+        />
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3 mb-6">
