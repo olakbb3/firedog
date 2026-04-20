@@ -1,18 +1,32 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Flame, Dumbbell, Trophy, BookOpen, LogOut, Shield, ChevronRight, Camera } from 'lucide-react';
+import { Flame, Dumbbell, Trophy, BookOpen, LogOut, Shield, ChevronRight, Camera, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabaseClient';
 import { toast } from '@/hooks/use-toast';
 import firedogLogo from '@/assets/firedog-logo.png';
+import EditProfileModal, { AthleteProfileFields } from '@/components/EditProfileModal';
 
 interface ProfileData {
   full_name: string | null;
   points: number;
   completed_workouts: number;
   avatar_url: string | null;
+  weight_lbs: number | null;
+  height_inches: number | null;
+  gym_affiliation: string | null;
+  fd_affiliation: string | null;
+  fd_career_volunteer: string | null;
+  fd_rank: string | null;
 }
+
+const formatHeight = (inches: number | null): string => {
+  if (!inches) return '';
+  const ft = Math.floor(inches / 12);
+  const inch = inches % 12;
+  return `${ft}'${inch}"`;
+};
 
 interface ProgramRow {
   id: string;
@@ -25,14 +39,19 @@ const ProfilePage = () => {
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [programs, setPrograms] = useState<ProgramRow[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!user) return;
 
     const fetchProfile = async () => {
-      const profileRes = await supabase.from('profiles').select('full_name, points, completed_workouts, avatar_url').eq('id', user.id).maybeSingle();
-      if (profileRes.data) setProfile(profileRes.data);
+      const profileRes = await supabase
+        .from('profiles')
+        .select('full_name, points, completed_workouts, avatar_url, weight_lbs, height_inches, gym_affiliation, fd_affiliation, fd_career_volunteer, fd_rank')
+        .eq('id', user.id)
+        .maybeSingle();
+      if (profileRes.data) setProfile(profileRes.data as ProfileData);
 
       // Fetch active programs: enrolled + Free WOD
       try {
@@ -140,7 +159,60 @@ const ProfilePage = () => {
         </button>
         <h1 className="text-xl font-bold">{displayName}</h1>
         <p className="text-sm text-muted-foreground">{user?.email}</p>
+
+        {(profile?.gym_affiliation || profile?.fd_affiliation) && (
+          <div className="flex flex-wrap justify-center gap-2 mt-3">
+            {profile?.gym_affiliation && (
+              <span className="text-xs px-2.5 py-1 rounded-full bg-secondary text-secondary-foreground">
+                🏋️ {profile.gym_affiliation}
+              </span>
+            )}
+            {profile?.fd_affiliation && (
+              <span className="text-xs px-2.5 py-1 rounded-full bg-secondary text-secondary-foreground">
+                🚒 {profile.fd_affiliation}{profile.fd_career_volunteer ? ` - ${profile.fd_career_volunteer}` : ''}
+              </span>
+            )}
+          </div>
+        )}
+
+        {(() => {
+          const stats = [
+            profile?.weight_lbs ? `${profile.weight_lbs} lbs` : null,
+            profile?.height_inches ? formatHeight(profile.height_inches) : null,
+            profile?.fd_rank || null,
+          ].filter(Boolean);
+          return stats.length > 0 ? (
+            <p className="text-xs text-muted-foreground mt-2">{stats.join(' • ')}</p>
+          ) : null;
+        })()}
+
+        <Button
+          variant="outline"
+          size="sm"
+          className="mt-4 font-display"
+          onClick={() => setEditOpen(true)}
+        >
+          <Pencil className="h-3.5 w-3.5 mr-1.5" />
+          EDIT PROFILE
+        </Button>
       </div>
+
+      {user && profile && (
+        <EditProfileModal
+          open={editOpen}
+          onOpenChange={setEditOpen}
+          userId={user.id}
+          initial={{
+            weight_lbs: profile.weight_lbs,
+            height_inches: profile.height_inches,
+            gym_affiliation: profile.gym_affiliation,
+            fd_affiliation: profile.fd_affiliation,
+            fd_career_volunteer: profile.fd_career_volunteer,
+            fd_rank: profile.fd_rank,
+          }}
+          onSaved={(fields) => setProfile(prev => prev ? { ...prev, ...fields } : prev)}
+        />
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3 mb-6">
