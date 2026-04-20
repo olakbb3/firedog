@@ -1,18 +1,32 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Flame, Dumbbell, Trophy, BookOpen, LogOut, Shield, ChevronRight, Camera } from 'lucide-react';
+import { Flame, Dumbbell, Trophy, BookOpen, LogOut, Shield, ChevronRight, Camera, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabaseClient';
 import { toast } from '@/hooks/use-toast';
 import firedogLogo from '@/assets/firedog-logo.png';
+import EditProfileModal, { AthleteProfileFields } from '@/components/EditProfileModal';
 
 interface ProfileData {
   full_name: string | null;
   points: number;
   completed_workouts: number;
   avatar_url: string | null;
+  weight_lbs: number | null;
+  height_inches: number | null;
+  gym_affiliation: string | null;
+  fd_affiliation: string | null;
+  fd_career_volunteer: string | null;
+  fd_rank: string | null;
 }
+
+const formatHeight = (inches: number | null): string => {
+  if (!inches) return '';
+  const ft = Math.floor(inches / 12);
+  const inch = inches % 12;
+  return `${ft}'${inch}"`;
+};
 
 interface ProgramRow {
   id: string;
@@ -25,14 +39,19 @@ const ProfilePage = () => {
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [programs, setPrograms] = useState<ProgramRow[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!user) return;
 
     const fetchProfile = async () => {
-      const profileRes = await supabase.from('profiles').select('full_name, points, completed_workouts, avatar_url').eq('id', user.id).maybeSingle();
-      if (profileRes.data) setProfile(profileRes.data);
+      const profileRes = await supabase
+        .from('profiles')
+        .select('full_name, points, completed_workouts, avatar_url, weight_lbs, height_inches, gym_affiliation, fd_affiliation, fd_career_volunteer, fd_rank')
+        .eq('id', user.id)
+        .maybeSingle();
+      if (profileRes.data) setProfile(profileRes.data as ProfileData);
 
       // Fetch active programs: enrolled + Free WOD
       try {
