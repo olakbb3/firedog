@@ -40,6 +40,8 @@ export interface ExerciseRow {
   duration: string | null;
   notes: string | null;
   order_index: number;
+  /** Optional UI-only field (not persisted yet). Coach-provided scaling hint per exercise. */
+  scaling_notes?: string | null;
 }
 
 export interface Workout {
