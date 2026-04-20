@@ -220,27 +220,31 @@ const ProgressPage = () => {
       ) : (
         <div className="space-y-3">
           {logs.map((log) => {
-            const date = new Date(log.completion_date);
+            const title = workouts[log.workout_id] || 'Workout';
+            const isRestDay = !workoutHasContent[log.workout_id];
+            const score = isRestDay ? 'Rest Day 🐾' : formatScore(log);
+            const showBadge = !isRestDay && log.result_type !== 'completed';
+            const isRx = log.is_rx ?? true;
+            const dateLabel = formatLogDate(log.completion_date);
+
             return (
               <div key={log.id} className="rounded-xl bg-card border border-border p-4 shadow-card">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="font-bold font-display text-sm">{workouts[log.workout_id] || 'Workout'}</h3>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                    {(log.weight !== null && log.weight !== undefined) && <span>{log.weight}</span>}
-                    {log.time && (
-                      <span className="flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        {log.time}
-                      </span>
+                <div className="flex items-center justify-between gap-3">
+                  <h3 className="flex-1 min-w-0 truncate font-bold font-display text-sm">{title}</h3>
+                  <div className="shrink-0 flex items-center gap-2">
+                    <span className="text-xs font-semibold tabular-nums">{score}</span>
+                    {showBadge && (
+                      <Badge
+                        variant={isRx ? 'default' : 'secondary'}
+                        className="text-[10px] px-1.5 py-0 h-5"
+                      >
+                        {isRx ? 'Rx' : 'SC'}
+                      </Badge>
                     )}
+                    <span className="text-[11px] text-muted-foreground whitespace-nowrap">{dateLabel}</span>
                   </div>
                 </div>
-                {log.notes && <p className="text-xs text-muted-foreground mt-2 italic">{log.notes}</p>}
+                {log.notes && <p className="text-xs text-muted-foreground mt-2 italic truncate">{log.notes}</p>}
               </div>
             );
           })}
