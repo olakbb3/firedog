@@ -58,7 +58,7 @@ const formatScore = (log: WorkoutLog): string => {
         return reps > 0 ? `${r}R+${reps}r` : `${r}R`;
       }
       if (log.calories != null) return `${log.calories} cals`;
-      if (log.meters != null) return `${log.meters} m` : '—';
+      if (log.meters != null) return `${log.meters} m`;
       return '—';
   }
 };
