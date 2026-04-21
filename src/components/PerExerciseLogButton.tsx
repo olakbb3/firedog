@@ -14,6 +14,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useAuthGate } from '@/hooks/useAuthGate';
 import { supabase } from '@/lib/supabaseClient';
 import type { ExerciseRow, SectionResultType } from '@/types/index';
+import { isPersonalRecord } from '@/utils/personalRecords';
 
 interface Props {
   workoutId: string;
@@ -121,6 +122,16 @@ export default function PerExerciseLogButton({ workoutId, sectionId, sectionName
         .gte('completion_date', dayStart.toISOString())
         .lt('completion_date', dayEnd.toISOString());
       if (findErr) throw findErr;
+
+      // Fetch ALL prior logs for this section across history (PR baseline) — exclude today
+      const { data: priorAll } = await supabase
+        .from('workout_logs')
+        .select('exercise_name, notes, weight, reps, time, result_type, completion_date')
+        .eq('user_id', user.id)
+        .eq('workout_section_id', sectionId)
+        .lt('completion_date', dayStart.toISOString());
+
+      const newPRs: string[] = [];
 
       // Process each exercise: update if a log exists for it today, otherwise insert
       for (const ex of entries) {
