@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabaseClient';
 import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
 import { Badge } from '@/components/ui/badge';
-import { isPersonalRecord } from '@/utils/personalRecords';
+import { usePersonalRecords } from '@/hooks/usePersonalRecords';
 
 type ResultType = 'completed' | 'time' | 'rounds_reps' | 'calories' | 'meters' | 'weight';
 
@@ -82,6 +82,8 @@ const ProgressPage = () => {
   const [workoutHasContent, setWorkoutHasContent] = useState<Record<string, boolean>>({});
   const [points, setPoints] = useState(0);
   const [loading, setLoading] = useState(true);
+
+  const { prLogIds } = usePersonalRecords(user?.id);
 
   useEffect(() => {
     if (!user) { setLoading(false); return; }
@@ -234,7 +236,7 @@ const ProgressPage = () => {
               const showBadge = !isRestDay && log.result_type !== 'completed';
               const isRx = log.is_rx ?? true;
               const dateLabel = formatLogDate(log.completion_date);
-              const isPR = !isRestDay && isPersonalRecord(log as any, logs as any);
+              const isPR = !isRestDay && !!log.id && prLogIds.has(log.id);
 
               return (
                 <div key={log.id} className="rounded-xl bg-card border border-border p-4 shadow-card">

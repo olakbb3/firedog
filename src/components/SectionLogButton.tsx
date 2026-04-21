@@ -15,7 +15,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useAuthGate } from '@/hooks/useAuthGate';
 import { supabase } from '@/lib/supabaseClient';
 import type { SectionResultType, ExerciseRow } from '@/types/index';
-import { isPersonalRecord } from '@/utils/personalRecords';
+import { evaluatePRBatch, type PRLog } from '@/utils/personalRecords';
 
 interface SectionLogEntry {
   result_type: SectionResultType;
@@ -317,8 +317,8 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName, re
       setLoggedResults(prev => [newEntry, ...prev]);
       setOpen(false);
 
-      // PR detection — compare against prior logs (loggedResults captured BEFORE this save)
-      const priorLogs = loggedResults.map(l => ({
+      // Single PR evaluation for this submission via the shared engine.
+      const priorLogs: PRLog[] = loggedResults.map(l => ({
         workout_id: workoutId,
         workout_section_id: sectionId,
         result_type: l.result_type,
@@ -326,8 +326,10 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName, re
         time: l.time ?? null,
         rounds: l.rounds ?? null,
         reps: l.reps ?? null,
+        calories: l.calories ?? null,
+        meters: l.meters ?? null,
       }));
-      const candidate = {
+      const candidateLog: PRLog = {
         workout_id: workoutId,
         workout_section_id: sectionId,
         result_type: resultType,
@@ -335,16 +337,21 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName, re
         time: payload.time ?? null,
         rounds: payload.rounds ?? null,
         reps: payload.reps ?? null,
+        calories: payload.calories ?? null,
+        meters: payload.meters ?? null,
       };
-      const isPR = isPersonalRecord(candidate as any, priorLogs as any);
+      const { hasPR } = evaluatePRBatch(
+        [{ label: sectionName, log: candidateLog }],
+        priorLogs
+      );
 
-      if (isPR) {
-        toast('🎉 New PR!', { description: 'You just beat your previous best.', duration: 3500 });
+      if (hasPR) {
+        toast('You beat your best 💪', { duration: 3500 });
       } else {
         toast(
           <div className="flex items-center gap-3">
             <img src={dalmatianReward} alt="Got that dog in me" className="w-16 h-16 rounded-lg object-cover" />
-            <span className="font-semibold text-sm">You got that dog in you! 🐾</span>
+            <span className="font-semibold text-sm">Workout logged 🐾</span>
           </div>,
           { duration: 3000 }
         );
