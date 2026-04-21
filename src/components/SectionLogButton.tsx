@@ -15,6 +15,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useAuthGate } from '@/hooks/useAuthGate';
 import { supabase } from '@/lib/supabaseClient';
 import type { SectionResultType, ExerciseRow } from '@/types/index';
+import { isPersonalRecord } from '@/utils/personalRecords';
 
 interface SectionLogEntry {
   result_type: SectionResultType;
