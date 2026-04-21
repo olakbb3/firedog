@@ -244,7 +244,7 @@ const ProgressPage = () => {
                       <span className="text-xs font-semibold tabular-nums">{score}</span>
                       {isPR && (
                         <span
-                          className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-500 whitespace-nowrap"
+                          className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-fire-yellow/15 text-fire-yellow whitespace-nowrap"
                           title="Personal Record"
                         >
                           🔥 PR
