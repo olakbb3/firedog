@@ -316,13 +316,39 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName, re
       // Only update UI AFTER the database confirms a successful save
       setLoggedResults(prev => [newEntry, ...prev]);
       setOpen(false);
-      toast(
-        <div className="flex items-center gap-3">
-          <img src={dalmatianReward} alt="Got that dog in me" className="w-16 h-16 rounded-lg object-cover" />
-          <span className="font-semibold text-sm">You got that dog in you! 🐾</span>
-        </div>,
-        { duration: 3000 }
-      );
+
+      // PR detection — compare against prior logs (loggedResults captured BEFORE this save)
+      const priorLogs = loggedResults.map(l => ({
+        workout_id: workoutId,
+        workout_section_id: sectionId,
+        result_type: l.result_type,
+        weight: l.weight ?? null,
+        time: l.time ?? null,
+        rounds: l.rounds ?? null,
+        reps: l.reps ?? null,
+      }));
+      const candidate = {
+        workout_id: workoutId,
+        workout_section_id: sectionId,
+        result_type: resultType,
+        weight: payload.weight ?? null,
+        time: payload.time ?? null,
+        rounds: payload.rounds ?? null,
+        reps: payload.reps ?? null,
+      };
+      const isPR = isPersonalRecord(candidate as any, priorLogs as any);
+
+      if (isPR) {
+        toast('🎉 New PR!', { description: 'You just beat your previous best.', duration: 3500 });
+      } else {
+        toast(
+          <div className="flex items-center gap-3">
+            <img src={dalmatianReward} alt="Got that dog in me" className="w-16 h-16 rounded-lg object-cover" />
+            <span className="font-semibold text-sm">You got that dog in you! 🐾</span>
+          </div>,
+          { duration: 3000 }
+        );
+      }
     } catch (err: any) {
       setSubmitError('Failed to save. Check your connection and try again.');
       toast.error('Failed to save. Please check your connection and try again.');
