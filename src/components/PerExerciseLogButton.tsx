@@ -14,7 +14,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useAuthGate } from '@/hooks/useAuthGate';
 import { supabase } from '@/lib/supabaseClient';
 import type { ExerciseRow, SectionResultType } from '@/types/index';
-import { isPersonalRecord } from '@/utils/personalRecords';
+import { evaluatePRBatch, type PRCandidate, type PRLog } from '@/utils/personalRecords';
 
 interface Props {
   workoutId: string;
@@ -131,7 +131,17 @@ export default function PerExerciseLogButton({ workoutId, sectionId, sectionName
         .eq('workout_section_id', sectionId)
         .lt('completion_date', dayStart.toISOString());
 
-      const newPRs: string[] = [];
+      const candidates: PRCandidate[] = [];
+      const priorLogs: PRLog[] = (priorAll ?? []).map((l: any) => ({
+        workout_id: workoutId,
+        workout_section_id: sectionId,
+        exercise_name: l.exercise_name || l.notes || null,
+        result_type: l.result_type,
+        weight: l.weight ?? null,
+        time: l.time ?? null,
+        reps: l.reps ?? null,
+        rounds: l.rounds ?? null,
+      }));
 
       // Process each exercise: update if a log exists for it today, otherwise insert
       for (const ex of entries) {
@@ -171,31 +181,25 @@ export default function PerExerciseLogButton({ workoutId, sectionId, sectionName
           if (insertErr) throw insertErr;
         }
 
-        // PR check vs prior history for THIS exercise
-        const priorForExercise = (priorAll || [])
-          .filter((l: any) => (l.exercise_name || l.notes) === ex.exercise_name)
-          .map((l: any) => ({
+        candidates.push({
+          label: ex.exercise_name,
+          log: {
             workout_id: workoutId,
             workout_section_id: sectionId,
-            result_type: l.result_type,
-            weight: l.weight ?? null,
-            time: l.time ?? null,
-            reps: l.reps ?? null,
-            rounds: l.rounds ?? null,
-          }));
-        const candidate = {
-          workout_id: workoutId,
-          workout_section_id: sectionId,
-          result_type: resultType,
-          weight: payload.weight ?? null,
-          time: payload.time ?? null,
-          reps: payload.reps ?? null,
-          rounds: payload.rounds ?? null,
-        };
-        if (isPersonalRecord(candidate as any, priorForExercise as any)) {
-          newPRs.push(ex.exercise_name);
-        }
+            exercise_name: ex.exercise_name,
+            result_type: resultType,
+            weight: payload.weight ?? null,
+            time: payload.time ?? null,
+            reps: payload.reps ?? null,
+            rounds: payload.rounds ?? null,
+            calories: payload.calories ?? null,
+            meters: payload.meters ?? null,
+          },
+        });
       }
+
+      // Single PR evaluation across the whole submission batch.
+      const { hasPR, prItems } = evaluatePRBatch(candidates, priorLogs);
 
       // Only mark as logged in the UI AFTER the database confirms success
       setLoggedExercises(prev => {
@@ -205,18 +209,16 @@ export default function PerExerciseLogButton({ workoutId, sectionId, sectionName
       });
 
       setOpen(false);
-      if (newPRs.length > 0) {
-        toast('🎉 New PR!', {
-          description: newPRs.length === 1
-            ? `New best on ${newPRs[0]}.`
-            : `${newPRs.length} new bests: ${newPRs.join(', ')}`,
-          duration: 4000,
-        });
+      if (hasPR) {
+        toast(
+          prItems.length === 1 ? 'You beat your best 💪' : 'New bests set today 💪',
+          { duration: 4000 }
+        );
       } else {
         toast(
           <div className="flex items-center gap-3">
             <img src={dalmatianReward} alt="Got that dog in me" className="w-16 h-16 rounded-lg object-cover" />
-            <span className="font-semibold text-sm">Lifts logged! 🐾</span>
+            <span className="font-semibold text-sm">Workout logged 🐾</span>
           </div>,
           { duration: 3000 }
         );
