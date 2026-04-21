@@ -202,7 +202,7 @@ export default function PerExerciseLogButton({ workoutId, sectionId, sectionName
       const { hasPR, prItems } = evaluatePRBatch(candidates, priorLogs);
 
       // Only mark as logged in the UI AFTER the database confirms success
-      setLoggedResults(prev => {
+      setLoggedExercises(prev => {
         const next = new Set(prev);
         entries.forEach(ex => next.add(ex.exercise_name));
         return next;
