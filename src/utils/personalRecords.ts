@@ -220,7 +220,6 @@ export const computePersonalRecords = (
   const records: PersonalRecord[] = [];
   for (const [, best] of bestByKey) {
     const rt = best.result_type as PersonalRecord['result_type'];
-    if (rt === 'completed') continue;
     records.push({
       id: best.id ?? `${groupKey(best)}`,
       movement_name:
