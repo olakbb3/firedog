@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabaseClient';
 import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
 import { Badge } from '@/components/ui/badge';
+import { isPersonalRecord } from '@/utils/personalRecords';
 
 type ResultType = 'completed' | 'time' | 'rounds_reps' | 'calories' | 'meters' | 'weight';
 
@@ -233,6 +234,7 @@ const ProgressPage = () => {
               const showBadge = !isRestDay && log.result_type !== 'completed';
               const isRx = log.is_rx ?? true;
               const dateLabel = formatLogDate(log.completion_date);
+              const isPR = !isRestDay && isPersonalRecord(log as any, logs as any);
 
               return (
                 <div key={log.id} className="rounded-xl bg-card border border-border p-4 shadow-card">
@@ -240,6 +242,14 @@ const ProgressPage = () => {
                     <h3 className="flex-1 min-w-0 truncate font-bold font-display text-sm">{title}</h3>
                     <div className="shrink-0 flex items-center gap-2">
                       <span className="text-xs font-semibold tabular-nums">{score}</span>
+                      {isPR && (
+                        <span
+                          className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-500 whitespace-nowrap"
+                          title="Personal Record"
+                        >
+                          🔥 PR
+                        </span>
+                      )}
                       {showBadge && (
                         <Badge
                           variant={isRx ? 'default' : 'secondary'}
