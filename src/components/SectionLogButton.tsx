@@ -71,6 +71,13 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName, re
   const { user } = useAuth();
   const { requireAuth } = useAuthGate();
   const submittingRef = useRef(false);
+  const lastSubmitAtRef = useRef(0);
+  const SUBMIT_DEDUPE_MS = 3000;
+  const isSubmitLocked = () => {
+    if (submittingRef.current) return true;
+    if (Date.now() - lastSubmitAtRef.current < SUBMIT_DEDUPE_MS) return true;
+    return false;
+  };
 
   // If resultType is 'completed', skip straight to submit after Rx/Scaled
   const needsInput = resultType !== 'completed';
@@ -121,7 +128,7 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName, re
   };
 
   const handleSubmitCompleted = async () => {
-    if (!user || submittingRef.current) return;
+    if (!user || isSubmitLocked()) return;
     submittingRef.current = true;
     setSubmitting(true);
     const completionDateIso = new Date().toISOString();
@@ -177,6 +184,7 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName, re
     } finally {
       setSubmitting(false);
       submittingRef.current = false;
+      lastSubmitAtRef.current = Date.now();
     }
   };
 
@@ -232,7 +240,7 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName, re
   };
 
   const handleSubmit = async (rxOverride?: boolean, skipValidation?: boolean) => {
-    if (!user || submittingRef.current) return;
+    if (!user || isSubmitLocked()) return;
 
     const rx = rxOverride !== undefined ? rxOverride : isRx;
 
@@ -366,6 +374,7 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName, re
     } finally {
       setSubmitting(false);
       submittingRef.current = false;
+      lastSubmitAtRef.current = Date.now();
     }
   };
 
