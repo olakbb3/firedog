@@ -23,6 +23,9 @@ import AdminDashboard from "@/pages/AdminDashboard";
 import AdminProgramPage from "@/pages/AdminProgramPage";
 import ProgramDetailPage from "@/pages/ProgramDetailPage";
 import ConsentPage from "@/pages/ConsentPage";
+import ForgotPasswordPage from "@/pages/ForgotPasswordPage";
+import ResetPasswordPage from "@/pages/ResetPasswordPage";
+import AuthCallbackPage from "@/pages/AuthCallbackPage";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -48,6 +51,9 @@ const App = () => {
                   <Route path="/signup" element={<SignupPage />} />
                   <Route path="/onboarding" element={<OnboardingPage />} />
                   <Route path="/consent" element={<ConsentPage />} />
+                  <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                  <Route path="/reset-password" element={<ResetPasswordPage />} />
+                  <Route path="/auth/callback" element={<AuthCallbackPage />} />
 
                   {/* Guest-accessible routes */}
                   <Route path="/" element={<HomePage />} />

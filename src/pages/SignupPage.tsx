@@ -5,6 +5,8 @@ import { Input } from '@/components/ui/input';
 import { supabase } from '@/lib/supabaseClient';
 import { useToast } from '@/hooks/use-toast';
 import { useOnboarding } from '@/contexts/OnboardingContext';
+import GoogleSignInButton from '@/components/GoogleSignInButton';
+import AuthDivider from '@/components/AuthDivider';
 import firedogLogo from '@/assets/firedog-logo.png';
 
 const SignupPage = () => {
@@ -84,6 +86,11 @@ const SignupPage = () => {
           <p className="text-xs"><span className="text-primary font-semibold">{onboardingData.training_level}</span> · {onboardingData.fitness_goal} · {onboardingData.training_frequency}</p>
         </div>
       )}
+
+      <div className="w-full max-w-sm">
+        <GoogleSignInButton label="Sign up with Google" />
+      </div>
+      <AuthDivider />
 
       <form onSubmit={handleSignup} className="w-full max-w-sm space-y-4">
         <Input placeholder="Full Name" value={name} onChange={(e) => setName(e.target.value)} className="bg-secondary border-border" required />

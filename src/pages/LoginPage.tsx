@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/lib/supabaseClient';
 import { useToast } from '@/hooks/use-toast';
+import GoogleSignInButton from '@/components/GoogleSignInButton';
+import AuthDivider from '@/components/AuthDivider';
 import firedogLogo from '@/assets/firedog-logo.png';
 
 const LoginPage = () => {
@@ -41,6 +43,11 @@ const LoginPage = () => {
       <h1 className="text-2xl font-bold mb-1">WELCOME BACK</h1>
       <p className="text-muted-foreground text-sm mb-8">Train hard. Stay ready.</p>
 
+      <div className="w-full max-w-sm">
+        <GoogleSignInButton label="Sign in with Google" />
+      </div>
+      <AuthDivider />
+
       <form onSubmit={handleLogin} className="w-full max-w-sm space-y-4">
         <Input
           type="email"
@@ -58,6 +65,15 @@ const LoginPage = () => {
           className="bg-secondary border-border"
           required
         />
+        <div className="text-right">
+          <button
+            type="button"
+            onClick={() => navigate('/forgot-password')}
+            className="text-xs text-primary font-semibold hover:underline"
+          >
+            Forgot password?
+          </button>
+        </div>
         <Button
           type="submit"
           disabled={loading}
