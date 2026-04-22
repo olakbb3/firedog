@@ -5,6 +5,8 @@ import { Input } from '@/components/ui/input';
 import { supabase } from '@/lib/supabaseClient';
 import { useToast } from '@/hooks/use-toast';
 import { useOnboarding } from '@/contexts/OnboardingContext';
+import GoogleSignInButton from '@/components/GoogleSignInButton';
+import AuthDivider from '@/components/AuthDivider';
 import firedogLogo from '@/assets/firedog-logo.png';
 
 const SignupPage = () => {
