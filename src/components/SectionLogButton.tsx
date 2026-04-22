@@ -291,6 +291,34 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName, re
       const dayEnd = new Date(dayStart);
       dayEnd.setDate(dayEnd.getDate() + 1);
 
+      // STEP 1: Fetch ALL prior logs for this user BEFORE insert.
+      // No filtering by section/workout; PR engine handles grouping.
+      const { data: allPriorLogs } = await supabase
+        .from('workout_logs')
+        .select(PR_LOG_COLUMNS)
+        .eq('user_id', user.id);
+
+      const priorLogs: PRLog[] = (allPriorLogs ?? []) as PRLog[];
+
+      // STEP 2: Evaluate PR using the dataset BEFORE the new log exists.
+      const candidateLog: PRLog = {
+        workout_id: workoutId,
+        workout_section_id: sectionId,
+        exercise_name: null,
+        result_type: resultType,
+        weight: payload.weight ?? null,
+        time: payload.time ?? null,
+        rounds: payload.rounds ?? null,
+        reps: payload.reps ?? null,
+        calories: payload.calories ?? null,
+        meters: payload.meters ?? null,
+      };
+      const { hasPR, prItems } = evaluatePRBatch(
+        [{ label: sectionName, log: candidateLog }],
+        priorLogs
+      );
+
+      // STEP 3: Insert (or update) the new log.
       const { data: existing, error: findErr } = await supabase
         .from('workout_logs')
         .select('id')
@@ -317,36 +345,12 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName, re
       setLoggedResults(prev => [newEntry, ...prev]);
       setOpen(false);
 
-      // Single PR evaluation for this submission via the shared engine.
-      const priorLogs: PRLog[] = loggedResults.map(l => ({
-        workout_id: workoutId,
-        workout_section_id: sectionId,
-        result_type: l.result_type,
-        weight: l.weight ?? null,
-        time: l.time ?? null,
-        rounds: l.rounds ?? null,
-        reps: l.reps ?? null,
-        calories: l.calories ?? null,
-        meters: l.meters ?? null,
-      }));
-      const candidateLog: PRLog = {
-        workout_id: workoutId,
-        workout_section_id: sectionId,
-        result_type: resultType,
-        weight: payload.weight ?? null,
-        time: payload.time ?? null,
-        rounds: payload.rounds ?? null,
-        reps: payload.reps ?? null,
-        calories: payload.calories ?? null,
-        meters: payload.meters ?? null,
-      };
-      const { hasPR } = evaluatePRBatch(
-        [{ label: sectionName, log: candidateLog }],
-        priorLogs
-      );
-
+      // STEP 4: Toast based on the single evaluation result.
       if (hasPR) {
-        toast('You beat your best 💪', { duration: 3500 });
+        const msg = prItems.length === 1
+          ? `You beat your best on ${prItems[0]} 💪`
+          : 'New bests set today 💪';
+        toast(msg, { duration: 3500 });
       } else {
         toast(
           <div className="flex items-center gap-3">
