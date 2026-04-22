@@ -113,7 +113,37 @@ export default function PerExerciseLogButton({ workoutId, sectionId, sectionName
       dayEnd.setDate(dayEnd.getDate() + 1);
       const completionDateIso = new Date().toISOString();
 
-      // Fetch existing logs for this user/section in today's window
+      // STEP 1: Fetch ALL prior logs for this user BEFORE insert (no section filter).
+      const { data: allPriorLogs } = await supabase
+        .from('workout_logs')
+        .select(PR_LOG_COLUMNS)
+        .eq('user_id', user.id);
+
+      const priorLogs: PRLog[] = (allPriorLogs ?? []) as PRLog[];
+
+      // Build candidate logs from this submission for a single PR evaluation.
+      const candidates: PRCandidate[] = entries.map((ex) => {
+        const value = formValues[ex.exercise_name].trim();
+        const numVal = parseFloat(value);
+        const log: PRLog = {
+          workout_id: workoutId,
+          workout_section_id: sectionId,
+          exercise_name: ex.exercise_name,
+          result_type: resultType,
+          weight: resultType === 'weight' && !isNaN(numVal) ? numVal : null,
+          time: resultType === 'time' ? value : null,
+          reps: resultType === 'rounds_reps' && !isNaN(numVal) ? Math.round(numVal) : null,
+          rounds: null,
+          calories: resultType === 'calories' && !isNaN(numVal) ? Math.round(numVal) : null,
+          meters: resultType === 'meters' && !isNaN(numVal) ? Math.round(numVal) : null,
+        };
+        return { label: ex.exercise_name, log };
+      });
+
+      // STEP 2: Evaluate PRs against the dataset BEFORE the new logs exist.
+      const { hasPR, prItems } = evaluatePRBatch(candidates, priorLogs);
+
+      // STEP 3: Insert/update each exercise log.
       const { data: existingLogs, error: findErr } = await supabase
         .from('workout_logs')
         .select('id, exercise_name, notes')
@@ -123,27 +153,6 @@ export default function PerExerciseLogButton({ workoutId, sectionId, sectionName
         .lt('completion_date', dayEnd.toISOString());
       if (findErr) throw findErr;
 
-      // Fetch ALL prior logs for this section across history (PR baseline) — exclude today
-      const { data: priorAll } = await supabase
-        .from('workout_logs')
-        .select('exercise_name, notes, weight, reps, time, result_type, completion_date')
-        .eq('user_id', user.id)
-        .eq('workout_section_id', sectionId)
-        .lt('completion_date', dayStart.toISOString());
-
-      const candidates: PRCandidate[] = [];
-      const priorLogs: PRLog[] = (priorAll ?? []).map((l: any) => ({
-        workout_id: workoutId,
-        workout_section_id: sectionId,
-        exercise_name: l.exercise_name || l.notes || null,
-        result_type: l.result_type,
-        weight: l.weight ?? null,
-        time: l.time ?? null,
-        reps: l.reps ?? null,
-        rounds: l.rounds ?? null,
-      }));
-
-      // Process each exercise: update if a log exists for it today, otherwise insert
       for (const ex of entries) {
         const value = formValues[ex.exercise_name].trim();
         const payload: Record<string, any> = {
@@ -180,26 +189,7 @@ export default function PerExerciseLogButton({ workoutId, sectionId, sectionName
           const { error: insertErr } = await supabase.from('workout_logs').insert(payload);
           if (insertErr) throw insertErr;
         }
-
-        candidates.push({
-          label: ex.exercise_name,
-          log: {
-            workout_id: workoutId,
-            workout_section_id: sectionId,
-            exercise_name: ex.exercise_name,
-            result_type: resultType,
-            weight: payload.weight ?? null,
-            time: payload.time ?? null,
-            reps: payload.reps ?? null,
-            rounds: payload.rounds ?? null,
-            calories: payload.calories ?? null,
-            meters: payload.meters ?? null,
-          },
-        });
       }
-
-      // Single PR evaluation across the whole submission batch.
-      const { hasPR, prItems } = evaluatePRBatch(candidates, priorLogs);
 
       // Only mark as logged in the UI AFTER the database confirms success
       setLoggedExercises(prev => {
@@ -209,11 +199,13 @@ export default function PerExerciseLogButton({ workoutId, sectionId, sectionName
       });
 
       setOpen(false);
+
+      // STEP 4: Toast based on the single evaluation result.
       if (hasPR) {
-        toast(
-          prItems.length === 1 ? 'You beat your best 💪' : 'New bests set today 💪',
-          { duration: 4000 }
-        );
+        const msg = prItems.length === 1
+          ? `You beat your best on ${prItems[0]} 💪`
+          : 'New bests set today 💪';
+        toast(msg, { duration: 4000 });
       } else {
         toast(
           <div className="flex items-center gap-3">
