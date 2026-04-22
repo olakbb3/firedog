@@ -109,6 +109,13 @@ const groupKey = (l: PRLog): string => {
   return `${rt}::${l.workout_id}::${l.workout_section_id ?? ''}`;
 };
 
+/**
+ * Public columns required to fetch a user's full log history for PR evaluation.
+ * Keep this minimal — never include `notes` or large text fields.
+ */
+export const PR_LOG_COLUMNS =
+  'id, exercise_name, workout_id, workout_section_id, result_type, weight, time, rounds, reps, calories, meters, completion_date';
+
 const isScoreable = (l: PRLog): boolean => {
   if (!l.result_type || l.result_type === 'completed') return false;
   switch (l.result_type) {
