@@ -15,7 +15,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useAuthGate } from '@/hooks/useAuthGate';
 import { supabase } from '@/lib/supabaseClient';
 import type { SectionResultType, ExerciseRow } from '@/types/index';
-import { evaluatePRBatch, type PRLog } from '@/utils/personalRecords';
+import { evaluatePRBatch, PR_LOG_COLUMNS, type PRLog } from '@/utils/personalRecords';
 
 interface SectionLogEntry {
   result_type: SectionResultType;
