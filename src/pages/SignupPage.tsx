@@ -87,6 +87,11 @@ const SignupPage = () => {
         </div>
       )}
 
+      <div className="w-full max-w-sm">
+        <GoogleSignInButton label="Sign up with Google" />
+      </div>
+      <AuthDivider />
+
       <form onSubmit={handleSignup} className="w-full max-w-sm space-y-4">
         <Input placeholder="Full Name" value={name} onChange={(e) => setName(e.target.value)} className="bg-secondary border-border" required />
         <Input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} className="bg-secondary border-border" required />
