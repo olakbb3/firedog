@@ -14,7 +14,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useAuthGate } from '@/hooks/useAuthGate';
 import { supabase } from '@/lib/supabaseClient';
 import type { ExerciseRow, SectionResultType } from '@/types/index';
-import { evaluatePRBatch, type PRCandidate, type PRLog } from '@/utils/personalRecords';
+import { evaluatePRBatch, PR_LOG_COLUMNS, type PRCandidate, type PRLog } from '@/utils/personalRecords';
 
 interface Props {
   workoutId: string;
