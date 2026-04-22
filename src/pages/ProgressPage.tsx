@@ -6,6 +6,8 @@ import { supabase } from '@/lib/supabaseClient';
 import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
 import { Badge } from '@/components/ui/badge';
 import { usePersonalRecords } from '@/hooks/usePersonalRecords';
+import PRCard from '@/components/PRCard';
+import LeaderboardContextCard from '@/components/LeaderboardContextCard';
 
 type ResultType = 'completed' | 'time' | 'rounds_reps' | 'calories' | 'meters' | 'weight';
 
@@ -188,6 +190,9 @@ const ProgressPage = () => {
         </div>
       </div>
 
+      {/* Today's Rank */}
+      <LeaderboardContextCard />
+
       {/* Chart */}
       {chartData.length > 0 ? (
         <div className="rounded-xl bg-card border border-border p-4 mb-6 shadow-card">
@@ -213,6 +218,9 @@ const ProgressPage = () => {
           <p className="text-sm text-muted-foreground">Complete workouts to see your weight progression chart.</p>
         </div>
       )}
+
+      {/* Personal Records */}
+      <PRCard />
 
       {/* Workout History */}
       <h2 className="text-sm font-bold font-display mb-3">WORKOUT HISTORY</h2>
