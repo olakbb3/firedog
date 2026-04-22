@@ -37,6 +37,13 @@ export default function PerExerciseLogButton({ workoutId, sectionId, sectionName
   const { user } = useAuth();
   const { requireAuth } = useAuthGate();
   const submittingRef = useRef(false);
+  const lastSubmitAtRef = useRef(0);
+  const SUBMIT_DEDUPE_MS = 3000;
+  const isSubmitLocked = () => {
+    if (submittingRef.current) return true;
+    if (Date.now() - lastSubmitAtRef.current < SUBMIT_DEDUPE_MS) return true;
+    return false;
+  };
 
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -94,7 +101,7 @@ export default function PerExerciseLogButton({ workoutId, sectionId, sectionName
   };
 
   const handleSubmit = async () => {
-    if (!user || submittingRef.current) return;
+    if (!user || isSubmitLocked()) return;
 
     const entries = exercises.filter(ex => formValues[ex.exercise_name]?.trim());
     if (entries.length === 0) {
@@ -220,6 +227,7 @@ export default function PerExerciseLogButton({ workoutId, sectionId, sectionName
     } finally {
       setSubmitting(false);
       submittingRef.current = false;
+      lastSubmitAtRef.current = Date.now();
     }
   };
 
