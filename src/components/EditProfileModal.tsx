@@ -75,7 +75,14 @@ const EditProfileModal = ({ open, onOpenChange, userId, initial, onSaved }: Prop
         preferred_unit: unit,
       };
 
-      const { error } = await supabase.from('profiles').update(payload as any).eq('id', userId);
+      let { error } = await supabase.from('profiles').update(payload as any).eq('id', userId);
+      // If preferred_unit column hasn't been migrated yet, retry without it
+      // so the rest of the profile still saves cleanly.
+      if (error && /preferred_unit/i.test(error.message || '')) {
+        const { preferred_unit, ...rest } = payload;
+        const retry = await supabase.from('profiles').update(rest as any).eq('id', userId);
+        error = retry.error;
+      }
       if (error) throw error;
 
       // Broadcast unit change so dependent components re-render immediately.
