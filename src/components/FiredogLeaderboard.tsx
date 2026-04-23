@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { Trophy, Activity } from 'lucide-react';
 import type { CrewEntry } from '@/hooks/useLeaderboard';
 import type { WorkoutSection } from '@/types/index';
+import AthleteBadges from '@/components/AthleteBadges';
 
 interface Props {
   crew: CrewEntry[];
