@@ -196,16 +196,25 @@ export const useLeaderboard = (workoutId: string | undefined, sections: WorkoutS
         const userIds = sorted.map(l => l.user_id);
         const { data: profiles } = await supabase
           .from('profiles')
-          .select('id, full_name')
+          .select('id, full_name, gym_affiliation, fd_affiliation, fd_career_volunteer')
           .in('id', userIds);
 
         const nameMap = new Map((profiles || []).map(p => [p.id, p.full_name || 'Athlete']));
+        const affMap = new Map<string, AthleteAffiliationLite>(
+          (profiles || []).map(p => [p.id, {
+            gym_affiliation: (p as any).gym_affiliation,
+            fd_affiliation: (p as any).fd_affiliation,
+            fd_career_volunteer: (p as any).fd_career_volunteer,
+          }])
+        );
 
         const entries: CrewEntry[] = sorted.slice(0, 10).map(log => ({
+          user_id: log.user_id,
           user_name: nameMap.get(log.user_id) || 'Athlete',
           result: formatCrewResult(log),
           result_type: log.result_type || 'completed',
           is_rx: log.is_rx ?? true,
+          affiliation: affMap.get(log.user_id),
         }));
         setCrew(entries);
       } else {
