@@ -418,10 +418,10 @@ const WorkoutPage = () => {
               {(() => {
                 const sectionResultType = (section as any).result_type || 'completed';
                 const isAmrap = sectionResultType === 'rounds_reps';
-                const inputMode: SectionInputMode = isAmrap
+                const explicitMode = (section as any).input_mode as SectionInputMode | undefined | null;
+                const inputMode: SectionInputMode = isAmrap && explicitMode !== 'per_exercise'
                   ? 'single'
-                  : ((section as any).input_mode ||
-                      (section.exercises.length > 1 ? 'per_exercise' : 'single'));
+                  : (explicitMode ?? (section.exercises.length > 1 ? 'per_exercise' : 'single'));
 
                 if (inputMode === 'per_exercise') {
                   return (

@@ -49,8 +49,8 @@ export default function PerExerciseLogButton({ workoutId, sectionId, sectionName
   const [submitting, setSubmitting] = useState(false);
   const [loggedExercises, setLoggedExercises] = useState<Set<string>>(new Set());
 
-  // Per-exercise form values keyed by exercise name
-  const [formValues, setFormValues] = useState<Record<string, string>>({});
+  // Per-exercise form values keyed by exercise.id (prevents collisions on duplicate names)
+  const [inputValues, setInputValues] = useState<Record<string, string>>({});
 
   // Load existing logs for today
   useEffect(() => {
@@ -80,12 +80,12 @@ export default function PerExerciseLogButton({ workoutId, sectionId, sectionName
 
   const handleOpen = () => {
     if (!requireAuth('Log Result')) return;
-    // Initialize form values
+    // Initialize form values keyed by exercise.id
     const initial: Record<string, string> = {};
     for (const ex of exercises) {
-      initial[ex.exercise_name] = '';
+      initial[ex.id] = '';
     }
-    setFormValues(initial);
+    setInputValues(initial);
     setOpen(true);
   };
 
@@ -103,7 +103,7 @@ export default function PerExerciseLogButton({ workoutId, sectionId, sectionName
   const handleSubmit = async () => {
     if (!user || isSubmitLocked()) return;
 
-    const entries = exercises.filter(ex => formValues[ex.exercise_name]?.trim());
+    const entries = exercises.filter(ex => (inputValues[ex.id] || '').trim() !== '');
     if (entries.length === 0) {
       toast.error('Enter at least one value');
       return;
@@ -130,7 +130,7 @@ export default function PerExerciseLogButton({ workoutId, sectionId, sectionName
 
       // Build candidate logs from this submission for a single PR evaluation.
       const candidates: PRCandidate[] = entries.map((ex) => {
-        const value = formValues[ex.exercise_name].trim();
+        const value = (inputValues[ex.id] || '').trim();
         const numVal = parseFloat(value);
         const log: PRLog = {
           workout_id: workoutId,
@@ -161,7 +161,7 @@ export default function PerExerciseLogButton({ workoutId, sectionId, sectionName
       if (findErr) throw findErr;
 
       for (const ex of entries) {
-        const value = formValues[ex.exercise_name].trim();
+        const value = (inputValues[ex.id] || '').trim();
         const payload: Record<string, any> = {
           user_id: user.id,
           workout_id: workoutId,
@@ -279,8 +279,8 @@ export default function PerExerciseLogButton({ workoutId, sectionId, sectionName
                     type={resultType === 'time' ? 'text' : 'number'}
                     min="0"
                     step={resultType === 'weight' ? '0.5' : '1'}
-                    value={formValues[ex.exercise_name] || ''}
-                    onChange={e => setFormValues(prev => ({ ...prev, [ex.exercise_name]: e.target.value }))}
+                    value={inputValues[ex.id] ?? ''}
+                    onChange={e => setInputValues(prev => ({ ...prev, [ex.id]: e.target.value }))}
                     className="bg-secondary text-sm h-9 font-mono text-right pr-2"
                     placeholder="0"
                     inputMode={resultType === 'time' ? 'text' : 'numeric'}
