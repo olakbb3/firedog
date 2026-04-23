@@ -42,11 +42,20 @@ const ProfilePage = () => {
     if (!user) return;
 
     const fetchProfile = async () => {
-      const profileRes = await supabase
+      const baseCols = 'full_name, points, completed_workouts, avatar_url, weight_lbs, height_inches, gym_affiliation, fd_affiliation, fd_career_volunteer, fd_rank';
+      let profileRes = await supabase
         .from('profiles')
-        .select('full_name, points, completed_workouts, avatar_url, weight_lbs, height_inches, gym_affiliation, fd_affiliation, fd_career_volunteer, fd_rank, preferred_unit')
+        .select(`${baseCols}, preferred_unit`)
         .eq('id', user.id)
         .maybeSingle();
+      // Fallback if migration hasn't been applied yet.
+      if (profileRes.error && /preferred_unit/i.test(profileRes.error.message || '')) {
+        profileRes = await supabase
+          .from('profiles')
+          .select(baseCols)
+          .eq('id', user.id)
+          .maybeSingle();
+      }
       if (profileRes.data) setProfile(profileRes.data as ProfileData);
 
       // Fetch active programs: enrolled + Free WOD
