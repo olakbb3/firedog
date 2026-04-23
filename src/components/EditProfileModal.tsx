@@ -72,10 +72,14 @@ const EditProfileModal = ({ open, onOpenChange, userId, initial, onSaved }: Prop
         fd_affiliation: fd.trim() || null,
         fd_career_volunteer: careerVol || null,
         fd_rank: rank.trim() || null,
+        preferred_unit: unit,
       };
 
-      const { error } = await supabase.from('profiles').update(payload).eq('id', userId);
+      const { error } = await supabase.from('profiles').update(payload as any).eq('id', userId);
       if (error) throw error;
+
+      // Broadcast unit change so dependent components re-render immediately.
+      setPreferredUnit(unit);
 
       onSaved(payload);
       toast({ title: 'Profile updated' });
@@ -96,6 +100,19 @@ const EditProfileModal = ({ open, onOpenChange, userId, initial, onSaved }: Prop
         </DialogHeader>
 
         <div className="space-y-4 py-2">
+          <div className="space-y-1.5">
+            <Label>Units</Label>
+            <Select value={unit} onValueChange={(v) => setUnit(v as UnitSystem)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="imperial">Imperial (lbs, in)</SelectItem>
+                <SelectItem value="metric">Metric (kg, cm)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label htmlFor="weight">Weight (lbs)</Label>
