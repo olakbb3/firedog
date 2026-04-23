@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from '@/contexts/AuthContext';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { SectionResultType } from '@/types/index';
+import AthleteBadges, { type AthleteAffiliation } from '@/components/AthleteBadges';
 
 interface WorkoutOption {
   id: string;
@@ -18,6 +19,7 @@ interface LeaderboardRow {
   result: string;
   sort_value: number;
   is_rx: boolean;
+  affiliation?: AthleteAffiliation;
 }
 
 type RxFilter = 'all' | 'rx' | 'scaled';
@@ -153,9 +155,16 @@ const LeaderboardPage = () => {
       const userIds = Array.from(latestByUser.keys());
       const { data: profiles } = await supabase
         .from('profiles')
-        .select('id, full_name')
+        .select('id, full_name, gym_affiliation, fd_affiliation, fd_career_volunteer')
         .in('id', userIds);
       const nameMap = new Map((profiles || []).map(p => [p.id, p.full_name || 'Athlete']));
+      const affMap = new Map<string, AthleteAffiliation>(
+        (profiles || []).map(p => [p.id, {
+          gym_affiliation: (p as any).gym_affiliation,
+          fd_affiliation: (p as any).fd_affiliation,
+          fd_career_volunteer: (p as any).fd_career_volunteer,
+        }])
+      );
 
       const entries: LeaderboardRow[] = [];
       for (const [uid, log] of Array.from(latestByUser.entries())) {
@@ -200,7 +209,7 @@ const LeaderboardPage = () => {
             break;
         }
 
-        entries.push({ user_id: uid, user_name: nameMap.get(uid) || 'Athlete', result, sort_value: sortValue, is_rx: log.is_rx ?? true } as LeaderboardRow);
+        entries.push({ user_id: uid, user_name: nameMap.get(uid) || 'Athlete', result, sort_value: sortValue, is_rx: log.is_rx ?? true, affiliation: affMap.get(uid) } as LeaderboardRow);
       }
 
       // Sort: time ascending, everything else descending
