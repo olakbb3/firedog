@@ -2,11 +2,19 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import type { WorkoutSection } from '@/types/index';
 
+export interface AthleteAffiliationLite {
+  gym_affiliation?: string | null;
+  fd_affiliation?: string | null;
+  fd_career_volunteer?: string | null;
+}
+
 export interface CrewEntry {
+  user_id: string;
   user_name: string;
   result: string;
   result_type: string;
   is_rx: boolean;
+  affiliation?: AthleteAffiliationLite;
 }
 
 const formatCrewResult = (log: { result_type: string; time?: string | null; rounds?: number | null; reps?: number | null; calories?: number | null; meters?: number | null; weight?: number | null }): string => {
