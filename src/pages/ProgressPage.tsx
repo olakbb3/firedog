@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Calendar, Dumbbell, TrendingUp, Flame } from 'lucide-react';
 import { format, isToday, isYesterday, parseISO } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext';
@@ -8,6 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { usePersonalRecords } from '@/hooks/usePersonalRecords';
 import PRCard from '@/components/PRCard';
 import LeaderboardContextCard from '@/components/LeaderboardContextCard';
+import WorkoutHistoryDetailModal, { type HistoryDetailLog } from '@/components/WorkoutHistoryDetailModal';
+import { useUnitPreference, convertWeight, type UnitSystem } from '@/lib/units';
 
 type ResultType = 'completed' | 'time' | 'rounds_reps' | 'calories' | 'meters' | 'weight';
 
