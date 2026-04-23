@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/lib/supabaseClient';
 import { toast } from '@/hooks/use-toast';
+import { setPreferredUnit, type UnitSystem } from '@/lib/units';
 
 export interface AthleteProfileFields {
   weight_lbs: number | null;
@@ -14,6 +15,7 @@ export interface AthleteProfileFields {
   fd_affiliation: string | null;
   fd_career_volunteer: string | null;
   fd_rank: string | null;
+  preferred_unit?: UnitSystem;
 }
 
 interface Props {
@@ -31,6 +33,7 @@ const EditProfileModal = ({ open, onOpenChange, userId, initial, onSaved }: Prop
   const [fd, setFd] = useState('');
   const [careerVol, setCareerVol] = useState<string>('');
   const [rank, setRank] = useState('');
+  const [unit, setUnit] = useState<UnitSystem>('imperial');
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -41,6 +44,7 @@ const EditProfileModal = ({ open, onOpenChange, userId, initial, onSaved }: Prop
       setFd(initial.fd_affiliation ?? '');
       setCareerVol(initial.fd_career_volunteer ?? '');
       setRank(initial.fd_rank ?? '');
+      setUnit((initial.preferred_unit as UnitSystem) || 'imperial');
     }
   }, [open, initial]);
 
