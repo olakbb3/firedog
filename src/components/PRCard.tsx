@@ -88,7 +88,7 @@ export default function PRCard() {
               </div>
               <div className="shrink-0 flex items-center gap-2">
                 <span className="text-sm font-semibold tabular-nums">
-                  {r.pr_value}
+                  {formatPRDisplay(r, unit)}
                 </span>
                 <span className="text-[11px] text-muted-foreground whitespace-nowrap">
                   {formatDate(r.date_achieved)}
