@@ -72,10 +72,17 @@ export const useLeaderboard = (workoutId: string | undefined, sections: WorkoutS
       const allUserIds = [...new Set(logs.map(l => l.user_id))];
       const { data: allProfiles } = await supabase
         .from('profiles')
-        .select('id, full_name')
+        .select('id, full_name, gym_affiliation, fd_affiliation, fd_career_volunteer')
         .in('id', allUserIds);
 
       const nameMap = new Map((allProfiles || []).map(p => [p.id, p.full_name || 'Athlete']));
+      const affMap = new Map<string, AthleteAffiliationLite>(
+        (allProfiles || []).map(p => [p.id, {
+          gym_affiliation: (p as any).gym_affiliation,
+          fd_affiliation: (p as any).fd_affiliation,
+          fd_career_volunteer: (p as any).fd_career_volunteer,
+        }])
+      );
 
       // Attach names to logs
       const logsWithNames = logs.map(log => ({
@@ -117,10 +124,12 @@ export const useLeaderboard = (workoutId: string | undefined, sections: WorkoutS
       userTotals.sort((a, b) => b.total - a.total);
 
       const entries: CrewEntry[] = userTotals.slice(0, 10).map(u => ({
+        user_id: u.user_id,
         user_name: nameMap.get(u.user_id) || 'Athlete',
         result: `${u.total} lbs`,
         result_type: 'weight',
         is_rx: u.allRx,
+        affiliation: affMap.get(u.user_id),
       }));
 
 
