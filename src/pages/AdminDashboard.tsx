@@ -53,9 +53,10 @@ interface ExerciseInput {
   calories: string;
   meters: string;
   notes: string;
+  scaling_notes: string;
 }
 
-const emptyExercise = (): ExerciseInput => ({ exercise_name: '', sets: '', reps: '', duration: '', calories: '', meters: '', notes: '' });
+const emptyExercise = (): ExerciseInput => ({ exercise_name: '', sets: '', reps: '', duration: '', calories: '', meters: '', notes: '', scaling_notes: '' });
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -226,6 +227,7 @@ const WorkoutsTab = () => {
             calories: e.calories != null ? String(e.calories) : '',
             meters: e.meters != null ? String(e.meters) : '',
             notes: e.notes || '',
+            scaling_notes: (e as any).scaling_notes || '',
           })),
       })).map(s => s.exercises.length === 0 ? { ...s, exercises: [emptyExercise()] } : s));
     } else {
@@ -244,6 +246,7 @@ const WorkoutsTab = () => {
             calories: e.calories != null ? String(e.calories) : '',
             meters: e.meters != null ? String(e.meters) : '',
             notes: e.notes || '',
+            scaling_notes: (e as any).scaling_notes || '',
           })),
         }]);
       } else {
@@ -361,6 +364,7 @@ const WorkoutsTab = () => {
             calories: ex.calories.trim() !== '' ? parseInt(ex.calories) : null,
             meters: ex.meters.trim() !== '' ? parseInt(ex.meters) : null,
             notes: ex.notes || null,
+            scaling_notes: ex.scaling_notes.trim() || null,
             order_index: ei,
           });
         });
@@ -526,6 +530,13 @@ const WorkoutsTab = () => {
                       <Input placeholder="Meters" type="number" min="0" value={ex.meters} onChange={e => updateExercise(si, ei, 'meters', e.target.value)} className="bg-background text-xs" />
                     </div>
                     <Input placeholder="Coach note" value={ex.notes} onChange={e => updateExercise(si, ei, 'notes', e.target.value)} className="bg-background text-xs" />
+                    <Textarea
+                      placeholder="e.g. Sub ring rows for pull-ups, reduce weight by 50%"
+                      value={ex.scaling_notes}
+                      onChange={e => updateExercise(si, ei, 'scaling_notes', e.target.value)}
+                      className="bg-background text-xs"
+                      rows={3}
+                    />
                   </div>
                 ))}
                 <Button variant="ghost" size="sm" onClick={() => addExercise(si)} className="text-xs h-6 text-muted-foreground">
