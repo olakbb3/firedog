@@ -173,8 +173,8 @@ const ProfilePage = () => {
 
         {(() => {
           const stats = [
-            profile?.weight_lbs ? `${profile.weight_lbs} lbs` : null,
-            profile?.height_inches ? formatHeight(profile.height_inches) : null,
+            profile?.weight_lbs ? convertWeight(profile.weight_lbs, unit) : null,
+            profile?.height_inches ? convertHeight(profile.height_inches, unit) : null,
             profile?.fd_rank || null,
           ].filter(Boolean);
           return stats.length > 0 ? (
@@ -205,6 +205,7 @@ const ProfilePage = () => {
             fd_affiliation: profile.fd_affiliation,
             fd_career_volunteer: profile.fd_career_volunteer,
             fd_rank: profile.fd_rank,
+            preferred_unit: (profile.preferred_unit as UnitSystem) || 'imperial',
           }}
           onSaved={(fields) => setProfile(prev => prev ? { ...prev, ...fields } : prev)}
         />
