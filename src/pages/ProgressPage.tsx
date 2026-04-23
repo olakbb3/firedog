@@ -17,6 +17,7 @@ interface WorkoutLog {
   id: string;
   workout_id: string;
   workout_section_id?: string | null;
+  exercise_name?: string | null;
   result_type?: ResultType | null;
   reps?: number | null;
   rounds?: number | null;
@@ -34,11 +35,11 @@ interface WorkoutBasic {
   title: string;
 }
 
-const formatScore = (log: WorkoutLog): string => {
+const formatScore = (log: WorkoutLog, unit: UnitSystem): string => {
   const rt = log.result_type;
   switch (rt) {
     case 'weight':
-      return log.weight != null ? `${log.weight} lbs` : '—';
+      return log.weight != null ? convertWeight(log.weight, unit) : '—';
     case 'time':
       return log.time ? log.time : '—';
     case 'rounds_reps': {
@@ -54,8 +55,7 @@ const formatScore = (log: WorkoutLog): string => {
     case 'completed':
       return '✓ Completed';
     default:
-      // No result_type — try to derive
-      if (log.weight != null) return `${log.weight} lbs`;
+      if (log.weight != null) return convertWeight(log.weight, unit);
       if (log.time) return log.time;
       if (log.rounds != null || log.reps != null) {
         const r = log.rounds ?? 0;
@@ -81,11 +81,13 @@ const formatLogDate = (dateStr: string): string => {
 
 const ProgressPage = () => {
   const { user } = useAuth();
+  const unit = useUnitPreference(user?.id);
   const [logs, setLogs] = useState<WorkoutLog[]>([]);
   const [workouts, setWorkouts] = useState<Record<string, string>>({});
   const [workoutHasContent, setWorkoutHasContent] = useState<Record<string, boolean>>({});
   const [points, setPoints] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [detailKey, setDetailKey] = useState<string | null>(null);
 
   const { prLogIds } = usePersonalRecords(user?.id);
 
@@ -97,7 +99,7 @@ const ProgressPage = () => {
       const [logsRes, profileRes, workoutsRes, sectionsRes] = await Promise.all([
         supabase
           .from('workout_logs')
-          .select('id, workout_id, workout_section_id, result_type, reps, rounds, weight, calories, meters, time, is_rx, notes, completion_date')
+          .select('id, workout_id, workout_section_id, exercise_name, result_type, reps, rounds, weight, calories, meters, time, is_rx, notes, completion_date')
           .eq('user_id', user.id)
           .order('completion_date', { ascending: false }),
         supabase.from('profiles').select('points').eq('id', user.id).maybeSingle(),
