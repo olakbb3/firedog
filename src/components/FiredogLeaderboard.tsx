@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { Trophy, Activity } from 'lucide-react';
 import type { CrewEntry } from '@/hooks/useLeaderboard';
 import type { WorkoutSection } from '@/types/index';
+import AthleteBadges from '@/components/AthleteBadges';
 
 interface Props {
   crew: CrewEntry[];
@@ -65,12 +66,13 @@ const FiredogLeaderboard = ({ crew, rawLogs, sections }: Props) => {
         {crew.length > 0 ? (
           <div className="space-y-1.5">
             {crew.map((entry, i) => (
-              <div key={i} className="flex items-center justify-between text-sm font-body">
-                <span className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground w-4 text-right">{i + 1}</span>
-                  <span className={i === 0 ? 'text-accent font-semibold' : 'text-foreground'}>{entry.user_name}</span>
+              <div key={i} className="flex items-center justify-between gap-2 text-sm font-body">
+                <span className="flex items-center gap-2 min-w-0 flex-1">
+                  <span className="text-xs text-muted-foreground w-4 text-right shrink-0">{i + 1}</span>
+                  <span className={`truncate ${i === 0 ? 'text-accent font-semibold' : 'text-foreground'}`}>{entry.user_name}</span>
+                  <AthleteBadges profile={entry.affiliation} compact />
                 </span>
-                <span className="flex items-center gap-2">
+                <span className="flex items-center gap-2 shrink-0">
                   <span className="text-muted-foreground text-xs">{entry.result}</span>
                   <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${entry.is_rx ? 'bg-primary/15 text-primary' : 'bg-secondary text-muted-foreground'}`}>
                     {entry.is_rx ? 'Rx' : 'SC'}

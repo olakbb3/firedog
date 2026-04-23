@@ -10,6 +10,13 @@ import {
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import type { PersonalRecord } from '@/utils/personalRecords';
+import { useAuth } from '@/contexts/AuthContext';
+import { useUnitPreference, convertWeight, type UnitSystem } from '@/lib/units';
+
+const formatPRDisplay = (r: PersonalRecord, unit: UnitSystem): string => {
+  if (r.result_type === 'weight') return convertWeight(r.raw_value, unit);
+  return r.pr_value;
+};
 
 interface Props {
   open: boolean;
@@ -38,6 +45,8 @@ const categoryIcon = (cat: PersonalRecord['category']) => {
 type TabKey = 'all' | 'strength' | 'wod' | 'cardio';
 
 export default function PRModal({ open, onOpenChange, records }: Props) {
+  const { user } = useAuth();
+  const unit = useUnitPreference(user?.id);
   const [tab, setTab] = useState<TabKey>('all');
   const [query, setQuery] = useState('');
 
@@ -100,7 +109,7 @@ export default function PRModal({ open, onOpenChange, records }: Props) {
                     </div>
                     <div className="shrink-0 flex items-center gap-2">
                       <span className="text-sm font-semibold tabular-nums">
-                        {r.pr_value}
+                        {formatPRDisplay(r, unit)}
                       </span>
                       <span className="text-[11px] text-muted-foreground whitespace-nowrap">
                         {formatDate(r.date_achieved)}

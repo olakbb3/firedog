@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/lib/supabaseClient';
 import { toast } from '@/hooks/use-toast';
+import { setPreferredUnit, type UnitSystem } from '@/lib/units';
 
 export interface AthleteProfileFields {
   weight_lbs: number | null;
@@ -14,6 +15,7 @@ export interface AthleteProfileFields {
   fd_affiliation: string | null;
   fd_career_volunteer: string | null;
   fd_rank: string | null;
+  preferred_unit?: UnitSystem;
 }
 
 interface Props {
@@ -31,6 +33,7 @@ const EditProfileModal = ({ open, onOpenChange, userId, initial, onSaved }: Prop
   const [fd, setFd] = useState('');
   const [careerVol, setCareerVol] = useState<string>('');
   const [rank, setRank] = useState('');
+  const [unit, setUnit] = useState<UnitSystem>('imperial');
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -41,6 +44,7 @@ const EditProfileModal = ({ open, onOpenChange, userId, initial, onSaved }: Prop
       setFd(initial.fd_affiliation ?? '');
       setCareerVol(initial.fd_career_volunteer ?? '');
       setRank(initial.fd_rank ?? '');
+      setUnit((initial.preferred_unit as UnitSystem) || 'imperial');
     }
   }, [open, initial]);
 
@@ -68,10 +72,21 @@ const EditProfileModal = ({ open, onOpenChange, userId, initial, onSaved }: Prop
         fd_affiliation: fd.trim() || null,
         fd_career_volunteer: careerVol || null,
         fd_rank: rank.trim() || null,
+        preferred_unit: unit,
       };
 
-      const { error } = await supabase.from('profiles').update(payload).eq('id', userId);
+      let { error } = await supabase.from('profiles').update(payload as any).eq('id', userId);
+      // If preferred_unit column hasn't been migrated yet, retry without it
+      // so the rest of the profile still saves cleanly.
+      if (error && /preferred_unit/i.test(error.message || '')) {
+        const { preferred_unit, ...rest } = payload;
+        const retry = await supabase.from('profiles').update(rest as any).eq('id', userId);
+        error = retry.error;
+      }
       if (error) throw error;
+
+      // Broadcast unit change so dependent components re-render immediately.
+      setPreferredUnit(unit);
 
       onSaved(payload);
       toast({ title: 'Profile updated' });
@@ -92,6 +107,19 @@ const EditProfileModal = ({ open, onOpenChange, userId, initial, onSaved }: Prop
         </DialogHeader>
 
         <div className="space-y-4 py-2">
+          <div className="space-y-1.5">
+            <Label>Units</Label>
+            <Select value={unit} onValueChange={(v) => setUnit(v as UnitSystem)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="imperial">Imperial (lbs, in)</SelectItem>
+                <SelectItem value="metric">Metric (kg, cm)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label htmlFor="weight">Weight (lbs)</Label>

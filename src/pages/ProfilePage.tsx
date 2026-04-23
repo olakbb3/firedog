@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { toast } from '@/hooks/use-toast';
 import firedogLogo from '@/assets/firedog-logo.png';
 import EditProfileModal, { AthleteProfileFields } from '@/components/EditProfileModal';
+import { useUnitPreference, convertWeight, convertHeight, type UnitSystem } from '@/lib/units';
 
 interface ProfileData {
   full_name: string | null;
@@ -19,14 +20,8 @@ interface ProfileData {
   fd_affiliation: string | null;
   fd_career_volunteer: string | null;
   fd_rank: string | null;
+  preferred_unit: UnitSystem | null;
 }
-
-const formatHeight = (inches: number | null): string => {
-  if (!inches) return '';
-  const ft = Math.floor(inches / 12);
-  const inch = inches % 12;
-  return `${ft}'${inch}"`;
-};
 
 interface ProgramRow {
   id: string;
@@ -36,6 +31,7 @@ interface ProgramRow {
 const ProfilePage = () => {
   const navigate = useNavigate();
   const { user, role, signOut } = useAuth();
+  const unit = useUnitPreference(user?.id);
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [programs, setPrograms] = useState<ProgramRow[]>([]);
   const [uploading, setUploading] = useState(false);
@@ -46,11 +42,20 @@ const ProfilePage = () => {
     if (!user) return;
 
     const fetchProfile = async () => {
-      const profileRes = await supabase
+      const baseCols = 'full_name, points, completed_workouts, avatar_url, weight_lbs, height_inches, gym_affiliation, fd_affiliation, fd_career_volunteer, fd_rank';
+      let profileRes = await supabase
         .from('profiles')
-        .select('full_name, points, completed_workouts, avatar_url, weight_lbs, height_inches, gym_affiliation, fd_affiliation, fd_career_volunteer, fd_rank')
+        .select(`${baseCols}, preferred_unit`)
         .eq('id', user.id)
         .maybeSingle();
+      // Fallback if migration hasn't been applied yet.
+      if (profileRes.error && /preferred_unit/i.test(profileRes.error.message || '')) {
+        profileRes = await supabase
+          .from('profiles')
+          .select(baseCols)
+          .eq('id', user.id)
+          .maybeSingle();
+      }
       if (profileRes.data) setProfile(profileRes.data as ProfileData);
 
       // Fetch active programs: enrolled + Free WOD
@@ -177,8 +182,8 @@ const ProfilePage = () => {
 
         {(() => {
           const stats = [
-            profile?.weight_lbs ? `${profile.weight_lbs} lbs` : null,
-            profile?.height_inches ? formatHeight(profile.height_inches) : null,
+            profile?.weight_lbs ? convertWeight(profile.weight_lbs, unit) : null,
+            profile?.height_inches ? convertHeight(profile.height_inches, unit) : null,
             profile?.fd_rank || null,
           ].filter(Boolean);
           return stats.length > 0 ? (
@@ -209,6 +214,7 @@ const ProfilePage = () => {
             fd_affiliation: profile.fd_affiliation,
             fd_career_volunteer: profile.fd_career_volunteer,
             fd_rank: profile.fd_rank,
+            preferred_unit: (profile.preferred_unit as UnitSystem) || 'imperial',
           }}
           onSaved={(fields) => setProfile(prev => prev ? { ...prev, ...fields } : prev)}
         />

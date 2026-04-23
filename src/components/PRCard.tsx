@@ -3,7 +3,13 @@ import { format, isToday, isYesterday, parseISO } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePersonalRecords } from '@/hooks/usePersonalRecords';
 import type { PersonalRecord } from '@/utils/personalRecords';
+import { useUnitPreference, convertWeight, type UnitSystem } from '@/lib/units';
 import PRModal from './PRModal';
+
+const formatPRDisplay = (r: PersonalRecord, unit: UnitSystem): string => {
+  if (r.result_type === 'weight') return convertWeight(r.raw_value, unit);
+  return r.pr_value;
+};
 
 const formatDate = (s: string): string => {
   if (!s) return '';
@@ -44,6 +50,7 @@ const pickTopFour = (records: PersonalRecord[]): PersonalRecord[] => {
 
 export default function PRCard() {
   const { user } = useAuth();
+  const unit = useUnitPreference(user?.id);
   const { records, loading } = usePersonalRecords(user?.id);
   const [open, setOpen] = useState(false);
 
@@ -81,7 +88,7 @@ export default function PRCard() {
               </div>
               <div className="shrink-0 flex items-center gap-2">
                 <span className="text-sm font-semibold tabular-nums">
-                  {r.pr_value}
+                  {formatPRDisplay(r, unit)}
                 </span>
                 <span className="text-[11px] text-muted-foreground whitespace-nowrap">
                   {formatDate(r.date_achieved)}

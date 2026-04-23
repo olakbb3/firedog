@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Calendar, Dumbbell, TrendingUp, Flame } from 'lucide-react';
 import { format, isToday, isYesterday, parseISO } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext';
@@ -8,6 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { usePersonalRecords } from '@/hooks/usePersonalRecords';
 import PRCard from '@/components/PRCard';
 import LeaderboardContextCard from '@/components/LeaderboardContextCard';
+import WorkoutHistoryDetailModal, { type HistoryDetailLog } from '@/components/WorkoutHistoryDetailModal';
+import { useUnitPreference, convertWeight, type UnitSystem } from '@/lib/units';
 
 type ResultType = 'completed' | 'time' | 'rounds_reps' | 'calories' | 'meters' | 'weight';
 
@@ -15,6 +17,7 @@ interface WorkoutLog {
   id: string;
   workout_id: string;
   workout_section_id?: string | null;
+  exercise_name?: string | null;
   result_type?: ResultType | null;
   reps?: number | null;
   rounds?: number | null;
@@ -32,11 +35,11 @@ interface WorkoutBasic {
   title: string;
 }
 
-const formatScore = (log: WorkoutLog): string => {
+const formatScore = (log: WorkoutLog, unit: UnitSystem): string => {
   const rt = log.result_type;
   switch (rt) {
     case 'weight':
-      return log.weight != null ? `${log.weight} lbs` : '—';
+      return log.weight != null ? convertWeight(log.weight, unit) : '—';
     case 'time':
       return log.time ? log.time : '—';
     case 'rounds_reps': {
@@ -52,8 +55,7 @@ const formatScore = (log: WorkoutLog): string => {
     case 'completed':
       return '✓ Completed';
     default:
-      // No result_type — try to derive
-      if (log.weight != null) return `${log.weight} lbs`;
+      if (log.weight != null) return convertWeight(log.weight, unit);
       if (log.time) return log.time;
       if (log.rounds != null || log.reps != null) {
         const r = log.rounds ?? 0;
@@ -79,11 +81,13 @@ const formatLogDate = (dateStr: string): string => {
 
 const ProgressPage = () => {
   const { user } = useAuth();
+  const unit = useUnitPreference(user?.id);
   const [logs, setLogs] = useState<WorkoutLog[]>([]);
   const [workouts, setWorkouts] = useState<Record<string, string>>({});
   const [workoutHasContent, setWorkoutHasContent] = useState<Record<string, boolean>>({});
   const [points, setPoints] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [detailKey, setDetailKey] = useState<string | null>(null);
 
   const { prLogIds } = usePersonalRecords(user?.id);
 
@@ -95,7 +99,7 @@ const ProgressPage = () => {
       const [logsRes, profileRes, workoutsRes, sectionsRes] = await Promise.all([
         supabase
           .from('workout_logs')
-          .select('id, workout_id, workout_section_id, result_type, reps, rounds, weight, calories, meters, time, is_rx, notes, completion_date')
+          .select('id, workout_id, workout_section_id, exercise_name, result_type, reps, rounds, weight, calories, meters, time, is_rx, notes, completion_date')
           .eq('user_id', user.id)
           .order('completion_date', { ascending: false }),
         supabase.from('profiles').select('points').eq('id', user.id).maybeSingle(),
@@ -235,19 +239,27 @@ const ProgressPage = () => {
               if (!workouts[log.workout_id]) return false;
               const isRestDay = !workoutHasContent[log.workout_id];
               if (isRestDay) return true;
-              return formatScore(log) !== '—' || log.result_type === 'completed';
+              return formatScore(log, unit) !== '—' || log.result_type === 'completed';
             })
             .map((log) => {
               const title = workouts[log.workout_id] || 'Workout';
               const isRestDay = !workoutHasContent[log.workout_id];
-              const score = isRestDay ? 'Rest Day 🐾' : formatScore(log);
+              const score = isRestDay ? 'Rest Day 🐾' : formatScore(log, unit);
               const showBadge = !isRestDay && log.result_type !== 'completed';
               const isRx = log.is_rx ?? true;
               const dateLabel = formatLogDate(log.completion_date);
               const isPR = !isRestDay && !!log.id && prLogIds.has(log.id);
+              const day = log.completion_date.split('T')[0];
+              const groupKey = `${log.workout_id}::${day}`;
 
               return (
-                <div key={log.id} className="rounded-xl bg-card border border-border p-4 shadow-card">
+                <button
+                  key={log.id}
+                  type="button"
+                  onClick={() => !isRestDay && setDetailKey(groupKey)}
+                  disabled={isRestDay}
+                  className="w-full text-left rounded-xl bg-card border border-border p-4 shadow-card transition-opacity active:opacity-80 hover:border-primary/40 disabled:cursor-default disabled:hover:border-border"
+                >
                   <div className="flex items-center justify-between gap-3">
                     <h3 className="flex-1 min-w-0 truncate font-bold font-display text-sm">{title}</h3>
                     <div className="shrink-0 flex items-center gap-2">
@@ -272,13 +284,29 @@ const ProgressPage = () => {
                     </div>
                   </div>
                   {log.notes && (
-                    <p className="text-xs text-muted-foreground mt-1">{log.notes}</p>
+                    <p className="text-xs text-muted-foreground mt-1 text-left">{log.notes}</p>
                   )}
-                </div>
+                </button>
               );
             })}
         </div>
       )}
+
+      {detailKey && (() => {
+        const [wid, day] = detailKey.split('::');
+        const groupLogs = logs.filter(
+          (l) => l.workout_id === wid && l.completion_date.split('T')[0] === day
+        ) as HistoryDetailLog[];
+        return (
+          <WorkoutHistoryDetailModal
+            open={!!detailKey}
+            onOpenChange={(v) => { if (!v) setDetailKey(null); }}
+            workoutTitle={workouts[wid] || 'Workout'}
+            workoutId={wid}
+            logs={groupLogs}
+          />
+        );
+      })()}
     </div>
   );
 };
