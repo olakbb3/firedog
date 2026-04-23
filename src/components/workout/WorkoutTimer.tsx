@@ -46,9 +46,12 @@ const vibrate = (pattern: number | number[]) => {
   try { navigator?.vibrate?.(pattern); } catch { /* unsupported */ }
 };
 
-const shortBeeps = () => { playBeep(660, 120, 1); vibrate(100); };
-const goBeep = () => { playBeep(880, 350, 1); vibrate([200, 100, 200]); };
-const finishBeeps = () => { playBeep(800, 200, 3); vibrate([200, 100, 200, 100, 400]); };
+// Countdown beep at 3, 2, 1 seconds remaining → 880Hz, 120ms
+const shortBeeps = () => { playBeep(880, 120, 1); vibrate(100); };
+// GO / round-change → 1100Hz, 600ms
+const goBeep = () => { playBeep(1100, 600, 1); vibrate([200, 100, 200]); };
+// Time-up / finish → 1100Hz, 600ms (single distinct longer beep)
+const finishBeeps = () => { playBeep(1100, 600, 1); vibrate([200, 100, 200, 100, 400]); };
 
 /* ------------------------------------------------------------------ */
 /*  Format helpers                                                     */
