@@ -24,7 +24,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [role, setRole] = useState<AppRole | null>(null);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
-  // App starts in a loading state to block the router
   const [loading, setLoading] = useState(true);
 
   const claimPendingPurchases = async (userId: string, email: string) => {
@@ -65,7 +64,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
 
     if (email) {
-      // Intentionally not awaiting this so it doesn't delay the login screen
       claimPendingPurchases(userId, email);
     }
   };
@@ -75,41 +73,48 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     const initializeAuth = async () => {
       try {
-        // 1. Get the session token from the phone's memory
         const {
           data: { session: initialSession },
         } = await supabase.auth.getSession();
 
         if (initialSession?.user) {
-          setSession(initialSession);
-          setUser(initialSession.user);
-          // 2. WE WAIT for the profile to fetch BEFORE lowering the loading flag
+          // Fetch profile BEFORE setting session so router has the role immediately
           await fetchProfile(initialSession.user.id, initialSession.user.email);
+          if (mounted) {
+            setSession(initialSession);
+            setUser(initialSession.user);
+          }
         }
       } catch (error) {
         console.error("Auth init error:", error);
       } finally {
-        // 3. Now that we definitely have the role, it is safe to let the router run
         if (mounted) setLoading(false);
       }
     };
 
     initializeAuth();
 
-    // 4. Listen for future logins/logouts while the app is actively running
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, nextSession) => {
-      if (event === "INITIAL_SESSION") return; // Already handled by initializeAuth above
-
-      setSession(nextSession);
-      setUser(nextSession?.user ?? null);
+      // Skip initial session — already handled by initializeAuth
+      if (event === "INITIAL_SESSION") return;
 
       if (nextSession?.user) {
+        // Fetch profile first so role is always available to the router
         await fetchProfile(nextSession.user.id, nextSession.user.email);
+        if (mounted) {
+          setSession(nextSession);
+          setUser(nextSession.user);
+        }
       } else {
-        setRole(null);
-        setAcceptedTerms(false);
+        // User signed out — clear everything
+        if (mounted) {
+          setSession(null);
+          setUser(null);
+          setRole(null);
+          setAcceptedTerms(false);
+        }
       }
     });
 
