@@ -431,6 +431,7 @@ const WorkoutPage = () => {
                       sectionName={section.section_name}
                       exercises={section.exercises}
                       resultType={sectionResultType}
+                      isFiredogTotal={isFiredogTotal}
                     />
                   );
                 }
@@ -441,6 +442,7 @@ const WorkoutPage = () => {
                     sectionName={section.section_name}
                     resultType={sectionResultType}
                     exercises={section.exercises}
+                    isFiredogTotal={isFiredogTotal}
                   />
                 );
               })()}
