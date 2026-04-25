@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Edit, Trash2, Dumbbell, BookOpen, Image, Home, Trophy, X, Save, CalendarIcon } from 'lucide-react';
+import { ArrowLeft, Plus, Edit, Trash2, Dumbbell, BookOpen, Image, Home, Trophy, X, Save, CalendarIcon, Eye, Lock } from 'lucide-react';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,7 +19,7 @@ type Tab = 'workouts' | 'programs' | 'challenges' | 'media' | 'home';
 
 interface WorkoutRow { id: string; title: string; description: string; exercises: any[]; date: string; workout_date: string | null; }
 interface ProgramRow { id: string; title: string; description: string; sku: string; store_link: string | null; image_url: string | null; is_free: boolean; }
-interface ChallengeRow { id: string; title: string; description: string; participants: number; start_date: string; end_date: string; }
+interface ChallengeRow { id: string; title: string; description: string | null; participants: number; start_date: string; end_date: string; }
 
 const RESULT_TYPE_OPTIONS: { value: SectionResultType; label: string }[] = [
   { value: 'completed', label: 'Just Completed' },
@@ -38,6 +38,7 @@ const INPUT_MODE_OPTIONS: { value: SectionInputMode; label: string }[] = [
 const DEFAULT_SECTIONS = ['Morning Meeting', 'Dispatch', 'First-In', 'Overhaul', 'Rehab'];
 
 interface SectionInput {
+  id?: string;
   section_name: string;
   result_type: SectionResultType;
   input_mode: SectionInputMode;
