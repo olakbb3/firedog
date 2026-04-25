@@ -11,8 +11,10 @@ import PerExerciseLogButton from '@/components/PerExerciseLogButton';
 import WorkoutTimer from '@/components/workout/WorkoutTimer';
 import { useLeaderboard } from '@/hooks/useLeaderboard';
 import FiredogLeaderboard from '@/components/FiredogLeaderboard';
+import FiredogTotalArchive from '@/components/FiredogTotalArchive';
 import { ScalingGuideDrawer } from '@/components/ScalingGuideDrawer';
 import { BookOpen } from 'lucide-react';
+import { setPreferredUnit, useUnitPreference, type UnitSystem } from '@/lib/units';
 
 interface WorkoutData {
   id: string;
@@ -46,17 +48,29 @@ const WorkoutPage = () => {
   const [timerResult, setTimerResult] = useState<string | null>(null);
   const isFiredogTotal = workout?.title?.toUpperCase() === 'FIREDOG TOTAL';
   const { crew, rawLogs } = useLeaderboard(id, sections, isFiredogTotal);
+  const unit = useUnitPreference(user?.id);
 
   useEffect(() => {
     if (!id) return;
     const fetchWorkout = async () => {
       setLoading(true);
-      const [workoutRes, sectionsRes, exercisesRes] = await Promise.all([
+      const [workoutRes, challengeRes, sectionsRes, exercisesRes] = await Promise.all([
         supabase.from('workouts').select('*').eq('id', id).maybeSingle(),
+        supabase.from('challenges').select('id, title, description, start_date, end_date').eq('id', id).maybeSingle(),
         supabase.from('workout_sections').select('*').eq('workout_id', id).order('order_index'),
         supabase.from('exercises').select('*').eq('workout_id', id).order('order_index'),
       ]);
       if (workoutRes.data) setWorkout(workoutRes.data);
+      else if (challengeRes.data) setWorkout({
+        id: challengeRes.data.id,
+        title: challengeRes.data.title,
+        description: challengeRes.data.description || '',
+        exercises: [],
+        coach_notes: challengeRes.data.description || null,
+        video_url: null,
+        date: challengeRes.data.start_date,
+        workout_date: challengeRes.data.start_date,
+      });
       if (sectionsRes.data) setSections(sectionsRes.data);
       if (exercisesRes.data) setExercises(exercisesRes.data);
       setLoading(false);
