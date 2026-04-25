@@ -330,7 +330,7 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName, re
         priorLogs
       );
 
-      // STEP 3: Insert (or update) the new log.
+      // STEP 3: Insert the new log. Firedog Total logs are never overwritten.
       const { data: existing, error: findErr } = await supabase
         .from('workout_logs')
         .select('id')
@@ -342,7 +342,7 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName, re
         .maybeSingle();
       if (findErr) throw findErr;
 
-      if (existing?.id) {
+      if (existing?.id && !isFiredogTotal) {
         const { error: updateErr } = await supabase
           .from('workout_logs')
           .update(payload)
@@ -358,7 +358,9 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName, re
       setOpen(false);
 
       // STEP 4: Toast based on the single evaluation result.
-      if (hasPR) {
+      if (isFiredogTotal && !hasPR) {
+        toast('Your current best is higher — keep pushing!', { duration: 3500 });
+      } else if (hasPR) {
         const msg = prItems.length === 1
           ? `You beat your best on ${prItems[0]} 💪`
           : 'New bests set today 💪';
@@ -532,7 +534,7 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName, re
                 )}
                 {resultType === 'weight' && (
                   <div>
-                    <label className="text-[10px] text-muted-foreground mb-1 block font-body uppercase tracking-wider">Weight</label>
+                    <label className="text-[10px] text-muted-foreground mb-1 block font-body uppercase tracking-wider">Weight ({unit === 'metric' ? 'kg' : 'lbs'})</label>
                     <Input
                       type="number"
                       min="0"
