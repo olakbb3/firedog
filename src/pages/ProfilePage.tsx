@@ -8,6 +8,8 @@ import { toast } from '@/hooks/use-toast';
 import firedogLogo from '@/assets/firedog-logo.png';
 import EditProfileModal, { AthleteProfileFields } from '@/components/EditProfileModal';
 import { useUnitPreference, convertWeight, convertHeight, type UnitSystem } from '@/lib/units';
+import { Skeleton } from '@/components/ui/skeleton';
+import { displayLiftName, normalizeLift } from '@/components/PerLiftLeaderboard';
 
 interface ProfileData {
   full_name: string | null;
@@ -36,6 +38,8 @@ const ProfilePage = () => {
   const [programs, setPrograms] = useState<ProgramRow[]>([]);
   const [uploading, setUploading] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
+  const [leaderBadgeLoading, setLeaderBadgeLoading] = useState(false);
+  const [leaderBadge, setLeaderBadge] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -86,6 +90,57 @@ const ProfilePage = () => {
     };
 
     fetchProfile();
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    const fetchLeaderBadge = async () => {
+      setLeaderBadgeLoading(true);
+      const today = new Date();
+      const todayStr = today.toLocaleDateString('en-CA');
+      const monthStart = new Date(today.getFullYear(), today.getMonth(), 1).toLocaleDateString('en-CA');
+      const { data: challenge } = await supabase
+        .from('challenges')
+        .select('id, start_date')
+        .eq('title', 'FIREDOG TOTAL')
+        .lte('start_date', monthStart)
+        .gte('end_date', todayStr)
+        .order('start_date', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (!challenge) {
+        if (!cancelled) { setLeaderBadge(null); setLeaderBadgeLoading(false); }
+        return;
+      }
+      const [sectionsRes, logsRes] = await Promise.all([
+        supabase.from('workout_sections').select('id, section_name').eq('workout_id', challenge.id),
+        supabase.from('workout_logs').select('user_id, workout_section_id, weight').eq('workout_id', challenge.id).not('weight', 'is', null),
+      ]);
+      const sectionMap = new Map(((sectionsRes.data as any[]) || []).map(s => [s.id, s.section_name]));
+      const groups = new Map<string, any[]>();
+      ((logsRes.data as any[]) || []).forEach(log => {
+        const name = sectionMap.get(log.workout_section_id) || log.workout_section_id;
+        const key = normalizeLift(String(name || ''));
+        if (!key) return;
+        if (!groups.has(key)) groups.set(key, []);
+        groups.get(key)!.push(log);
+      });
+      let badge: string | null = null;
+      groups.forEach((rawLogs, liftName) => {
+        if (badge) return;
+        const userMax = new Map<string, number>();
+        rawLogs.forEach(log => userMax.set(log.user_id, Math.max(userMax.get(log.user_id) || 0, log.weight || 0)));
+        const ranked = Array.from(userMax.entries()).sort((a, b) => b[1] - a[1]);
+        if (ranked[0]?.[0] === user.id) {
+          const label = new Date(`${challenge.start_date}T00:00:00`).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+          badge = `🔥 ${displayLiftName(liftName)} Leader — ${label}`;
+        }
+      });
+      if (!cancelled) { setLeaderBadge(badge); setLeaderBadgeLoading(false); }
+    };
+    fetchLeaderBadge();
+    return () => { cancelled = true; };
   }, [user]);
 
   const handleAvatarClick = () => {
@@ -190,6 +245,14 @@ const ProfilePage = () => {
             <p className="text-xs text-muted-foreground mt-2">{stats.join(' • ')}</p>
           ) : null;
         })()}
+
+        {leaderBadgeLoading ? (
+          <Skeleton className="mt-3 h-7 w-56 rounded-full" />
+        ) : leaderBadge ? (
+          <span className="mt-3 max-w-full rounded-full bg-primary/15 px-3 py-1 text-xs font-semibold text-primary truncate">
+            {leaderBadge}
+          </span>
+        ) : null}
 
         <Button
           variant="outline"
