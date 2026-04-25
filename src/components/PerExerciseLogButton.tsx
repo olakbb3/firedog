@@ -13,6 +13,7 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { useAuthGate } from '@/hooks/useAuthGate';
 import { supabase } from '@/lib/supabaseClient';
+import { parseWeightToLbs, useUnitPreference } from '@/lib/units';
 import type { ExerciseRow, SectionResultType } from '@/types/index';
 import { evaluatePRBatch, PR_LOG_COLUMNS, type PRCandidate, type PRLog } from '@/utils/personalRecords';
 
@@ -22,6 +23,7 @@ interface Props {
   sectionName: string;
   exercises: ExerciseRow[];
   resultType?: SectionResultType;
+  isFiredogTotal?: boolean;
 }
 
 interface ExerciseLogEntry {
@@ -33,9 +35,10 @@ interface ExerciseLogEntry {
   completion_date?: string;
 }
 
-export default function PerExerciseLogButton({ workoutId, sectionId, sectionName, exercises, resultType = 'weight' }: Props) {
+export default function PerExerciseLogButton({ workoutId, sectionId, sectionName, exercises, resultType = 'weight', isFiredogTotal = false }: Props) {
   const { user } = useAuth();
   const { requireAuth } = useAuthGate();
+  const unit = useUnitPreference(user?.id);
   const submittingRef = useRef(false);
   const lastSubmitAtRef = useRef(0);
   const SUBMIT_DEDUPE_MS = 3000;
@@ -108,6 +111,10 @@ export default function PerExerciseLogButton({ workoutId, sectionId, sectionName
       toast.error('Enter at least one value');
       return;
     }
+    if (resultType === 'weight' && entries.some(ex => !parseWeightToLbs(inputValues[ex.id] || '', unit))) {
+      toast.error('Enter weights greater than 0');
+      return;
+    }
 
     submittingRef.current = true;
     setSubmitting(true);
@@ -137,7 +144,7 @@ export default function PerExerciseLogButton({ workoutId, sectionId, sectionName
           workout_section_id: sectionId,
           exercise_name: ex.exercise_name,
           result_type: resultType,
-          weight: resultType === 'weight' && !isNaN(numVal) ? numVal : null,
+          weight: resultType === 'weight' ? parseWeightToLbs(value, unit) : null,
           time: resultType === 'time' ? value : null,
           reps: resultType === 'rounds_reps' && !isNaN(numVal) ? Math.round(numVal) : null,
           rounds: null,
@@ -174,7 +181,7 @@ export default function PerExerciseLogButton({ workoutId, sectionId, sectionName
         };
 
         const numVal = parseFloat(value);
-        if (resultType === 'weight' && !isNaN(numVal)) payload.weight = numVal;
+        if (resultType === 'weight') payload.weight = parseWeightToLbs(value, unit) ?? 0;
         else if (resultType === 'time') payload.time = value;
         else if (resultType === 'calories' && !isNaN(numVal)) payload.calories = Math.round(numVal);
         else if (resultType === 'meters' && !isNaN(numVal)) payload.meters = Math.round(numVal);
@@ -186,7 +193,7 @@ export default function PerExerciseLogButton({ workoutId, sectionId, sectionName
           (l: any) => (l.exercise_name || l.notes) === ex.exercise_name
         );
 
-        if (existing?.id) {
+        if (existing?.id && !isFiredogTotal) {
           const { error: updateErr } = await supabase
             .from('workout_logs')
             .update(payload)
@@ -208,7 +215,9 @@ export default function PerExerciseLogButton({ workoutId, sectionId, sectionName
       setOpen(false);
 
       // STEP 4: Toast based on the single evaluation result.
-      if (hasPR) {
+      if (isFiredogTotal && !hasPR) {
+        toast('Your current best is higher — keep pushing!', { duration: 3500 });
+      } else if (hasPR) {
         const msg = prItems.length === 1
           ? `You beat your best on ${prItems[0]} 💪`
           : 'New bests set today 💪';
