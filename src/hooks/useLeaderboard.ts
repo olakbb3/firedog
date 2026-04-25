@@ -37,16 +37,28 @@ const formatCrewResult = (log: { result_type: string; time?: string | null; roun
 export const useLeaderboard = (workoutId: string | undefined, sections: WorkoutSection[], isFiredogTotal = false) => {
   const [crew, setCrew] = useState<CrewEntry[]>([]);
   const [rawLogs, setRawLogs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [refreshIndex, setRefreshIndex] = useState(0);
+
+  useEffect(() => {
+    if (!workoutId || !isFiredogTotal) return;
+    const interval = window.setInterval(() => {
+      if (!document.hidden) setRefreshIndex(i => i + 1);
+    }, 60000);
+    return () => window.clearInterval(interval);
+  }, [workoutId, isFiredogTotal]);
 
   useEffect(() => {
     if (!workoutId) return;
 
     const fetchLeaderboard = async () => {
+      setLoading(true);
       if (isFiredogTotal) {
         await fetchFiredogTotalLeaderboard();
       } else {
         await fetchStandardLeaderboard();
       }
+      setLoading(false);
     };
 
     const fetchFiredogTotalLeaderboard = async () => {
@@ -58,6 +70,10 @@ export const useLeaderboard = (workoutId: string | undefined, sections: WorkoutS
         .from('challenges')
         .select('id')
         .eq('title', 'FIREDOG TOTAL')
+        .lte('start_date', monthStart.toLocaleDateString('en-CA'))
+        .gte('end_date', new Date(now.getFullYear(), now.getMonth(), now.getDate()).toLocaleDateString('en-CA'))
+        .order('start_date', { ascending: false })
+        .limit(1)
         .maybeSingle();
 
       if (!firedogChallenge) {
@@ -234,7 +250,7 @@ export const useLeaderboard = (workoutId: string | undefined, sections: WorkoutS
     };
 
     fetchLeaderboard();
-  }, [workoutId, sections, isFiredogTotal]);
+  }, [workoutId, sections, isFiredogTotal, refreshIndex]);
 
-  return { crew, rawLogs };
+  return { crew, rawLogs, loading };
 };

@@ -11,8 +11,10 @@ import PerExerciseLogButton from '@/components/PerExerciseLogButton';
 import WorkoutTimer from '@/components/workout/WorkoutTimer';
 import { useLeaderboard } from '@/hooks/useLeaderboard';
 import FiredogLeaderboard from '@/components/FiredogLeaderboard';
+import FiredogTotalArchive from '@/components/FiredogTotalArchive';
 import { ScalingGuideDrawer } from '@/components/ScalingGuideDrawer';
 import { BookOpen } from 'lucide-react';
+import { setPreferredUnit, useUnitPreference, type UnitSystem } from '@/lib/units';
 
 interface WorkoutData {
   id: string;
@@ -46,17 +48,29 @@ const WorkoutPage = () => {
   const [timerResult, setTimerResult] = useState<string | null>(null);
   const isFiredogTotal = workout?.title?.toUpperCase() === 'FIREDOG TOTAL';
   const { crew, rawLogs } = useLeaderboard(id, sections, isFiredogTotal);
+  const unit = useUnitPreference(user?.id);
 
   useEffect(() => {
     if (!id) return;
     const fetchWorkout = async () => {
       setLoading(true);
-      const [workoutRes, sectionsRes, exercisesRes] = await Promise.all([
+      const [workoutRes, challengeRes, sectionsRes, exercisesRes] = await Promise.all([
         supabase.from('workouts').select('*').eq('id', id).maybeSingle(),
+        supabase.from('challenges').select('id, title, description, start_date, end_date').eq('id', id).maybeSingle(),
         supabase.from('workout_sections').select('*').eq('workout_id', id).order('order_index'),
         supabase.from('exercises').select('*').eq('workout_id', id).order('order_index'),
       ]);
       if (workoutRes.data) setWorkout(workoutRes.data);
+      else if (challengeRes.data) setWorkout({
+        id: challengeRes.data.id,
+        title: challengeRes.data.title,
+        description: challengeRes.data.description || '',
+        exercises: [],
+        coach_notes: challengeRes.data.description || null,
+        video_url: null,
+        date: challengeRes.data.start_date,
+        workout_date: challengeRes.data.start_date,
+      });
       if (sectionsRes.data) setSections(sectionsRes.data);
       if (exercisesRes.data) setExercises(exercisesRes.data);
       setLoading(false);
@@ -289,17 +303,35 @@ const WorkoutPage = () => {
 
       {/* === FIREDOG TOTAL CHALLENGE HEADER === */}
       {isFiredogTotal && (
-        <div className="rounded-xl border border-primary/30 bg-primary/5 p-5 mb-4 text-center">
-          <p className="text-2xl font-bold font-display">🔥 FIREDOG TOTAL</p>
-          <p className="text-sm text-muted-foreground mt-1">Monthly Strength Challenge</p>
-          <p className="text-xs text-foreground mt-2">Test your max lifts and see where you rank.</p>
-          <div className="mt-3 flex items-center justify-center gap-2">
-            <span className="text-xs font-semibold text-primary">{challengeMonth} Challenge</span>
-            <span className="text-xs text-muted-foreground">• Ends in {daysLeft} days</span>
+        <div className="rounded-xl border border-primary/30 bg-primary/5 p-5 mb-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <p className="text-2xl font-bold font-display leading-tight">🔥 FIREDOG TOTAL — {workout.workout_date ? new Date(`${workout.workout_date}T00:00:00`).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : challengeMonth}</p>
+              <p className="text-sm text-muted-foreground mt-1">Monthly Strength Challenge</p>
+            </div>
+            <div className="flex rounded-md bg-secondary p-0.5 shrink-0">
+              {(['imperial', 'metric'] as UnitSystem[]).map((u) => (
+                <button
+                  key={u}
+                  type="button"
+                  onClick={() => setPreferredUnit(u)}
+                  className={`px-2 py-0.5 text-[10px] font-bold rounded ${unit === u ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'}`}
+                >
+                  {u === 'imperial' ? 'LBS' : 'KG'}
+                </button>
+              ))}
+            </div>
           </div>
-          <p className="text-[10px] text-muted-foreground mt-2 italic">
-            Log your best lifts anytime this month. You can update your score as you improve.
-          </p>
+          <p className="text-xs text-foreground mt-3">Test your max lifts and see where you rank.</p>
+          <p className="text-[10px] text-muted-foreground mt-2 italic">Log your best lifts anytime this month. You can update your score as you improve. Ends in {daysLeft} days.</p>
+        </div>
+      )}
+
+      {isFiredogTotal && workout.coach_notes && (
+        <div className="rounded-xl border border-border bg-card p-4 mb-4">
+          <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-body mb-1">Coaching Notes</p>
+          <p className="text-xs text-muted-foreground italic font-body leading-relaxed">{parseTextWithLinks(workout.coach_notes)}</p>
+          <LinkButtons links={extractLinkButtons(workout.coach_notes)} />
         </div>
       )}
 
@@ -451,7 +483,7 @@ const WorkoutPage = () => {
         </div>
 
         {/* Coach Notes */}
-        {workout.coach_notes && (
+        {workout.coach_notes && !isFiredogTotal && (
           <div className="mt-5 border-t border-border pt-3">
             <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-body mb-1">Coach Notes</p>
             <p className="text-xs text-muted-foreground italic font-body leading-relaxed">{parseTextWithLinks(workout.coach_notes)}</p>
@@ -462,7 +494,10 @@ const WorkoutPage = () => {
 
       {/* === LEADERBOARD === */}
       {isFiredogTotal ? (
-        <FiredogLeaderboard crew={crew} rawLogs={rawLogs} sections={sections} />
+        <div className="space-y-4 mb-4">
+          <FiredogLeaderboard crew={crew} rawLogs={rawLogs} sections={sections} />
+          <FiredogTotalArchive />
+        </div>
       ) : (
         <div className="rounded-xl border border-border bg-card p-4 mb-4">
           <div className="flex items-center gap-2 mb-3">
