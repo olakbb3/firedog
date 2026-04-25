@@ -494,7 +494,10 @@ const WorkoutPage = () => {
 
       {/* === LEADERBOARD === */}
       {isFiredogTotal ? (
-        <FiredogLeaderboard crew={crew} rawLogs={rawLogs} sections={sections} />
+        <div className="space-y-4 mb-4">
+          <FiredogLeaderboard crew={crew} rawLogs={rawLogs} sections={sections} />
+          <FiredogTotalArchive />
+        </div>
       ) : (
         <div className="rounded-xl border border-border bg-card p-4 mb-4">
           <div className="flex items-center gap-2 mb-3">
