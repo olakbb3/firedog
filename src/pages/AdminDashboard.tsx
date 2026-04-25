@@ -1,41 +1,88 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Edit, Trash2, Dumbbell, BookOpen, Image, Home, Trophy, X, Save, CalendarIcon, Eye, Lock } from 'lucide-react';
-import { format } from 'date-fns';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/lib/supabaseClient';
-import { useToast } from '@/hooks/use-toast';
-import { cn } from '@/lib/utils';
-import type { SectionResultType, SectionInputMode } from '@/types/index';
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  ArrowLeft,
+  Plus,
+  Edit,
+  Trash2,
+  Dumbbell,
+  BookOpen,
+  Image,
+  Home,
+  Trophy,
+  X,
+  Save,
+  CalendarIcon,
+  Eye,
+  Lock,
+} from "lucide-react";
+import { format } from "date-fns";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/lib/supabaseClient";
+import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
+import type { SectionResultType, SectionInputMode } from "@/types/index";
 
-type Tab = 'workouts' | 'programs' | 'challenges' | 'media' | 'home';
+type Tab = "workouts" | "programs" | "challenges" | "media" | "home";
 
-interface WorkoutRow { id: string; title: string; description: string; exercises: any[]; date: string; workout_date: string | null; }
-interface ProgramRow { id: string; title: string; description: string; sku: string; store_link: string | null; image_url: string | null; is_free: boolean; }
-interface ChallengeRow { id: string; title: string; description: string | null; participants: number; start_date: string; end_date: string; }
+interface WorkoutRow {
+  id: string;
+  title: string;
+  description: string;
+  exercises: any[];
+  date: string;
+  workout_date: string | null;
+}
+interface ProgramRow {
+  id: string;
+  title: string;
+  description: string;
+  sku: string;
+  store_link: string | null;
+  image_url: string | null;
+  is_free: boolean;
+}
+interface ChallengeRow {
+  id: string;
+  title: string;
+  description: string | null;
+  participants: number;
+  start_date: string;
+  end_date: string;
+}
 
 const RESULT_TYPE_OPTIONS: { value: SectionResultType; label: string }[] = [
-  { value: 'completed', label: 'Just Completed' },
-  { value: 'time', label: 'Time' },
-  { value: 'rounds_reps', label: 'Rounds + Reps' },
-  { value: 'calories', label: 'Calories' },
-  { value: 'meters', label: 'Meters' },
-  { value: 'weight', label: 'Weight' },
+  { value: "completed", label: "Just Completed" },
+  { value: "time", label: "Time" },
+  { value: "rounds_reps", label: "Rounds + Reps" },
+  { value: "calories", label: "Calories" },
+  { value: "meters", label: "Meters" },
+  { value: "weight", label: "Weight" },
 ];
 
 const INPUT_MODE_OPTIONS: { value: SectionInputMode; label: string }[] = [
-  { value: 'single', label: 'Single Score' },
-  { value: 'per_exercise', label: 'Per Exercise' },
+  { value: "single", label: "Single Score" },
+  { value: "per_exercise", label: "Per Exercise" },
 ];
 
-const DEFAULT_SECTIONS = ['Morning Meeting', 'Dispatch', 'First-In', 'Overhaul', 'Rehab'];
+const DEFAULT_SECTIONS = ["Morning Meeting", "Dispatch", "First-In", "Overhaul", "Rehab"];
 
 interface SectionInput {
   id?: string;
@@ -57,21 +104,30 @@ interface ExerciseInput {
   scaling_notes: string;
 }
 
-const emptyExercise = (): ExerciseInput => ({ exercise_name: '', sets: '', reps: '', duration: '', calories: '', meters: '', notes: '', scaling_notes: '' });
+const emptyExercise = (): ExerciseInput => ({
+  exercise_name: "",
+  sets: "",
+  reps: "",
+  duration: "",
+  calories: "",
+  meters: "",
+  notes: "",
+  scaling_notes: "",
+});
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
   const { role } = useAuth();
-  const [activeTab, setActiveTab] = useState<Tab>('workouts');
+  const [activeTab, setActiveTab] = useState<Tab>("workouts");
 
-  if (role !== 'admin') return null;
+  if (role !== "admin") return null;
 
   const tabs: { id: Tab; label: string; icon: React.ElementType }[] = [
-    { id: 'workouts', label: 'Workouts', icon: Dumbbell },
-    { id: 'programs', label: 'Programs', icon: BookOpen },
-    { id: 'challenges', label: 'Challenges', icon: Trophy },
-    { id: 'media', label: 'Media', icon: Image },
-    { id: 'home', label: 'Home', icon: Home },
+    { id: "workouts", label: "Workouts", icon: Dumbbell },
+    { id: "programs", label: "Programs", icon: BookOpen },
+    { id: "challenges", label: "Challenges", icon: Trophy },
+    { id: "media", label: "Media", icon: Image },
+    { id: "home", label: "Home", icon: Home },
   ];
 
   return (
@@ -79,7 +135,7 @@ const AdminDashboard = () => {
       <div className="sticky top-0 z-30 bg-background/95 backdrop-blur-lg border-b border-border px-4 py-3">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <button onClick={() => navigate('/')} className="text-muted-foreground hover:text-foreground">
+            <button onClick={() => navigate("/")} className="text-muted-foreground hover:text-foreground">
               <ArrowLeft className="h-5 w-5" />
             </button>
             <h1 className="text-lg font-bold font-display">ADMIN DASHBOARD</h1>
@@ -94,7 +150,9 @@ const AdminDashboard = () => {
               key={id}
               onClick={() => setActiveTab(id)}
               className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-                activeTab === id ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
+                activeTab === id
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
               }`}
             >
               <Icon className="h-4 w-4" />
@@ -105,11 +163,11 @@ const AdminDashboard = () => {
       </div>
 
       <div className="max-w-4xl mx-auto px-4 py-6">
-        {activeTab === 'workouts' && <WorkoutsTab />}
-        {activeTab === 'programs' && <ProgramsTab />}
-        {activeTab === 'challenges' && <ChallengesTab />}
-        {activeTab === 'media' && <MediaTab />}
-        {activeTab === 'home' && <HomeTab />}
+        {activeTab === "workouts" && <WorkoutsTab />}
+        {activeTab === "programs" && <ProgramsTab />}
+        {activeTab === "challenges" && <ChallengesTab />}
+        {activeTab === "media" && <MediaTab />}
+        {activeTab === "home" && <HomeTab />}
       </div>
     </div>
   );
@@ -120,58 +178,83 @@ const WorkoutsTab = () => {
   const [workouts, setWorkouts] = useState<WorkoutRow[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [formTitle, setFormTitle] = useState('');
-  const [formDesc, setFormDesc] = useState('');
+  const [formTitle, setFormTitle] = useState("");
+  const [formDesc, setFormDesc] = useState("");
   const [formDate, setFormDate] = useState<Date | undefined>(new Date());
   const [sections, setSections] = useState<SectionInput[]>(
-    DEFAULT_SECTIONS.map(name => ({ section_name: name, result_type: 'completed' as SectionResultType, input_mode: 'single' as SectionInputMode, exercises: [emptyExercise()] }))
+    DEFAULT_SECTIONS.map((name) => ({
+      section_name: name,
+      result_type: "completed" as SectionResultType,
+      input_mode: "single" as SectionInputMode,
+      exercises: [emptyExercise()],
+    })),
   );
   const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
   const [pendingSave, setPendingSave] = useState(false);
 
   const fetchWorkouts = async () => {
-    const { data } = await supabase.from('workouts').select('*').order('workout_date', { ascending: false, nullsFirst: false });
+    const { data } = await supabase
+      .from("workouts")
+      .select("*")
+      .order("workout_date", { ascending: false, nullsFirst: false });
     if (data) setWorkouts(data);
   };
 
-  useEffect(() => { fetchWorkouts(); }, []);
+  useEffect(() => {
+    fetchWorkouts();
+  }, []);
 
   const resetForm = () => {
-    setFormTitle('');
-    setFormDesc('');
+    setFormTitle("");
+    setFormDesc("");
     setFormDate(new Date());
     setEditingId(null);
-    setSections(DEFAULT_SECTIONS.map(name => ({ section_name: name, result_type: 'completed' as SectionResultType, input_mode: 'single' as SectionInputMode, exercises: [emptyExercise()] })));
+    setSections(
+      DEFAULT_SECTIONS.map((name) => ({
+        section_name: name,
+        result_type: "completed" as SectionResultType,
+        input_mode: "single" as SectionInputMode,
+        exercises: [emptyExercise()],
+      })),
+    );
   };
 
   const addSection = () => {
-    setSections(prev => [...prev, { section_name: '', result_type: 'completed' as SectionResultType, input_mode: 'single' as SectionInputMode, exercises: [emptyExercise()] }]);
+    setSections((prev) => [
+      ...prev,
+      {
+        section_name: "",
+        result_type: "completed" as SectionResultType,
+        input_mode: "single" as SectionInputMode,
+        exercises: [emptyExercise()],
+      },
+    ]);
   };
 
   const removeSection = (idx: number) => {
-    setSections(prev => prev.filter((_, i) => i !== idx));
+    setSections((prev) => prev.filter((_, i) => i !== idx));
   };
 
   const updateSectionName = (idx: number, name: string) => {
-    setSections(prev => prev.map((s, i) => i === idx ? { ...s, section_name: name } : s));
+    setSections((prev) => prev.map((s, i) => (i === idx ? { ...s, section_name: name } : s)));
   };
 
   const updateSectionResultType = (idx: number, rt: SectionResultType) => {
-    setSections(prev => prev.map((s, i) => i === idx ? { ...s, result_type: rt } : s));
+    setSections((prev) => prev.map((s, i) => (i === idx ? { ...s, result_type: rt } : s)));
   };
 
   const updateSectionInputMode = (idx: number, mode: SectionInputMode) => {
-    setSections(prev => prev.map((s, i) => i === idx ? { ...s, input_mode: mode } : s));
+    setSections((prev) => prev.map((s, i) => (i === idx ? { ...s, input_mode: mode } : s)));
   };
 
   const updateSectionTimeCap = (idx: number, value: string) => {
-    setSections(prev => prev.map((s, i) => i === idx ? { ...s, time_cap_minutes: value } : s));
+    setSections((prev) => prev.map((s, i) => (i === idx ? { ...s, time_cap_minutes: value } : s)));
   };
 
   const moveSection = (idx: number, dir: -1 | 1) => {
     const target = idx + dir;
     if (target < 0 || target >= sections.length) return;
-    setSections(prev => {
+    setSections((prev) => {
       const arr = [...prev];
       [arr[idx], arr[target]] = [arr[target], arr[idx]];
       return arr;
@@ -179,79 +262,98 @@ const WorkoutsTab = () => {
   };
 
   const addExercise = (sectionIdx: number) => {
-    setSections(prev => prev.map((s, i) => i === sectionIdx ? { ...s, exercises: [...s.exercises, emptyExercise()] } : s));
+    setSections((prev) =>
+      prev.map((s, i) => (i === sectionIdx ? { ...s, exercises: [...s.exercises, emptyExercise()] } : s)),
+    );
   };
 
   const removeExercise = (sectionIdx: number, exIdx: number) => {
-    setSections(prev => prev.map((s, i) => i === sectionIdx ? { ...s, exercises: s.exercises.filter((_, j) => j !== exIdx) } : s));
+    setSections((prev) =>
+      prev.map((s, i) => (i === sectionIdx ? { ...s, exercises: s.exercises.filter((_, j) => j !== exIdx) } : s)),
+    );
   };
 
   const updateExercise = (sectionIdx: number, exIdx: number, field: keyof ExerciseInput, value: string) => {
-    setSections(prev => prev.map((s, si) =>
-      si === sectionIdx
-        ? { ...s, exercises: s.exercises.map((ex, ei) => ei === exIdx ? { ...ex, [field]: value } : ex) }
-        : s
-    ));
+    setSections((prev) =>
+      prev.map((s, si) =>
+        si === sectionIdx
+          ? { ...s, exercises: s.exercises.map((ex, ei) => (ei === exIdx ? { ...ex, [field]: value } : ex)) }
+          : s,
+      ),
+    );
   };
 
   const handleEdit = async (workoutId: string) => {
-    const w = workouts.find(x => x.id === workoutId);
+    const w = workouts.find((x) => x.id === workoutId);
     if (!w) return;
 
     setFormTitle(w.title);
     setFormDesc(w.description);
-    setFormDate(new Date(w.workout_date + 'T00:00:00'));
+    setFormDate(new Date(w.workout_date + "T00:00:00"));
     setEditingId(workoutId);
 
     // Fetch sections and exercises for this workout
     const [sectionsRes, exercisesRes] = await Promise.all([
-      supabase.from('workout_sections').select('*').eq('workout_id', workoutId).order('order_index'),
-      supabase.from('exercises').select('*').eq('workout_id', workoutId).order('order_index'),
+      supabase.from("workout_sections").select("*").eq("workout_id", workoutId).order("order_index"),
+      supabase.from("exercises").select("*").eq("workout_id", workoutId).order("order_index"),
     ]);
 
     const dbSections = sectionsRes.data || [];
     const dbExercises = exercisesRes.data || [];
 
     if (dbSections.length > 0) {
-      setSections(dbSections.map(s => ({
-        section_name: s.section_name,
-        result_type: (s.result_type as SectionResultType) || 'completed',
-        input_mode: (s.input_mode as SectionInputMode) || 'single',
-        time_cap_minutes: (s as any).time_cap_minutes != null ? String((s as any).time_cap_minutes) : '',
-        exercises: dbExercises
-          .filter((e: any) => e.section_id === s.id)
-          .map((e: any) => ({
-            exercise_name: e.exercise_name || '',
-            sets: e.sets?.toString() || '',
-            reps: e.reps?.toString() || '',
-            duration: e.duration || '',
-            calories: e.calories != null ? String(e.calories) : '',
-            meters: e.meters != null ? String(e.meters) : '',
-            notes: e.notes || '',
-            scaling_notes: (e as any).scaling_notes || '',
-          })),
-      })).map(s => s.exercises.length === 0 ? { ...s, exercises: [emptyExercise()] } : s));
+      setSections(
+        dbSections
+          .map((s) => ({
+            section_name: s.section_name,
+            result_type: (s.result_type as SectionResultType) || "completed",
+            input_mode: (s.input_mode as SectionInputMode) || "single",
+            time_cap_minutes: (s as any).time_cap_minutes != null ? String((s as any).time_cap_minutes) : "",
+            exercises: dbExercises
+              .filter((e: any) => e.section_id === s.id)
+              .map((e: any) => ({
+                exercise_name: e.exercise_name || "",
+                sets: e.sets?.toString() || "",
+                reps: e.reps?.toString() || "",
+                duration: e.duration || "",
+                calories: e.calories != null ? String(e.calories) : "",
+                meters: e.meters != null ? String(e.meters) : "",
+                notes: e.notes || "",
+                scaling_notes: (e as any).scaling_notes || "",
+              })),
+          }))
+          .map((s) => (s.exercises.length === 0 ? { ...s, exercises: [emptyExercise()] } : s)),
+      );
     } else {
       // Fallback: use JSON exercises column
       const jsonExercises = w.exercises || [];
       if (jsonExercises.length > 0) {
-        setSections([{
-          section_name: 'Workout',
-          result_type: 'completed' as SectionResultType,
-          input_mode: 'single' as SectionInputMode,
-          exercises: jsonExercises.map((e: any) => ({
-            exercise_name: e.name || e.exercise_name || '',
-            sets: e.sets?.toString() || '',
-            reps: e.reps?.toString() || '',
-            duration: e.duration || '',
-            calories: e.calories != null ? String(e.calories) : '',
-            meters: e.meters != null ? String(e.meters) : '',
-            notes: e.notes || '',
-            scaling_notes: (e as any).scaling_notes || '',
-          })),
-        }]);
+        setSections([
+          {
+            section_name: "Workout",
+            result_type: "completed" as SectionResultType,
+            input_mode: "single" as SectionInputMode,
+            exercises: jsonExercises.map((e: any) => ({
+              exercise_name: e.name || e.exercise_name || "",
+              sets: e.sets?.toString() || "",
+              reps: e.reps?.toString() || "",
+              duration: e.duration || "",
+              calories: e.calories != null ? String(e.calories) : "",
+              meters: e.meters != null ? String(e.meters) : "",
+              notes: e.notes || "",
+              scaling_notes: (e as any).scaling_notes || "",
+            })),
+          },
+        ]);
       } else {
-        setSections(DEFAULT_SECTIONS.map(name => ({ section_name: name, result_type: 'completed' as SectionResultType, input_mode: 'single' as SectionInputMode, exercises: [emptyExercise()] })));
+        setSections(
+          DEFAULT_SECTIONS.map((name) => ({
+            section_name: name,
+            result_type: "completed" as SectionResultType,
+            input_mode: "single" as SectionInputMode,
+            exercises: [emptyExercise()],
+          })),
+        );
       }
     }
 
@@ -261,45 +363,38 @@ const WorkoutsTab = () => {
   const handleDelete = async (workoutId: string) => {
     // Delete exercises and sections first, then workout
     await Promise.all([
-      supabase.from('exercises').delete().eq('workout_id', workoutId),
-      supabase.from('workout_sections').delete().eq('workout_id', workoutId),
+      supabase.from("exercises").delete().eq("workout_id", workoutId),
+      supabase.from("workout_sections").delete().eq("workout_id", workoutId),
     ]);
-    const { error } = await supabase.from('workouts').delete().eq('id', workoutId);
+    const { error } = await supabase.from("workouts").delete().eq("id", workoutId);
     if (error) {
-      toast({ title: 'Error deleting workout', description: error.message, variant: 'destructive' });
+      toast({ title: "Error deleting workout", description: error.message, variant: "destructive" });
     } else {
-      toast({ title: 'Workout deleted' });
+      toast({ title: "Workout deleted" });
       fetchWorkouts();
     }
   };
 
   const executeSave = async () => {
-    const workoutDate = formDate ? format(formDate, 'yyyy-MM-dd') : null;
-
+    const workoutDate = formDate ? format(formDate, "yyyy-MM-dd") : null;
     let workoutId = editingId;
 
     if (editingId) {
-      // Update existing workout
-      const { error } = await supabase.from('workouts').update({
-        title: formTitle,
-        description: formDesc,
-        workout_date: workoutDate,
-      }).eq('id', editingId);
-
+      const { error } = await supabase
+        .from("workouts")
+        .update({
+          title: formTitle,
+          description: formDesc,
+          workout_date: workoutDate,
+        })
+        .eq("id", editingId);
       if (error) {
-        toast({ title: 'Error updating workout', description: error.message, variant: 'destructive' });
+        toast({ title: "Error updating workout", description: error.message, variant: "destructive" });
         return;
       }
-
-      // Clear old sections & exercises
-      await Promise.all([
-        supabase.from('exercises').delete().eq('workout_id', editingId),
-        supabase.from('workout_sections').delete().eq('workout_id', editingId),
-      ]);
     } else {
-      // Create new workout
       const { data: workout, error } = await supabase
-        .from('workouts')
+        .from("workouts")
         .insert({
           title: formTitle,
           description: formDesc,
@@ -308,40 +403,70 @@ const WorkoutsTab = () => {
         })
         .select()
         .single();
-
       if (error || !workout) {
-        toast({ title: 'Error creating workout', description: error?.message, variant: 'destructive' });
+        toast({ title: "Error creating workout", description: error?.message, variant: "destructive" });
         return;
       }
       workoutId = workout.id;
     }
 
-    // Insert sections
+    // Build section rows
     const sectionRows = sections
-      .filter(s => s.section_name.trim())
+      .filter((s) => s.section_name.trim())
       .map((s, i) => ({
         workout_id: workoutId,
         section_name: s.section_name,
-        result_type: s.result_type || 'completed',
-        input_mode: s.input_mode || 'single',
-        time_cap_minutes: s.time_cap_minutes && s.time_cap_minutes.trim() !== ''
-          ? Math.max(0, parseInt(s.time_cap_minutes))
-          : null,
+        result_type: s.result_type || "completed",
+        input_mode: s.input_mode || "single",
+        time_cap_minutes:
+          s.time_cap_minutes && String(s.time_cap_minutes).trim() !== ""
+            ? Math.max(0, parseInt(s.time_cap_minutes))
+            : null,
         order_index: i,
       }));
 
-    let sectionMap: Record<number, string> = {};
+    // Build exercise rows with null safety
+    const exerciseRows: any[] = [];
+    sections.forEach((section, si) => {
+      section.exercises
+        .filter((ex) => ex.exercise_name.trim())
+        .forEach((ex, ei) => {
+          exerciseRows.push({
+            workout_id: workoutId,
+            section_id: null, // will be updated after sections insert
+            exercise_name: ex.exercise_name,
+            sets: ex.sets ? parseInt(ex.sets) : null,
+            reps: ex.reps ? parseInt(ex.reps) : null,
+            duration: ex.duration || null,
+            calories: ex.calories && String(ex.calories).trim() !== "" ? parseInt(ex.calories) : null,
+            meters: ex.meters && String(ex.meters).trim() !== "" ? parseInt(ex.meters) : null,
+            notes: ex.notes || null,
+            scaling_notes: ex.scaling_notes ? ex.scaling_notes.trim() || null : null,
+            order_index: ei,
+            _sectionIndex: si,
+          });
+        });
+    });
 
+    // NOW delete old data — only after new data is ready
+    if (editingId) {
+      await Promise.all([
+        supabase.from("exercises").delete().eq("workout_id", editingId),
+        supabase.from("workout_sections").delete().eq("workout_id", editingId),
+      ]);
+    }
+
+    // Insert sections
+    let sectionMap: Record<number, string> = {};
     if (sectionRows.length > 0) {
       const { data: insertedSections, error: secError } = await supabase
-        .from('workout_sections')
+        .from("workout_sections")
         .insert(sectionRows)
         .select();
-
       if (secError) {
-        toast({ title: 'Error creating sections', description: secError.message, variant: 'destructive' });
+        toast({ title: "Error saving sections", description: secError.message, variant: "destructive" });
+        return;
       }
-
       if (insertedSections) {
         insertedSections.forEach((s, i) => {
           sectionMap[i] = s.id;
@@ -349,33 +474,22 @@ const WorkoutsTab = () => {
       }
     }
 
-    // Insert exercises
-    const exerciseRows: any[] = [];
-    sections.forEach((section, si) => {
-      section.exercises
-        .filter(ex => ex.exercise_name.trim())
-        .forEach((ex, ei) => {
-          exerciseRows.push({
-            workout_id: workoutId,
-            section_id: sectionMap[si] || null,
-            exercise_name: ex.exercise_name,
-            sets: ex.sets ? parseInt(ex.sets) : null,
-            reps: ex.reps ? parseInt(ex.reps) : null,
-            duration: ex.duration || null,
-            calories: ex.calories.trim() !== '' ? parseInt(ex.calories) : null,
-            meters: ex.meters.trim() !== '' ? parseInt(ex.meters) : null,
-            notes: ex.notes || null,
-            scaling_notes: ex.scaling_notes.trim() || null,
-            order_index: ei,
-          });
-        });
+    // Assign section IDs to exercises
+    const finalExerciseRows = exerciseRows.map((ex) => {
+      const { _sectionIndex, ...rest } = ex;
+      return { ...rest, section_id: sectionMap[_sectionIndex] || null };
     });
 
-    if (exerciseRows.length > 0) {
-      await supabase.from('exercises').insert(exerciseRows);
+    // Insert exercises
+    if (finalExerciseRows.length > 0) {
+      const { error: exError } = await supabase.from("exercises").insert(finalExerciseRows);
+      if (exError) {
+        toast({ title: "Error saving exercises", description: exError.message, variant: "destructive" });
+        return;
+      }
     }
 
-    toast({ title: editingId ? 'Workout updated!' : 'Workout created!' });
+    toast({ title: editingId ? "Workout updated!" : "Workout created!" });
     setShowForm(false);
     resetForm();
     fetchWorkouts();
@@ -383,18 +497,18 @@ const WorkoutsTab = () => {
 
   const handleSave = async () => {
     if (!formTitle.trim()) {
-      toast({ title: 'Please add a Workout Title.', variant: 'destructive' });
+      toast({ title: "Please add a Workout Title.", variant: "destructive" });
       return;
     }
 
     // Duplicate date check (only for new workouts)
     if (!editingId && formDate) {
-      const workoutDate = format(formDate, 'yyyy-MM-dd');
+      const workoutDate = format(formDate, "yyyy-MM-dd");
       const { data: existing } = await supabase
-        .from('workouts')
-        .select('id')
-        .eq('workout_date', workoutDate)
-        .is('program_id', null)
+        .from("workouts")
+        .select("id")
+        .eq("workout_date", workoutDate)
+        .is("program_id", null)
         .limit(1);
 
       if (existing && existing.length > 0) {
@@ -415,30 +529,68 @@ const WorkoutsTab = () => {
     <div>
       <div className="flex items-center justify-between mb-4">
         <h2 className="font-bold font-display">MANAGE WORKOUTS</h2>
-        <Button size="sm" className="gradient-fire text-primary-foreground shadow-fire" onClick={() => {
-          if (showForm) { setShowForm(false); resetForm(); } else { resetForm(); setShowForm(true); }
-        }}>
-          {showForm ? <><X className="h-4 w-4 mr-1" /> Cancel</> : <><Plus className="h-4 w-4 mr-1" /> Add Workout</>}
+        <Button
+          size="sm"
+          className="gradient-fire text-primary-foreground shadow-fire"
+          onClick={() => {
+            if (showForm) {
+              setShowForm(false);
+              resetForm();
+            } else {
+              resetForm();
+              setShowForm(true);
+            }
+          }}
+        >
+          {showForm ? (
+            <>
+              <X className="h-4 w-4 mr-1" /> Cancel
+            </>
+          ) : (
+            <>
+              <Plus className="h-4 w-4 mr-1" /> Add Workout
+            </>
+          )}
         </Button>
       </div>
 
       {showForm && (
         <div className="rounded-xl bg-card border border-border p-5 mb-6 shadow-card space-y-4">
-          <Input placeholder="Workout Title" value={formTitle} onChange={e => setFormTitle(e.target.value)} className="bg-secondary" />
-          <Textarea placeholder="Description" value={formDesc} onChange={e => setFormDesc(e.target.value)} className="bg-secondary" rows={2} />
+          <Input
+            placeholder="Workout Title"
+            value={formTitle}
+            onChange={(e) => setFormTitle(e.target.value)}
+            className="bg-secondary"
+          />
+          <Textarea
+            placeholder="Description"
+            value={formDesc}
+            onChange={(e) => setFormDesc(e.target.value)}
+            className="bg-secondary"
+            rows={2}
+          />
 
           {/* Date Picker */}
           <div>
             <label className="text-xs text-muted-foreground mb-1 block font-display">WORKOUT DATE</label>
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !formDate && "text-muted-foreground")}>
+                <Button
+                  variant="outline"
+                  className={cn("w-full justify-start text-left font-normal", !formDate && "text-muted-foreground")}
+                >
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {formDate ? format(formDate, 'PPP') : 'Pick a date'}
+                  {formDate ? format(formDate, "PPP") : "Pick a date"}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
-                <Calendar mode="single" selected={formDate} onSelect={setFormDate} initialFocus className="p-3 pointer-events-auto" />
+                <Calendar
+                  mode="single"
+                  selected={formDate}
+                  onSelect={setFormDate}
+                  initialFocus
+                  className="p-3 pointer-events-auto"
+                />
               </PopoverContent>
             </Popover>
           </div>
@@ -456,16 +608,31 @@ const WorkoutsTab = () => {
               <div key={si} className="mb-4 rounded-lg border border-border bg-secondary/50 p-3">
                 <div className="flex items-center gap-2 mb-2">
                   <div className="flex flex-col gap-0.5">
-                    <button onClick={() => moveSection(si, -1)} className="text-muted-foreground hover:text-foreground text-xs" disabled={si === 0}>▲</button>
-                    <button onClick={() => moveSection(si, 1)} className="text-muted-foreground hover:text-foreground text-xs" disabled={si === sections.length - 1}>▼</button>
+                    <button
+                      onClick={() => moveSection(si, -1)}
+                      className="text-muted-foreground hover:text-foreground text-xs"
+                      disabled={si === 0}
+                    >
+                      ▲
+                    </button>
+                    <button
+                      onClick={() => moveSection(si, 1)}
+                      className="text-muted-foreground hover:text-foreground text-xs"
+                      disabled={si === sections.length - 1}
+                    >
+                      ▼
+                    </button>
                   </div>
                   <Input
                     placeholder="Section name"
                     value={section.section_name}
-                    onChange={e => updateSectionName(si, e.target.value)}
+                    onChange={(e) => updateSectionName(si, e.target.value)}
                     className="bg-background text-sm font-bold flex-1"
                   />
-                  <button onClick={() => removeSection(si)} className="text-destructive hover:bg-destructive/10 p-1 rounded">
+                  <button
+                    onClick={() => removeSection(si)}
+                    className="text-destructive hover:bg-destructive/10 p-1 rounded"
+                  >
                     <X className="h-4 w-4" />
                   </button>
                 </div>
@@ -473,27 +640,41 @@ const WorkoutsTab = () => {
                 {/* Result Type & Input Mode */}
                 <div className="mb-2 grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <div>
-                    <label className="text-[10px] text-muted-foreground font-display uppercase tracking-wider mb-1 block">Result Type</label>
-                    <Select value={section.result_type} onValueChange={(v) => updateSectionResultType(si, v as SectionResultType)}>
+                    <label className="text-[10px] text-muted-foreground font-display uppercase tracking-wider mb-1 block">
+                      Result Type
+                    </label>
+                    <Select
+                      value={section.result_type}
+                      onValueChange={(v) => updateSectionResultType(si, v as SectionResultType)}
+                    >
                       <SelectTrigger className="bg-background text-xs h-8">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {RESULT_TYPE_OPTIONS.map(opt => (
-                          <SelectItem key={opt.value} value={opt.value} className="text-xs">{opt.label}</SelectItem>
+                        {RESULT_TYPE_OPTIONS.map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value} className="text-xs">
+                            {opt.label}
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
                   <div>
-                    <label className="text-[10px] text-muted-foreground font-display uppercase tracking-wider mb-1 block">Input Mode</label>
-                    <Select value={section.input_mode || 'single'} onValueChange={(v) => updateSectionInputMode(si, v as SectionInputMode)}>
+                    <label className="text-[10px] text-muted-foreground font-display uppercase tracking-wider mb-1 block">
+                      Input Mode
+                    </label>
+                    <Select
+                      value={section.input_mode || "single"}
+                      onValueChange={(v) => updateSectionInputMode(si, v as SectionInputMode)}
+                    >
                       <SelectTrigger className="bg-background text-xs h-8">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {INPUT_MODE_OPTIONS.map(opt => (
-                          <SelectItem key={opt.value} value={opt.value} className="text-xs">{opt.label}</SelectItem>
+                        {INPUT_MODE_OPTIONS.map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value} className="text-xs">
+                            {opt.label}
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -502,13 +683,15 @@ const WorkoutsTab = () => {
 
                 {/* Optional Time Cap (minutes) */}
                 <div className="mb-2">
-                  <label className="text-[10px] text-muted-foreground font-display uppercase tracking-wider mb-1 block">Time Cap (min, optional)</label>
+                  <label className="text-[10px] text-muted-foreground font-display uppercase tracking-wider mb-1 block">
+                    Time Cap (min, optional)
+                  </label>
                   <Input
                     type="number"
                     min="0"
                     placeholder="—"
-                    value={section.time_cap_minutes || ''}
-                    onChange={e => updateSectionTimeCap(si, e.target.value)}
+                    value={section.time_cap_minutes || ""}
+                    onChange={(e) => updateSectionTimeCap(si, e.target.value)}
                     className="bg-background text-xs h-8 max-w-[120px]"
                   />
                 </div>
@@ -516,31 +699,82 @@ const WorkoutsTab = () => {
                 {section.exercises.map((ex, ei) => (
                   <div key={ei} className="mb-3 p-2 rounded-md bg-background/40 border border-border/60 space-y-1.5">
                     <div className="flex items-start gap-1.5">
-                      <Input placeholder="Exercise name" value={ex.exercise_name} onChange={e => updateExercise(si, ei, 'exercise_name', e.target.value)} className="bg-background text-xs flex-1" />
-                      <button onClick={() => removeExercise(si, ei)} className="p-2 text-destructive hover:bg-destructive/10 rounded shrink-0">
+                      <Input
+                        placeholder="Exercise name"
+                        value={ex.exercise_name}
+                        onChange={(e) => updateExercise(si, ei, "exercise_name", e.target.value)}
+                        className="bg-background text-xs flex-1"
+                      />
+                      <button
+                        onClick={() => removeExercise(si, ei)}
+                        className="p-2 text-destructive hover:bg-destructive/10 rounded shrink-0"
+                      >
                         <X className="h-3 w-3" />
                       </button>
                     </div>
                     <div className="grid grid-cols-3 gap-1.5">
-                      <Input placeholder="Sets" type="number" min="0" value={ex.sets} onChange={e => updateExercise(si, ei, 'sets', e.target.value)} className="bg-background text-xs" />
-                      <Input placeholder="Reps" type="number" min="0" value={ex.reps} onChange={e => updateExercise(si, ei, 'reps', e.target.value)} className="bg-background text-xs" />
-                      <Input placeholder="Time" value={ex.duration} onChange={e => updateExercise(si, ei, 'duration', e.target.value)} className="bg-background text-xs" />
+                      <Input
+                        placeholder="Sets"
+                        type="number"
+                        min="0"
+                        value={ex.sets}
+                        onChange={(e) => updateExercise(si, ei, "sets", e.target.value)}
+                        className="bg-background text-xs"
+                      />
+                      <Input
+                        placeholder="Reps"
+                        type="number"
+                        min="0"
+                        value={ex.reps}
+                        onChange={(e) => updateExercise(si, ei, "reps", e.target.value)}
+                        className="bg-background text-xs"
+                      />
+                      <Input
+                        placeholder="Time"
+                        value={ex.duration}
+                        onChange={(e) => updateExercise(si, ei, "duration", e.target.value)}
+                        className="bg-background text-xs"
+                      />
                     </div>
                     <div className="grid grid-cols-2 gap-1.5">
-                      <Input placeholder="Cals" type="number" min="0" value={ex.calories} onChange={e => updateExercise(si, ei, 'calories', e.target.value)} className="bg-background text-xs" />
-                      <Input placeholder="Meters" type="number" min="0" value={ex.meters} onChange={e => updateExercise(si, ei, 'meters', e.target.value)} className="bg-background text-xs" />
+                      <Input
+                        placeholder="Cals"
+                        type="number"
+                        min="0"
+                        value={ex.calories}
+                        onChange={(e) => updateExercise(si, ei, "calories", e.target.value)}
+                        className="bg-background text-xs"
+                      />
+                      <Input
+                        placeholder="Meters"
+                        type="number"
+                        min="0"
+                        value={ex.meters}
+                        onChange={(e) => updateExercise(si, ei, "meters", e.target.value)}
+                        className="bg-background text-xs"
+                      />
                     </div>
-                    <Input placeholder="Coach note" value={ex.notes} onChange={e => updateExercise(si, ei, 'notes', e.target.value)} className="bg-background text-xs" />
+                    <Input
+                      placeholder="Coach note"
+                      value={ex.notes}
+                      onChange={(e) => updateExercise(si, ei, "notes", e.target.value)}
+                      className="bg-background text-xs"
+                    />
                     <Textarea
                       placeholder="e.g. Sub ring rows for pull-ups, reduce weight by 50%"
                       value={ex.scaling_notes}
-                      onChange={e => updateExercise(si, ei, 'scaling_notes', e.target.value)}
+                      onChange={(e) => updateExercise(si, ei, "scaling_notes", e.target.value)}
                       className="bg-background text-xs"
                       rows={3}
                     />
                   </div>
                 ))}
-                <Button variant="ghost" size="sm" onClick={() => addExercise(si)} className="text-xs h-6 text-muted-foreground">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => addExercise(si)}
+                  className="text-xs h-6 text-muted-foreground"
+                >
                   <Plus className="h-3 w-3 mr-1" /> Exercise
                 </Button>
               </div>
@@ -548,7 +782,7 @@ const WorkoutsTab = () => {
           </div>
 
           <Button onClick={handleSave} className="w-full gradient-fire text-primary-foreground shadow-fire">
-            <Save className="h-4 w-4 mr-2" /> {editingId ? 'UPDATE WORKOUT' : 'SAVE WORKOUT'}
+            <Save className="h-4 w-4 mr-2" /> {editingId ? "UPDATE WORKOUT" : "SAVE WORKOUT"}
           </Button>
         </div>
       )}
@@ -571,13 +805,19 @@ const WorkoutsTab = () => {
 
       <div className="space-y-3">
         {workouts.map((w) => (
-          <div key={w.id} className="rounded-xl bg-card border border-border p-4 shadow-card flex items-center justify-between">
+          <div
+            key={w.id}
+            className="rounded-xl bg-card border border-border p-4 shadow-card flex items-center justify-between"
+          >
             <div>
               <h3 className="font-bold font-display text-sm">{w.title}</h3>
               <p className="text-xs text-muted-foreground">{w.workout_date}</p>
             </div>
             <div className="flex items-center gap-2">
-              <button onClick={() => handleEdit(w.id)} className="p-2 rounded-lg bg-secondary text-muted-foreground hover:text-foreground">
+              <button
+                onClick={() => handleEdit(w.id)}
+                className="p-2 rounded-lg bg-secondary text-muted-foreground hover:text-foreground"
+              >
                 <Edit className="h-4 w-4" />
               </button>
               <AlertDialog>
@@ -589,11 +829,19 @@ const WorkoutsTab = () => {
                 <AlertDialogContent>
                   <AlertDialogHeader>
                     <AlertDialogTitle>Delete "{w.title}"?</AlertDialogTitle>
-                    <AlertDialogDescription>This will permanently delete the workout, its sections, and all exercises. This action cannot be undone.</AlertDialogDescription>
+                    <AlertDialogDescription>
+                      This will permanently delete the workout, its sections, and all exercises. This action cannot be
+                      undone.
+                    </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
                     <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={() => handleDelete(w.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
+                    <AlertDialogAction
+                      onClick={() => handleDelete(w.id)}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      Delete
+                    </AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>
               </AlertDialog>
@@ -611,44 +859,49 @@ const ProgramsTab = () => {
   const [programs, setPrograms] = useState<ProgramRow[]>([]);
 
   const fetchPrograms = async () => {
-    const { data } = await supabase.from('programs').select('id, title, description, sku, store_link, image_url, is_free').order('is_free', { ascending: false });
+    const { data } = await supabase
+      .from("programs")
+      .select("id, title, description, sku, store_link, image_url, is_free")
+      .order("is_free", { ascending: false });
     if (data) setPrograms(data);
   };
 
-  useEffect(() => { fetchPrograms(); }, []);
+  useEffect(() => {
+    fetchPrograms();
+  }, []);
 
   const isEditable = (p: ProgramRow) => {
-    const t = (p.title + ' ' + (p.sku || '')).toLowerCase();
-    return t.includes('firedog') || t.includes('engine');
+    const t = (p.title + " " + (p.sku || "")).toLowerCase();
+    return t.includes("firedog") || t.includes("engine");
   };
   const handleImageUpload = async (programId: string, file: File) => {
-    const ext = file.name.split('.').pop();
+    const ext = file.name.split(".").pop();
     const path = `programs/${programId}.${ext}`;
 
-    const { error: uploadError } = await supabase.storage.from('program-images').upload(path, file, { upsert: true });
+    const { error: uploadError } = await supabase.storage.from("program-images").upload(path, file, { upsert: true });
     if (uploadError) {
-      toast({ title: 'Upload failed', description: uploadError.message, variant: 'destructive' });
+      toast({ title: "Upload failed", description: uploadError.message, variant: "destructive" });
       return;
     }
 
-    const { data: urlData } = supabase.storage.from('program-images').getPublicUrl(path);
-    const imageUrl = urlData.publicUrl + '?t=' + Date.now();
+    const { data: urlData } = supabase.storage.from("program-images").getPublicUrl(path);
+    const imageUrl = urlData.publicUrl + "?t=" + Date.now();
 
-    const { error } = await supabase.from('programs').update({ image_url: imageUrl }).eq('id', programId);
+    const { error } = await supabase.from("programs").update({ image_url: imageUrl }).eq("id", programId);
     if (error) {
-      toast({ title: 'Error saving URL', description: error.message, variant: 'destructive' });
+      toast({ title: "Error saving URL", description: error.message, variant: "destructive" });
     } else {
-      toast({ title: 'Image updated!' });
+      toast({ title: "Image updated!" });
       fetchPrograms();
     }
   };
 
   const handleDelete = async (programId: string) => {
-    const { error } = await supabase.from('programs').delete().eq('id', programId);
+    const { error } = await supabase.from("programs").delete().eq("id", programId);
     if (error) {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      toast({ title: "Error", description: error.message, variant: "destructive" });
     } else {
-      toast({ title: 'Program deleted' });
+      toast({ title: "Program deleted" });
       fetchPrograms();
     }
   };
@@ -662,7 +915,10 @@ const ProgramsTab = () => {
         {programs.map((p) => (
           <div
             key={p.id}
-            className={cn("rounded-xl bg-card border border-border p-4 shadow-card", isEditable(p) && "cursor-pointer hover:border-primary/50 transition-colors")}
+            className={cn(
+              "rounded-xl bg-card border border-border p-4 shadow-card",
+              isEditable(p) && "cursor-pointer hover:border-primary/50 transition-colors",
+            )}
             onClick={() => isEditable(p) && navigate(`/admin/programs/${p.id}`)}
           >
             <div className="flex items-center justify-between">
@@ -676,17 +932,24 @@ const ProgramsTab = () => {
                 )}
                 <div className="min-w-0">
                   <h3 className="font-bold font-display text-sm truncate">{p.title}</h3>
-                  <p className="text-xs text-muted-foreground">{p.sku} • {p.is_free ? 'Free' : 'Premium'}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {p.sku} • {p.is_free ? "Free" : "Premium"}
+                  </p>
                 </div>
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 <label className="p-2 rounded-lg bg-secondary text-muted-foreground hover:text-foreground cursor-pointer">
                   <Image className="h-4 w-4" />
-                  <input type="file" accept="image/*" className="hidden" onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) handleImageUpload(p.id, file);
-                    e.target.value = '';
-                  }} />
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleImageUpload(p.id, file);
+                      e.target.value = "";
+                    }}
+                  />
                 </label>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
@@ -697,11 +960,18 @@ const ProgramsTab = () => {
                   <AlertDialogContent>
                     <AlertDialogHeader>
                       <AlertDialogTitle>Delete "{p.title}"?</AlertDialogTitle>
-                      <AlertDialogDescription>This will permanently remove this program. This action cannot be undone.</AlertDialogDescription>
+                      <AlertDialogDescription>
+                        This will permanently remove this program. This action cannot be undone.
+                      </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                       <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction onClick={() => handleDelete(p.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
+                      <AlertDialogAction
+                        onClick={() => handleDelete(p.id)}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      >
+                        Delete
+                      </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>
@@ -719,7 +989,7 @@ const ChallengesTab = () => {
   const { toast } = useToast();
   const [challenges, setChallenges] = useState<ChallengeRow[]>([]);
   const [editing, setEditing] = useState<ChallengeRow | null>(null);
-  const [desc, setDesc] = useState('');
+  const [desc, setDesc] = useState("");
   const [startDate, setStartDate] = useState<Date | undefined>();
   const [endDate, setEndDate] = useState<Date | undefined>();
   const [lifts, setLifts] = useState<{ id?: string; section_name: string }[]>([]);
@@ -727,122 +997,290 @@ const ChallengesTab = () => {
   const [hasFuture, setHasFuture] = useState(false);
 
   const fetchChallenges = () => {
-    const todayLocal = new Date().toLocaleDateString('en-CA');
+    const todayLocal = new Date().toLocaleDateString("en-CA");
     supabase
-      .from('challenges')
-      .select('*')
-      .eq('title', 'FIREDOG TOTAL')
-      .gte('end_date', todayLocal)
-      .order('start_date', { ascending: true })
+      .from("challenges")
+      .select("*")
+      .eq("title", "FIREDOG TOTAL")
+      .gte("end_date", todayLocal)
+      .order("start_date", { ascending: true })
       .then(({ data }) => {
         const rows = (data as ChallengeRow[]) || [];
         setChallenges(rows);
-        setHasFuture(rows.some(c => c.start_date > todayLocal));
+        setHasFuture(rows.some((c) => c.start_date > todayLocal));
       });
   };
 
-  useEffect(() => { fetchChallenges(); }, []);
+  useEffect(() => {
+    fetchChallenges();
+  }, []);
 
   const openEdit = async (challenge: ChallengeRow) => {
     setEditing(challenge);
-    setDesc(challenge.description || '');
+    setDesc(challenge.description || "");
     setStartDate(challenge.start_date ? new Date(`${challenge.start_date}T00:00:00`) : undefined);
     setEndDate(challenge.end_date ? new Date(`${challenge.end_date}T00:00:00`) : undefined);
-    const { data } = await supabase.from('workout_sections').select('id, section_name').eq('workout_id', challenge.id).order('order_index');
-    setLifts(((data as any[]) || []).map(s => ({ id: s.id, section_name: s.section_name })));
+    const { data } = await supabase
+      .from("workout_sections")
+      .select("id, section_name")
+      .eq("workout_id", challenge.id)
+      .order("order_index");
+    setLifts(((data as any[]) || []).map((s) => ({ id: s.id, section_name: s.section_name })));
   };
 
   const prepareNextMonth = async () => {
     const now = new Date();
     const nextStart = new Date(now.getFullYear(), now.getMonth() + 1, 1);
     const nextEnd = new Date(now.getFullYear(), now.getMonth() + 2, 0);
-    const nextStartStr = format(nextStart, 'yyyy-MM-dd');
-    const nextEndStr = format(nextEnd, 'yyyy-MM-dd');
-    const { data: existing } = await supabase.from('challenges').select('*').eq('title', 'FIREDOG TOTAL').eq('start_date', nextStartStr).maybeSingle();
+    const nextStartStr = format(nextStart, "yyyy-MM-dd");
+    const nextEndStr = format(nextEnd, "yyyy-MM-dd");
+    const { data: existing } = await supabase
+      .from("challenges")
+      .select("*")
+      .eq("title", "FIREDOG TOTAL")
+      .eq("start_date", nextStartStr)
+      .maybeSingle();
     if (existing) {
       await openEdit(existing as ChallengeRow);
       return;
     }
-    const current = challenges.find(c => c.start_date <= new Date().toLocaleDateString('en-CA') && c.end_date >= new Date().toLocaleDateString('en-CA')) || challenges[0];
+    const current =
+      challenges.find(
+        (c) =>
+          c.start_date <= new Date().toLocaleDateString("en-CA") &&
+          c.end_date >= new Date().toLocaleDateString("en-CA"),
+      ) || challenges[0];
     const { data: currentLifts } = current
-      ? await supabase.from('workout_sections').select('section_name').eq('workout_id', current.id).order('order_index')
+      ? await supabase.from("workout_sections").select("section_name").eq("workout_id", current.id).order("order_index")
       : { data: [] as any[] };
-    const draft: ChallengeRow = { id: '', title: 'FIREDOG TOTAL', description: current?.description || '', participants: 0, start_date: nextStartStr, end_date: nextEndStr };
+    const draft: ChallengeRow = {
+      id: "",
+      title: "FIREDOG TOTAL",
+      description: current?.description || "",
+      participants: 0,
+      start_date: nextStartStr,
+      end_date: nextEndStr,
+    };
     setEditing(draft);
-    setDesc(draft.description || '');
+    setDesc(draft.description || "");
     setStartDate(nextStart);
     setEndDate(nextEnd);
-    setLifts(((currentLifts as any[]) || []).map(s => ({ section_name: s.section_name })).concat((currentLifts || []).length ? [] : [{ section_name: 'Back Squat' }]));
+    setLifts(
+      ((currentLifts as any[]) || [])
+        .map((s) => ({ section_name: s.section_name }))
+        .concat((currentLifts || []).length ? [] : [{ section_name: "Back Squat" }]),
+    );
   };
 
   const saveChallenge = async () => {
     if (!editing || !startDate || !endDate) return;
     if (startDate >= endDate) {
-      toast({ title: 'Invalid dates', description: 'Start date must be before end date.', variant: 'destructive' });
+      toast({ title: "Invalid dates", description: "Start date must be before end date.", variant: "destructive" });
       return;
     }
-    const cleanLifts = lifts.map(l => ({ ...l, section_name: l.section_name.trim() })).filter(l => l.section_name);
+    const cleanLifts = lifts.map((l) => ({ ...l, section_name: l.section_name.trim() })).filter((l) => l.section_name);
     if (cleanLifts.length < 1) {
-      toast({ title: 'At least one lift is required', variant: 'destructive' });
+      toast({ title: "At least one lift is required", variant: "destructive" });
       return;
     }
     setSaving(true);
-    const start = format(startDate, 'yyyy-MM-dd');
-    const end = format(endDate, 'yyyy-MM-dd');
+    const start = format(startDate, "yyyy-MM-dd");
+    const end = format(endDate, "yyyy-MM-dd");
     let challengeId = editing.id;
-    const payload = { title: 'FIREDOG TOTAL', description: desc.trim() || null, start_date: start, end_date: end };
+    const payload = { title: "FIREDOG TOTAL", description: desc.trim() || null, start_date: start, end_date: end };
     const challengeRes = challengeId
-      ? await supabase.from('challenges').update(payload).eq('id', challengeId)
-      : await supabase.from('challenges').insert({ ...payload, participants: 0 }).select('id').single();
+      ? await supabase.from("challenges").update(payload).eq("id", challengeId)
+      : await supabase
+          .from("challenges")
+          .insert({ ...payload, participants: 0 })
+          .select("id")
+          .single();
     if (challengeRes.error) {
       setSaving(false);
-      toast({ title: 'Save failed', description: challengeRes.error.message, variant: 'destructive' });
+      toast({ title: "Save failed", description: challengeRes.error.message, variant: "destructive" });
       return;
     }
     if (!challengeId) challengeId = (challengeRes.data as any).id;
-    const existingIds = cleanLifts.map(l => l.id).filter(Boolean) as string[];
-    await supabase.from('workout_sections').delete().eq('workout_id', challengeId).not('id', 'in', `(${existingIds.join(',') || '00000000-0000-0000-0000-000000000000'})`);
+    const existingIds = cleanLifts.map((l) => l.id).filter(Boolean) as string[];
+    await supabase
+      .from("workout_sections")
+      .delete()
+      .eq("workout_id", challengeId)
+      .not("id", "in", `(${existingIds.join(",") || "00000000-0000-0000-0000-000000000000"})`);
     for (let i = 0; i < cleanLifts.length; i++) {
       const lift = cleanLifts[i];
-      if (lift.id) await supabase.from('workout_sections').update({ order_index: i, result_type: 'weight', input_mode: 'single' }).eq('id', lift.id);
-      else await supabase.from('workout_sections').insert({ workout_id: challengeId, section_name: lift.section_name, order_index: i, result_type: 'weight', input_mode: 'single' });
+      if (lift.id)
+        await supabase
+          .from("workout_sections")
+          .update({ order_index: i, result_type: "weight", input_mode: "single" })
+          .eq("id", lift.id);
+      else
+        await supabase
+          .from("workout_sections")
+          .insert({
+            workout_id: challengeId,
+            section_name: lift.section_name,
+            order_index: i,
+            result_type: "weight",
+            input_mode: "single",
+          });
     }
     setSaving(false);
     setEditing(null);
     fetchChallenges();
-    toast({ title: 'Firedog Total saved' });
+    toast({ title: "Firedog Total saved" });
   };
 
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
         <h2 className="font-bold font-display">MANAGE CHALLENGES</h2>
-        {!hasFuture && <Button size="sm" onClick={prepareNextMonth} className="gradient-fire text-primary-foreground shadow-fire"><Plus className="h-4 w-4 mr-1" /> Prepare Next Month</Button>}
+        {!hasFuture && (
+          <Button size="sm" onClick={prepareNextMonth} className="gradient-fire text-primary-foreground shadow-fire">
+            <Plus className="h-4 w-4 mr-1" /> Prepare Next Month
+          </Button>
+        )}
       </div>
       <div className="space-y-3">
         {challenges.map((c) => (
           <div key={c.id} className="rounded-xl bg-card border border-border p-4 shadow-card">
             <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0 flex-1"><h3 className="font-bold font-display text-sm truncate">{c.title}</h3><p className="text-xs text-muted-foreground mt-1">{c.description}</p><p className="text-xs text-muted-foreground mt-2">{c.start_date} → {c.end_date}</p><p className="text-xs text-muted-foreground mt-2">{c.participants} participants</p></div>
-              <div className="flex items-center gap-2 shrink-0"><button onClick={() => navigate(`/workout/${c.id}`)} className="p-2 rounded-lg bg-secondary text-muted-foreground hover:text-foreground"><Eye className="h-4 w-4" /></button><button onClick={() => openEdit(c)} className="p-2 rounded-lg bg-secondary text-muted-foreground hover:text-foreground"><Edit className="h-4 w-4" /></button></div>
+              <div className="min-w-0 flex-1">
+                <h3 className="font-bold font-display text-sm truncate">{c.title}</h3>
+                <p className="text-xs text-muted-foreground mt-1">{c.description}</p>
+                <p className="text-xs text-muted-foreground mt-2">
+                  {c.start_date} → {c.end_date}
+                </p>
+                <p className="text-xs text-muted-foreground mt-2">{c.participants} participants</p>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  onClick={() => navigate(`/workout/${c.id}`)}
+                  className="p-2 rounded-lg bg-secondary text-muted-foreground hover:text-foreground"
+                >
+                  <Eye className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => openEdit(c)}
+                  className="p-2 rounded-lg bg-secondary text-muted-foreground hover:text-foreground"
+                >
+                  <Edit className="h-4 w-4" />
+                </button>
+              </div>
             </div>
           </div>
         ))}
       </div>
       {editing && (
-        <div className="fixed inset-0 z-50 bg-black/80 flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={() => setEditing(null)}>
-          <div className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-t-xl sm:rounded-xl bg-background border border-border p-4" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4"><h3 className="font-bold font-display">EDIT FIREDOG TOTAL</h3><button onClick={() => setEditing(null)} className="p-2 rounded-lg bg-secondary"><X className="h-4 w-4" /></button></div>
+        <div
+          className="fixed inset-0 z-50 bg-black/80 flex items-end sm:items-center justify-center p-0 sm:p-4"
+          onClick={() => setEditing(null)}
+        >
+          <div
+            className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-t-xl sm:rounded-xl bg-background border border-border p-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold font-display">EDIT FIREDOG TOTAL</h3>
+              <button onClick={() => setEditing(null)} className="p-2 rounded-lg bg-secondary">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
             <div className="space-y-4">
-              <div><label className="text-xs text-muted-foreground mb-1 block">Title</label><Input value="FIREDOG TOTAL" disabled className="bg-secondary" /></div>
-              <div><label className="text-xs text-muted-foreground mb-1 block">Description / Coaching Notes</label><Textarea value={desc} onChange={(e) => setDesc(e.target.value)} rows={4} className="bg-secondary" /></div>
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Title</label>
+                <Input value="FIREDOG TOTAL" disabled className="bg-secondary" />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Description / Coaching Notes</label>
+                <Textarea value={desc} onChange={(e) => setDesc(e.target.value)} rows={4} className="bg-secondary" />
+              </div>
               <div className="grid grid-cols-2 gap-3">
-                {[['Start date', startDate, setStartDate], ['End date', endDate, setEndDate]].map(([label, date, setter]: any) => (
-                  <div key={label}><label className="text-xs text-muted-foreground mb-1 block">{label}</label><Popover><PopoverTrigger asChild><Button variant="outline" className="w-full justify-start text-left font-normal"><CalendarIcon className="h-4 w-4" />{date ? format(date, 'MMM d, yyyy') : 'Pick date'}</Button></PopoverTrigger><PopoverContent className="w-auto p-0"><Calendar mode="single" selected={date} onSelect={setter} initialFocus className="p-3 pointer-events-auto" /></PopoverContent></Popover></div>
+                {[
+                  ["Start date", startDate, setStartDate],
+                  ["End date", endDate, setEndDate],
+                ].map(([label, date, setter]: any) => (
+                  <div key={label}>
+                    <label className="text-xs text-muted-foreground mb-1 block">{label}</label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" className="w-full justify-start text-left font-normal">
+                          <CalendarIcon className="h-4 w-4" />
+                          {date ? format(date, "MMM d, yyyy") : "Pick date"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0">
+                        <Calendar
+                          mode="single"
+                          selected={date}
+                          onSelect={setter}
+                          initialFocus
+                          className="p-3 pointer-events-auto"
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
                 ))}
               </div>
-              <div><div className="flex items-center justify-between mb-2"><label className="text-xs text-muted-foreground block">Lifts</label><Button size="sm" variant="outline" onClick={() => setLifts(prev => [...prev, { section_name: '' }])}><Plus className="h-3.5 w-3.5" /> Add</Button></div><div className="space-y-2">{lifts.map((lift, i) => <div key={lift.id || i} className="flex items-center gap-2"><div className="relative flex-1 min-w-0"><Input value={lift.section_name} disabled={!!lift.id} title={lift.id ? 'Rename by deleting this lift and adding a new one' : undefined} onChange={(e) => setLifts(prev => prev.map((l, idx) => idx === i ? { ...l, section_name: e.target.value } : l))} className="bg-secondary pr-8" />{lift.id && <Lock className="absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />}</div><button disabled={lifts.length <= 1} onClick={() => setLifts(prev => prev.length <= 1 ? prev : prev.filter((_, idx) => idx !== i))} className="p-2 rounded-lg bg-secondary text-destructive disabled:opacity-40"><Trash2 className="h-4 w-4" /></button></div>)}</div></div>
-              <div className="flex gap-2"><Button variant="outline" onClick={() => editing.id && navigate(`/workout/${editing.id}`)} className="flex-1"><Eye className="h-4 w-4" /> Preview</Button><Button disabled={saving} onClick={saveChallenge} className="flex-1 gradient-fire text-primary-foreground"><Save className="h-4 w-4" /> Save</Button></div>
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-xs text-muted-foreground block">Lifts</label>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setLifts((prev) => [...prev, { section_name: "" }])}
+                  >
+                    <Plus className="h-3.5 w-3.5" /> Add
+                  </Button>
+                </div>
+                <div className="space-y-2">
+                  {lifts.map((lift, i) => (
+                    <div key={lift.id || i} className="flex items-center gap-2">
+                      <div className="relative flex-1 min-w-0">
+                        <Input
+                          value={lift.section_name}
+                          disabled={!!lift.id}
+                          title={lift.id ? "Rename by deleting this lift and adding a new one" : undefined}
+                          onChange={(e) =>
+                            setLifts((prev) =>
+                              prev.map((l, idx) => (idx === i ? { ...l, section_name: e.target.value } : l)),
+                            )
+                          }
+                          className="bg-secondary pr-8"
+                        />
+                        {lift.id && (
+                          <Lock className="absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                        )}
+                      </div>
+                      <button
+                        disabled={lifts.length <= 1}
+                        onClick={() =>
+                          setLifts((prev) => (prev.length <= 1 ? prev : prev.filter((_, idx) => idx !== i)))
+                        }
+                        className="p-2 rounded-lg bg-secondary text-destructive disabled:opacity-40"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => editing.id && navigate(`/workout/${editing.id}`)}
+                  className="flex-1"
+                >
+                  <Eye className="h-4 w-4" /> Preview
+                </Button>
+                <Button
+                  disabled={saving}
+                  onClick={saveChallenge}
+                  className="flex-1 gradient-fire text-primary-foreground"
+                >
+                  <Save className="h-4 w-4" /> Save
+                </Button>
+              </div>
             </div>
           </div>
         </div>
@@ -873,8 +1311,8 @@ const HomeTab = () => {
   useEffect(() => {
     const fetch = async () => {
       const [w, p] = await Promise.all([
-        supabase.from('workouts').select('id, title'),
-        supabase.from('programs').select('id, title'),
+        supabase.from("workouts").select("id, title"),
+        supabase.from("programs").select("id, title"),
       ]);
       if (w.data) setWorkouts(w.data);
       if (p.data) setPrograms(p.data);
@@ -892,23 +1330,33 @@ const HomeTab = () => {
         </div>
         <div className="rounded-xl bg-card border border-border p-4 shadow-card">
           <label className="text-xs text-muted-foreground mb-2 block">Motivational Quote</label>
-          <Textarea defaultValue='"The fire inside you burns brighter than the fire around you." — Unknown' className="bg-secondary" rows={2} />
+          <Textarea
+            defaultValue='"The fire inside you burns brighter than the fire around you." — Unknown'
+            className="bg-secondary"
+            rows={2}
+          />
         </div>
         <div className="rounded-xl bg-card border border-border p-4 shadow-card">
           <label className="text-xs text-muted-foreground mb-2 block">Featured Workout</label>
           <select className="w-full rounded-lg bg-secondary border border-border p-2 text-sm text-foreground">
-            {workouts.map(w => <option key={w.id} value={w.id}>{w.title}</option>)}
+            {workouts.map((w) => (
+              <option key={w.id} value={w.id}>
+                {w.title}
+              </option>
+            ))}
           </select>
         </div>
         <div className="rounded-xl bg-card border border-border p-4 shadow-card">
           <label className="text-xs text-muted-foreground mb-2 block">Featured Program</label>
           <select className="w-full rounded-lg bg-secondary border border-border p-2 text-sm text-foreground">
-            {programs.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}
+            {programs.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.title}
+              </option>
+            ))}
           </select>
         </div>
-        <Button className="w-full gradient-fire text-primary-foreground font-display shadow-fire">
-          SAVE CHANGES
-        </Button>
+        <Button className="w-full gradient-fire text-primary-foreground font-display shadow-fire">SAVE CHANGES</Button>
       </div>
     </div>
   );
