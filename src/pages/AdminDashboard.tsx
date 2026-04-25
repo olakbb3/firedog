@@ -19,7 +19,7 @@ type Tab = 'workouts' | 'programs' | 'challenges' | 'media' | 'home';
 
 interface WorkoutRow { id: string; title: string; description: string; exercises: any[]; date: string; workout_date: string | null; }
 interface ProgramRow { id: string; title: string; description: string; sku: string; store_link: string | null; image_url: string | null; is_free: boolean; }
-interface ChallengeRow { id: string; title: string; description: string; participants: number; }
+interface ChallengeRow { id: string; title: string; description: string; participants: number; start_date: string; end_date: string; }
 
 const RESULT_TYPE_OPTIONS: { value: SectionResultType; label: string }[] = [
   { value: 'completed', label: 'Just Completed' },
@@ -716,7 +716,14 @@ const ProgramsTab = () => {
 const ChallengesTab = () => {
   const [challenges, setChallenges] = useState<ChallengeRow[]>([]);
   useEffect(() => {
-    supabase.from('challenges').select('*').then(({ data }) => { if (data) setChallenges(data); });
+    const todayLocal = new Date().toLocaleDateString('en-CA');
+    supabase
+      .from('challenges')
+      .select('*')
+      .eq('title', 'FIREDOG TOTAL')
+      .gte('end_date', todayLocal)
+      .order('start_date', { ascending: true })
+      .then(({ data }) => { if (data) setChallenges(data); });
   }, []);
 
   return (
@@ -732,6 +739,7 @@ const ChallengesTab = () => {
           <div key={c.id} className="rounded-xl bg-card border border-border p-4 shadow-card">
             <h3 className="font-bold font-display text-sm">{c.title}</h3>
             <p className="text-xs text-muted-foreground mt-1">{c.description}</p>
+            <p className="text-xs text-muted-foreground mt-2">{c.start_date} → {c.end_date}</p>
             <p className="text-xs text-muted-foreground mt-2">{c.participants} participants</p>
           </div>
         ))}

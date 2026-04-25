@@ -54,10 +54,22 @@ export const useLeaderboard = (workoutId: string | undefined, sections: WorkoutS
       const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
       const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
 
+      const { data: firedogChallenge } = await supabase
+        .from('challenges')
+        .select('id')
+        .eq('title', 'FIREDOG TOTAL')
+        .maybeSingle();
+
+      if (!firedogChallenge) {
+        setCrew([]);
+        setRawLogs([]);
+        return;
+      }
+
       const { data: logs } = await supabase
         .from('workout_logs')
         .select('user_id, workout_section_id, weight, is_rx, completion_date')
-        .eq('workout_id', workoutId)
+        .eq('workout_id', firedogChallenge.id)
         .gte('completion_date', monthStart.toISOString())
         .lt('completion_date', monthEnd.toISOString())
         .not('weight', 'is', null);
@@ -68,16 +80,15 @@ export const useLeaderboard = (workoutId: string | undefined, sections: WorkoutS
         return;
       }
 
-      // Fetch user names for rawLogs
       const allUserIds = [...new Set(logs.map(l => l.user_id))];
-      const { data: allProfiles } = await supabase
+      const { data: profiles } = await supabase
         .from('profiles')
         .select('id, full_name, gym_affiliation, fd_affiliation, fd_career_volunteer')
         .in('id', allUserIds);
 
-      const nameMap = new Map((allProfiles || []).map(p => [p.id, p.full_name || 'Athlete']));
+      const nameMap = new Map((profiles || []).map(p => [p.id, p.full_name || 'Athlete']));
       const affMap = new Map<string, AthleteAffiliationLite>(
-        (allProfiles || []).map(p => [p.id, {
+        (profiles || []).map(p => [p.id, {
           gym_affiliation: (p as any).gym_affiliation,
           fd_affiliation: (p as any).fd_affiliation,
           fd_career_volunteer: (p as any).fd_career_volunteer,

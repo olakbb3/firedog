@@ -14,6 +14,7 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { useAuthGate } from '@/hooks/useAuthGate';
 import { supabase } from '@/lib/supabaseClient';
+import { parseWeightToLbs, useUnitPreference } from '@/lib/units';
 import type { SectionResultType, ExerciseRow } from '@/types/index';
 import { evaluatePRBatch, PR_LOG_COLUMNS, type PRLog } from '@/utils/personalRecords';
 
@@ -36,6 +37,7 @@ interface Props {
   sectionName: string;
   resultType?: SectionResultType;
   exercises?: ExerciseRow[];
+  isFiredogTotal?: boolean;
 }
 
 const RESULT_TYPE_LABELS: Record<SectionResultType, string> = {
@@ -64,12 +66,13 @@ function formatLogSummary(entry: SectionLogEntry): string {
   }
 }
 
-export default function SectionLogButton({ workoutId, sectionId, sectionName, resultType = 'completed', exercises = [] }: Props) {
+export default function SectionLogButton({ workoutId, sectionId, sectionName, resultType = 'completed', exercises = [], isFiredogTotal = false }: Props) {
   const isAmrap = resultType === 'rounds_reps';
   // Total reps required to complete one full round across all movements (AMRAP)
   const totalRoundReps = exercises.reduce((sum, ex) => sum + (ex.reps || 0), 0);
   const { user } = useAuth();
   const { requireAuth } = useAuthGate();
+  const unit = useUnitPreference(user?.id);
   const submittingRef = useRef(false);
   const lastSubmitAtRef = useRef(0);
   const SUBMIT_DEDUPE_MS = 3000;
@@ -233,6 +236,7 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName, re
         return true;
       case 'weight':
         if (formData.weight === '') { setValidationError('Enter weight'); return false; }
+        if (!parseWeightToLbs(formData.weight, unit)) { setValidationError('Enter a weight greater than 0'); return false; }
         return true;
       default:
         return true;
@@ -276,7 +280,7 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName, re
     }
     if (resultType === 'calories' && formData.calories !== '') payload.calories = Math.max(0, parseInt(formData.calories));
     if (resultType === 'meters' && formData.meters !== '') payload.meters = Math.max(0, parseInt(formData.meters));
-    if (resultType === 'weight' && formData.weight !== '') payload.weight = Math.max(0, parseFloat(formData.weight));
+    if (resultType === 'weight' && formData.weight !== '') payload.weight = parseWeightToLbs(formData.weight, unit) ?? 0;
     if (formData.notes) payload.notes = formData.notes;
 
     const newEntry: SectionLogEntry = {
@@ -326,7 +330,7 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName, re
         priorLogs
       );
 
-      // STEP 3: Insert (or update) the new log.
+      // STEP 3: Insert the new log. Firedog Total logs are never overwritten.
       const { data: existing, error: findErr } = await supabase
         .from('workout_logs')
         .select('id')
@@ -338,7 +342,7 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName, re
         .maybeSingle();
       if (findErr) throw findErr;
 
-      if (existing?.id) {
+      if (existing?.id && !isFiredogTotal) {
         const { error: updateErr } = await supabase
           .from('workout_logs')
           .update(payload)
@@ -354,7 +358,9 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName, re
       setOpen(false);
 
       // STEP 4: Toast based on the single evaluation result.
-      if (hasPR) {
+      if (isFiredogTotal && !hasPR) {
+        toast('Your current best is higher — keep pushing!', { duration: 3500 });
+      } else if (hasPR) {
         const msg = prItems.length === 1
           ? `You beat your best on ${prItems[0]} 💪`
           : 'New bests set today 💪';
@@ -528,7 +534,7 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName, re
                 )}
                 {resultType === 'weight' && (
                   <div>
-                    <label className="text-[10px] text-muted-foreground mb-1 block font-body uppercase tracking-wider">Weight</label>
+                    <label className="text-[10px] text-muted-foreground mb-1 block font-body uppercase tracking-wider">Weight ({unit === 'metric' ? 'kg' : 'lbs'})</label>
                     <Input
                       type="number"
                       min="0"

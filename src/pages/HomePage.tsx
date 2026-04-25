@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useAuthGate } from '@/hooks/useAuthGate';
 import { supabase } from '@/lib/supabaseClient';
 import WeeklyDateStrip from '@/components/WeeklyDateStrip';
+import NewMonthBanner from '@/components/NewMonthBanner';
 import { format, isSameDay } from 'date-fns';
 import firedogLogo from '@/assets/firedog-logo.png';
 import philosophyImage from '@/assets/100-words.jpeg';
@@ -23,6 +24,14 @@ interface WorkoutRow {
   workout_date: string | null;
 }
 
+interface ChallengeRow {
+  id: string;
+  title: string;
+  description: string | null;
+  start_date: string;
+  end_date: string;
+}
+
 
 
 
@@ -37,6 +46,7 @@ const HomePage = () => {
   const { requireAuth, isGuest } = useAuthGate();
   const [profile, setProfile] = useState<ProfileRow | null>(null);
   const [allWorkouts, setAllWorkouts] = useState<WorkoutRow[]>([]);
+  const [activeFiredogChallenge, setActiveFiredogChallenge] = useState<ChallengeRow | null>(null);
   
   
   const [selectedDate, setSelectedDate] = useState<Date>(() => {
@@ -47,9 +57,21 @@ const HomePage = () => {
 
   useEffect(() => {
     const fetchData = async () => {
+      const todayLocal = new Date().toLocaleDateString('en-CA');
       const workoutsRes = await supabase.from('workouts').select('*').order('workout_date', { ascending: false });
+      const challengeRes = await supabase
+        .from('challenges')
+        .select('id, title, description, start_date, end_date')
+        .eq('title', 'FIREDOG TOTAL')
+        .eq('is_hidden', false)
+        .lte('start_date', todayLocal)
+        .gte('end_date', todayLocal)
+        .order('start_date', { ascending: true })
+        .limit(1)
+        .maybeSingle();
 
       if (workoutsRes.data) setAllWorkouts(workoutsRes.data);
+      setActiveFiredogChallenge((challengeRes.data as ChallengeRow | null) || null);
 
       if (user) {
         const profileRes = await supabase.from('profiles').select('full_name, points').eq('id', user.id).maybeSingle();
@@ -59,9 +81,6 @@ const HomePage = () => {
 
     fetchData();
   }, [user]);
-
-  // Find Firedog Total workout
-  const firedogTotal = allWorkouts.find(w => w.title === 'Firedog Total');
 
   // Filter workout for selected date (exclude Firedog Total from daily WOD)
   const dateStr = format(selectedDate, 'yyyy-MM-dd');
@@ -136,6 +155,7 @@ const HomePage = () => {
       )}
 
       {/* Weekly Date Strip */}
+      <NewMonthBanner />
       <WeeklyDateStrip selectedDate={selectedDate} onDateSelect={setSelectedDate} />
 
       {/* Banner */}
@@ -215,19 +235,19 @@ const HomePage = () => {
       </div>
 
       {/* Active Challenges */}
-      {firedogTotal && (
+      {activeFiredogChallenge && (
         <div className="mb-6">
           <h2 className="text-lg font-bold mb-3">🔥 ACTIVE CHALLENGES</h2>
           <div className="space-y-3">
             <div className="rounded-xl bg-card border border-border p-4 shadow-card">
               <h3 className="font-bold font-display text-sm">🔥 FIREDOG TOTAL</h3>
-              <p className="text-xs text-muted-foreground mt-1">{firedogTotal.description}</p>
+              <p className="text-xs text-muted-foreground mt-1">{activeFiredogChallenge.description}</p>
               <div className="mt-2 flex items-center justify-end">
                 <Button
                   size="sm"
                   variant="outline"
                   className="text-xs h-7 border-primary text-primary hover:bg-primary hover:text-primary-foreground"
-                  onClick={() => navigate(`/workout/${firedogTotal.id}`)}
+                  onClick={() => navigate(`/workout/${activeFiredogChallenge.id}`)}
                 >
                   View Challenge
                 </Button>

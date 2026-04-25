@@ -3,6 +3,7 @@ import { Trophy, Activity } from 'lucide-react';
 import type { CrewEntry } from '@/hooks/useLeaderboard';
 import type { WorkoutSection } from '@/types/index';
 import AthleteBadges from '@/components/AthleteBadges';
+import { displayWeightValue, reformatWeightString, setPreferredUnit, useUnitPreference, type UnitSystem } from '@/lib/units';
 
 interface Props {
   crew: CrewEntry[];
@@ -21,7 +22,16 @@ const timeAgo = (dateStr: string) => {
   return `${days}d ago`;
 };
 
+const normalizeLift = (name: string) =>
+  name.toLowerCase().replace('1rm ', '').trim();
+
+const displayLiftName = (name: string) => {
+  const normalized = normalizeLift(name);
+  return normalized ? `1RM ${normalized}`.toUpperCase() : '1RM UNKNOWN';
+};
+
 const FiredogLeaderboard = ({ crew, rawLogs, sections }: Props) => {
+  const unit = useUnitPreference();
   const sectionMap = useMemo(() => new Map(sections.map(s => [s.id, s.section_name])), [sections]);
 
   // Per-lift top 3
@@ -29,11 +39,12 @@ const FiredogLeaderboard = ({ crew, rawLogs, sections }: Props) => {
     const grouped: Record<string, any[]> = {};
     rawLogs.forEach(log => {
       if (!log.workout_section_id) return;
-      if (!grouped[log.workout_section_id]) grouped[log.workout_section_id] = [];
-      grouped[log.workout_section_id].push(log);
+      const key = normalizeLift(sectionMap.get(log.workout_section_id) || log.workout_section_id);
+      if (!grouped[key]) grouped[key] = [];
+      grouped[key].push(log);
     });
 
-    return Object.entries(grouped).map(([sectionId, logs]) => {
+    return Object.entries(grouped).map(([liftName, logs]) => {
       // Deduplicate by user, keep max weight
       const userMax = new Map<string, any>();
       for (const log of logs) {
@@ -43,7 +54,7 @@ const FiredogLeaderboard = ({ crew, rawLogs, sections }: Props) => {
         }
       }
       const sorted = Array.from(userMax.values()).sort((a, b) => (b.weight ?? 0) - (a.weight ?? 0)).slice(0, 3);
-      return { sectionId, sectionName: sectionMap.get(sectionId) || 'Unknown', top3: sorted };
+      return { liftName, sectionName: displayLiftName(liftName), top3: sorted };
     });
   }, [rawLogs, sectionMap]);
 
@@ -73,7 +84,7 @@ const FiredogLeaderboard = ({ crew, rawLogs, sections }: Props) => {
                   <AthleteBadges profile={entry.affiliation} compact />
                 </span>
                 <span className="flex items-center gap-2 shrink-0">
-                  <span className="text-muted-foreground text-xs">{entry.result}</span>
+                      <span className="text-muted-foreground text-xs">{reformatWeightString(entry.result, unit)}</span>
                   <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${entry.is_rx ? 'bg-primary/15 text-primary' : 'bg-secondary text-muted-foreground'}`}>
                     {entry.is_rx ? 'Rx' : 'SC'}
                   </span>
@@ -89,16 +100,28 @@ const FiredogLeaderboard = ({ crew, rawLogs, sections }: Props) => {
       </div>
 
       {/* Card 2 — Per-Lift Leaderboard */}
-      {perLiftLeaders.length > 0 && (
-        <div className="rounded-xl border border-border bg-card p-4">
+      <div className="rounded-xl border border-border bg-card p-4">
           <div className="flex items-center gap-2 mb-3">
             <Trophy className="h-4 w-4 text-primary" />
-            <p className="text-xs font-bold tracking-widest">🥇 PER-LIFT LEADERS</p>
+            <p className="flex-1 text-xs font-bold tracking-widest">🥇 PER-LIFT LEADERS</p>
+            <div className="flex rounded-md bg-secondary p-0.5">
+              {(['imperial', 'metric'] as UnitSystem[]).map((u) => (
+                <button
+                  key={u}
+                  type="button"
+                  onClick={() => setPreferredUnit(u)}
+                  className={`px-2 py-0.5 text-[10px] font-bold rounded ${unit === u ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'}`}
+                >
+                  {u === 'imperial' ? 'LBS' : 'KG'}
+                </button>
+              ))}
+            </div>
           </div>
+          {perLiftLeaders.length > 0 ? (
           <div className="space-y-4">
-            {perLiftLeaders.map(({ sectionId, sectionName, top3 }) => (
-              <div key={sectionId}>
-                <p className="text-xs font-bold text-primary tracking-widest mb-1.5">{sectionName.toUpperCase()}</p>
+            {perLiftLeaders.map(({ liftName, sectionName, top3 }) => (
+              <div key={liftName}>
+                <p className="text-xs font-bold text-primary tracking-widest mb-1.5">{sectionName}</p>
                 <div className="space-y-1">
                   {top3.map((log, i) => (
                     <div key={i} className="flex items-center justify-between text-sm font-body">
@@ -106,30 +129,32 @@ const FiredogLeaderboard = ({ crew, rawLogs, sections }: Props) => {
                         <span className="text-xs text-muted-foreground w-4 text-right">{i + 1}</span>
                         <span className={i === 0 ? 'text-accent font-semibold' : 'text-foreground'}>{log.user_name}</span>
                       </span>
-                      <span className="text-muted-foreground text-xs">{log.weight} lbs</span>
+                      <span className="text-muted-foreground text-xs">{displayWeightValue(log.weight, unit)} {unit === 'metric' ? 'kg' : 'lbs'}</span>
                     </div>
                   ))}
                 </div>
               </div>
             ))}
           </div>
+          ) : (
+            <p className="text-xs text-muted-foreground font-body text-center py-3 italic">No lifts logged yet</p>
+          )}
         </div>
-      )}
 
       {/* Card 3 — Live Activity Feed */}
-      {recentLogs.length > 0 && (
-        <div className="rounded-xl border border-border bg-card p-4">
+      <div className="rounded-xl border border-border bg-card p-4">
           <div className="flex items-center gap-2 mb-3">
             <Activity className="h-4 w-4 text-primary" />
             <p className="text-xs font-bold tracking-widest">📊 LIVE ACTIVITY</p>
           </div>
+          {recentLogs.length > 0 ? (
           <div className="space-y-2">
             {recentLogs.map((log, i) => (
               <div key={i} className="flex items-center justify-between text-xs font-body">
                 <span className="text-foreground">
                   <span className="font-semibold">{log.user_name}</span>
                   {' logged '}
-                  <span className="font-semibold">{log.weight} lbs</span>
+                  <span className="font-semibold">{displayWeightValue(log.weight, unit)} {unit === 'metric' ? 'kg' : 'lbs'}</span>
                   {' on '}
                   <span className="text-primary">{sectionMap.get(log.workout_section_id) || 'Unknown'}</span>
                 </span>
@@ -137,8 +162,10 @@ const FiredogLeaderboard = ({ crew, rawLogs, sections }: Props) => {
               </div>
             ))}
           </div>
+          ) : (
+            <p className="text-xs text-muted-foreground font-body text-center py-3 italic">Be the first to log this month!</p>
+          )}
         </div>
-      )}
     </div>
   );
 };
