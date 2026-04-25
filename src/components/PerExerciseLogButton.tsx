@@ -94,7 +94,7 @@ export default function PerExerciseLogButton({ workoutId, sectionId, sectionName
 
   const getInputLabel = (): string => {
     switch (resultType) {
-      case 'weight': return 'Weight';
+      case 'weight': return `Weight (${unit === 'metric' ? 'kg' : 'lbs'})`;
       case 'time': return 'Time';
       case 'calories': return 'Calories';
       case 'meters': return 'Meters';
