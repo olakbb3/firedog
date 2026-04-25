@@ -80,8 +80,23 @@ export const convertWeight = (
 ): string => {
   if (lbs == null) return '—';
   return unit === 'metric'
-    ? `${Math.round(lbs * 0.453592)} kg`
+    ? `${roundWeight(lbsToKg(lbs))} kg`
     : `${lbs} lbs`;
+};
+
+export const lbsToKg = (lbs: number): number => lbs / 2.2046;
+
+export const kgToLbs = (kg: number): number => kg * 2.2046;
+
+export const roundWeight = (value: number): number => Math.round(value * 10) / 10;
+
+export const displayWeightValue = (lbs: number, unit: UnitSystem): number =>
+  unit === 'metric' ? roundWeight(lbsToKg(lbs)) : roundWeight(lbs);
+
+export const parseWeightToLbs = (value: string, unit: UnitSystem): number | null => {
+  const parsed = parseFloat(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) return null;
+  return unit === 'metric' ? kgToLbs(parsed) : parsed;
 };
 
 export const convertHeight = (
