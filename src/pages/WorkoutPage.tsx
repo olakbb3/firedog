@@ -65,8 +65,6 @@ const WorkoutPage = () => {
       if (workoutRes.data) setWorkout(workoutRes.data);
       if (sectionsRes.data) setSections(sectionsRes.data);
       if (exercisesRes.data) setExercises(exercisesRes.data);
-      if (sectionsRes.data) setSections(sectionsRes.data);
-      if (exercisesRes.data) setExercises(exercisesRes.data);
       setLoading(false);
     };
     fetchWorkout();
