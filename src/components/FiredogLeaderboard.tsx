@@ -22,6 +22,14 @@ const timeAgo = (dateStr: string) => {
   return `${days}d ago`;
 };
 
+const normalizeLift = (name: string) =>
+  name.toLowerCase().replace('1rm ', '').trim();
+
+const displayLiftName = (name: string) => {
+  const normalized = normalizeLift(name);
+  return normalized ? `1RM ${normalized}`.toUpperCase() : '1RM UNKNOWN';
+};
+
 const FiredogLeaderboard = ({ crew, rawLogs, sections }: Props) => {
   const unit = useUnitPreference();
   const sectionMap = useMemo(() => new Map(sections.map(s => [s.id, s.section_name])), [sections]);
@@ -31,11 +39,12 @@ const FiredogLeaderboard = ({ crew, rawLogs, sections }: Props) => {
     const grouped: Record<string, any[]> = {};
     rawLogs.forEach(log => {
       if (!log.workout_section_id) return;
-      if (!grouped[log.workout_section_id]) grouped[log.workout_section_id] = [];
-      grouped[log.workout_section_id].push(log);
+      const key = normalizeLift(sectionMap.get(log.workout_section_id) || log.workout_section_id);
+      if (!grouped[key]) grouped[key] = [];
+      grouped[key].push(log);
     });
 
-    return Object.entries(grouped).map(([sectionId, logs]) => {
+    return Object.entries(grouped).map(([liftName, logs]) => {
       // Deduplicate by user, keep max weight
       const userMax = new Map<string, any>();
       for (const log of logs) {
@@ -45,7 +54,7 @@ const FiredogLeaderboard = ({ crew, rawLogs, sections }: Props) => {
         }
       }
       const sorted = Array.from(userMax.values()).sort((a, b) => (b.weight ?? 0) - (a.weight ?? 0)).slice(0, 3);
-      return { sectionId, sectionName: sectionMap.get(sectionId) || 'Unknown', top3: sorted };
+      return { liftName, sectionName: displayLiftName(liftName), top3: sorted };
     });
   }, [rawLogs, sectionMap]);
 
@@ -110,9 +119,9 @@ const FiredogLeaderboard = ({ crew, rawLogs, sections }: Props) => {
           </div>
           {perLiftLeaders.length > 0 ? (
           <div className="space-y-4">
-            {perLiftLeaders.map(({ sectionId, sectionName, top3 }) => (
-              <div key={sectionId}>
-                <p className="text-xs font-bold text-primary tracking-widest mb-1.5">{sectionName.toUpperCase()}</p>
+            {perLiftLeaders.map(({ liftName, sectionName, top3 }) => (
+              <div key={liftName}>
+                <p className="text-xs font-bold text-primary tracking-widest mb-1.5">{sectionName}</p>
                 <div className="space-y-1">
                   {top3.map((log, i) => (
                     <div key={i} className="flex items-center justify-between text-sm font-body">
