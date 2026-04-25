@@ -715,8 +715,18 @@ const ProgramsTab = () => {
 };
 
 const ChallengesTab = () => {
+  const navigate = useNavigate();
+  const { toast } = useToast();
   const [challenges, setChallenges] = useState<ChallengeRow[]>([]);
-  useEffect(() => {
+  const [editing, setEditing] = useState<ChallengeRow | null>(null);
+  const [desc, setDesc] = useState('');
+  const [startDate, setStartDate] = useState<Date | undefined>();
+  const [endDate, setEndDate] = useState<Date | undefined>();
+  const [lifts, setLifts] = useState<{ id?: string; section_name: string }[]>([]);
+  const [saving, setSaving] = useState(false);
+  const [hasFuture, setHasFuture] = useState(false);
+
+  const fetchChallenges = () => {
     const todayLocal = new Date().toLocaleDateString('en-CA');
     supabase
       .from('challenges')
@@ -724,27 +734,119 @@ const ChallengesTab = () => {
       .eq('title', 'FIREDOG TOTAL')
       .gte('end_date', todayLocal)
       .order('start_date', { ascending: true })
-      .then(({ data }) => { if (data) setChallenges(data); });
-  }, []);
+      .then(({ data }) => {
+        const rows = (data as ChallengeRow[]) || [];
+        setChallenges(rows);
+        setHasFuture(rows.some(c => c.start_date > todayLocal));
+      });
+  };
+
+  useEffect(() => { fetchChallenges(); }, []);
+
+  const openEdit = async (challenge: ChallengeRow) => {
+    setEditing(challenge);
+    setDesc(challenge.description || '');
+    setStartDate(challenge.start_date ? new Date(`${challenge.start_date}T00:00:00`) : undefined);
+    setEndDate(challenge.end_date ? new Date(`${challenge.end_date}T00:00:00`) : undefined);
+    const { data } = await supabase.from('workout_sections').select('id, section_name').eq('workout_id', challenge.id).order('order_index');
+    setLifts(((data as any[]) || []).map(s => ({ id: s.id, section_name: s.section_name })));
+  };
+
+  const prepareNextMonth = async () => {
+    const now = new Date();
+    const nextStart = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    const nextEnd = new Date(now.getFullYear(), now.getMonth() + 2, 0);
+    const nextStartStr = format(nextStart, 'yyyy-MM-dd');
+    const nextEndStr = format(nextEnd, 'yyyy-MM-dd');
+    const { data: existing } = await supabase.from('challenges').select('*').eq('title', 'FIREDOG TOTAL').eq('start_date', nextStartStr).maybeSingle();
+    if (existing) {
+      await openEdit(existing as ChallengeRow);
+      return;
+    }
+    const current = challenges.find(c => c.start_date <= new Date().toLocaleDateString('en-CA') && c.end_date >= new Date().toLocaleDateString('en-CA')) || challenges[0];
+    const { data: currentLifts } = current
+      ? await supabase.from('workout_sections').select('section_name').eq('workout_id', current.id).order('order_index')
+      : { data: [] as any[] };
+    const draft: ChallengeRow = { id: '', title: 'FIREDOG TOTAL', description: current?.description || '', participants: 0, start_date: nextStartStr, end_date: nextEndStr };
+    setEditing(draft);
+    setDesc(draft.description || '');
+    setStartDate(nextStart);
+    setEndDate(nextEnd);
+    setLifts(((currentLifts as any[]) || []).map(s => ({ section_name: s.section_name })).concat((currentLifts || []).length ? [] : [{ section_name: 'Back Squat' }]));
+  };
+
+  const saveChallenge = async () => {
+    if (!editing || !startDate || !endDate) return;
+    if (startDate >= endDate) {
+      toast({ title: 'Invalid dates', description: 'Start date must be before end date.', variant: 'destructive' });
+      return;
+    }
+    const cleanLifts = lifts.map(l => ({ ...l, section_name: l.section_name.trim() })).filter(l => l.section_name);
+    if (cleanLifts.length < 1) {
+      toast({ title: 'At least one lift is required', variant: 'destructive' });
+      return;
+    }
+    setSaving(true);
+    const start = format(startDate, 'yyyy-MM-dd');
+    const end = format(endDate, 'yyyy-MM-dd');
+    let challengeId = editing.id;
+    const payload = { title: 'FIREDOG TOTAL', description: desc.trim() || null, start_date: start, end_date: end };
+    const challengeRes = challengeId
+      ? await supabase.from('challenges').update(payload).eq('id', challengeId)
+      : await supabase.from('challenges').insert({ ...payload, participants: 0 }).select('id').single();
+    if (challengeRes.error) {
+      setSaving(false);
+      toast({ title: 'Save failed', description: challengeRes.error.message, variant: 'destructive' });
+      return;
+    }
+    if (!challengeId) challengeId = (challengeRes.data as any).id;
+    const existingIds = cleanLifts.map(l => l.id).filter(Boolean) as string[];
+    await supabase.from('workout_sections').delete().eq('workout_id', challengeId).not('id', 'in', `(${existingIds.join(',') || '00000000-0000-0000-0000-000000000000'})`);
+    for (let i = 0; i < cleanLifts.length; i++) {
+      const lift = cleanLifts[i];
+      if (lift.id) await supabase.from('workout_sections').update({ order_index: i, result_type: 'weight', input_mode: 'single' }).eq('id', lift.id);
+      else await supabase.from('workout_sections').insert({ workout_id: challengeId, section_name: lift.section_name, order_index: i, result_type: 'weight', input_mode: 'single' });
+    }
+    setSaving(false);
+    setEditing(null);
+    fetchChallenges();
+    toast({ title: 'Firedog Total saved' });
+  };
 
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
         <h2 className="font-bold font-display">MANAGE CHALLENGES</h2>
-        <Button size="sm" className="gradient-fire text-primary-foreground shadow-fire">
-          <Plus className="h-4 w-4 mr-1" /> Add Challenge
-        </Button>
+        {!hasFuture && <Button size="sm" onClick={prepareNextMonth} className="gradient-fire text-primary-foreground shadow-fire"><Plus className="h-4 w-4 mr-1" /> Prepare Next Month</Button>}
       </div>
       <div className="space-y-3">
         {challenges.map((c) => (
           <div key={c.id} className="rounded-xl bg-card border border-border p-4 shadow-card">
-            <h3 className="font-bold font-display text-sm">{c.title}</h3>
-            <p className="text-xs text-muted-foreground mt-1">{c.description}</p>
-            <p className="text-xs text-muted-foreground mt-2">{c.start_date} → {c.end_date}</p>
-            <p className="text-xs text-muted-foreground mt-2">{c.participants} participants</p>
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0 flex-1"><h3 className="font-bold font-display text-sm truncate">{c.title}</h3><p className="text-xs text-muted-foreground mt-1">{c.description}</p><p className="text-xs text-muted-foreground mt-2">{c.start_date} → {c.end_date}</p><p className="text-xs text-muted-foreground mt-2">{c.participants} participants</p></div>
+              <div className="flex items-center gap-2 shrink-0"><button onClick={() => navigate(`/workout/${c.id}`)} className="p-2 rounded-lg bg-secondary text-muted-foreground hover:text-foreground"><Eye className="h-4 w-4" /></button><button onClick={() => openEdit(c)} className="p-2 rounded-lg bg-secondary text-muted-foreground hover:text-foreground"><Edit className="h-4 w-4" /></button></div>
+            </div>
           </div>
         ))}
       </div>
+      {editing && (
+        <div className="fixed inset-0 z-50 bg-black/80 flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={() => setEditing(null)}>
+          <div className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-t-xl sm:rounded-xl bg-background border border-border p-4" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4"><h3 className="font-bold font-display">EDIT FIREDOG TOTAL</h3><button onClick={() => setEditing(null)} className="p-2 rounded-lg bg-secondary"><X className="h-4 w-4" /></button></div>
+            <div className="space-y-4">
+              <div><label className="text-xs text-muted-foreground mb-1 block">Title</label><Input value="FIREDOG TOTAL" disabled className="bg-secondary" /></div>
+              <div><label className="text-xs text-muted-foreground mb-1 block">Description / Coaching Notes</label><Textarea value={desc} onChange={(e) => setDesc(e.target.value)} rows={4} className="bg-secondary" /></div>
+              <div className="grid grid-cols-2 gap-3">
+                {[['Start date', startDate, setStartDate], ['End date', endDate, setEndDate]].map(([label, date, setter]: any) => (
+                  <div key={label}><label className="text-xs text-muted-foreground mb-1 block">{label}</label><Popover><PopoverTrigger asChild><Button variant="outline" className="w-full justify-start text-left font-normal"><CalendarIcon className="h-4 w-4" />{date ? format(date, 'MMM d, yyyy') : 'Pick date'}</Button></PopoverTrigger><PopoverContent className="w-auto p-0"><Calendar mode="single" selected={date} onSelect={setter} initialFocus className="p-3 pointer-events-auto" /></PopoverContent></Popover></div>
+                ))}
+              </div>
+              <div><div className="flex items-center justify-between mb-2"><label className="text-xs text-muted-foreground block">Lifts</label><Button size="sm" variant="outline" onClick={() => setLifts(prev => [...prev, { section_name: '' }])}><Plus className="h-3.5 w-3.5" /> Add</Button></div><div className="space-y-2">{lifts.map((lift, i) => <div key={lift.id || i} className="flex items-center gap-2"><div className="relative flex-1 min-w-0"><Input value={lift.section_name} disabled={!!lift.id} title={lift.id ? 'Rename by deleting this lift and adding a new one' : undefined} onChange={(e) => setLifts(prev => prev.map((l, idx) => idx === i ? { ...l, section_name: e.target.value } : l))} className="bg-secondary pr-8" />{lift.id && <Lock className="absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />}</div><button disabled={lifts.length <= 1} onClick={() => setLifts(prev => prev.length <= 1 ? prev : prev.filter((_, idx) => idx !== i))} className="p-2 rounded-lg bg-secondary text-destructive disabled:opacity-40"><Trash2 className="h-4 w-4" /></button></div>)}</div></div>
+              <div className="flex gap-2"><Button variant="outline" onClick={() => editing.id && navigate(`/workout/${editing.id}`)} className="flex-1"><Eye className="h-4 w-4" /> Preview</Button><Button disabled={saving} onClick={saveChallenge} className="flex-1 gradient-fire text-primary-foreground"><Save className="h-4 w-4" /> Save</Button></div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
