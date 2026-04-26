@@ -85,7 +85,7 @@ const HomePage = () => {
   // Filter workout for selected date (exclude Firedog Total from daily WOD)
   const dateStr = format(selectedDate, 'yyyy-MM-dd');
   const todayWorkout = allWorkouts.find(w => {
-    if (w.title === 'Firedog Total') return false;
+    if (w.title?.toUpperCase() === 'FIREDOG TOTAL') return false;
     return w.workout_date === dateStr;
   });
 
@@ -93,7 +93,7 @@ const HomePage = () => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const isSelectedToday = isSameDay(selectedDate, today);
-  const latestWod = allWorkouts.find(w => w.title !== 'Firedog Total');
+  const latestWod = allWorkouts.find(w => w.title?.toUpperCase() !== 'FIREDOG TOTAL');
   const displayWorkout = todayWorkout || (isSelectedToday ? latestWod || null : null);
 
   const displayName = profile?.full_name?.split(' ')[0] || user?.user_metadata?.full_name?.split(' ')[0] || 'Athlete';
