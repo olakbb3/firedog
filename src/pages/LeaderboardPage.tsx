@@ -136,13 +136,16 @@ const LeaderboardPage = () => {
 
       const resultType: SectionResultType = (scoringSection.result_type as SectionResultType) || 'completed';
 
-      const { data: logs } = await supabase
-        .from('workout_logs')
-        .select('user_id, result_type, time, rounds, reps, calories, meters, weight, is_rx, completion_date')
-        .eq('workout_id', selectedWorkoutId)
-        .eq('workout_section_id', scoringSection.id)
-        .order('completion_date', { ascending: false })
-        .limit(200);
+      const { data: logsData } = await supabase.rpc('get_leaderboard_logs', {
+        _workout_id: selectedWorkoutId,
+        _section_id: scoringSection.id,
+        _from: null,
+        _to: null,
+        _weight_only: false,
+      });
+      const logs = (logsData || [])
+        .sort((a, b) => new Date(b.completion_date || 0).getTime() - new Date(a.completion_date || 0).getTime())
+        .slice(0, 200);
 
       if (!logs || logs.length === 0) { setRows([]); return; }
 
@@ -152,14 +155,9 @@ const LeaderboardPage = () => {
         if (!latestByUser.has(log.user_id)) latestByUser.set(log.user_id, log);
       }
 
-      const userIds = Array.from(latestByUser.keys());
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('id, full_name, gym_affiliation, fd_affiliation, fd_career_volunteer')
-        .in('id', userIds);
-      const nameMap = new Map((profiles || []).map(p => [p.id, p.full_name || 'Athlete']));
+      const nameMap = new Map<string, string>(Array.from(latestByUser.values()).map(p => [p.user_id, p.user_name || 'Athlete']));
       const affMap = new Map<string, AthleteAffiliation>(
-        (profiles || []).map(p => [p.id, {
+        Array.from(latestByUser.values()).map(p => [p.user_id, {
           gym_affiliation: (p as any).gym_affiliation,
           fd_affiliation: (p as any).fd_affiliation,
           fd_career_volunteer: (p as any).fd_career_volunteer,
