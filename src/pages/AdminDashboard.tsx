@@ -193,10 +193,14 @@ const WorkoutsTab = () => {
   const [pendingSave, setPendingSave] = useState(false);
 
   const fetchWorkouts = async () => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("workouts")
       .select("*")
       .order("workout_date", { ascending: false, nullsFirst: false });
+    if (error) {
+      toast({ title: "Operation failed", description: error.message, variant: "destructive" });
+      return;
+    }
     if (data) setWorkouts(data);
   };
 
@@ -298,6 +302,15 @@ const WorkoutsTab = () => {
       supabase.from("exercises").select("*").eq("workout_id", workoutId).order("order_index"),
     ]);
 
+    if (sectionsRes.error) {
+      toast({ title: "Operation failed", description: sectionsRes.error.message, variant: "destructive" });
+      return;
+    }
+    if (exercisesRes.error) {
+      toast({ title: "Operation failed", description: exercisesRes.error.message, variant: "destructive" });
+      return;
+    }
+
     const dbSections = sectionsRes.data || [];
     const dbExercises = exercisesRes.data || [];
 
@@ -362,10 +375,18 @@ const WorkoutsTab = () => {
 
   const handleDelete = async (workoutId: string) => {
     // Delete exercises and sections first, then workout
-    await Promise.all([
+    const [exercisesDelete, sectionsDelete] = await Promise.all([
       supabase.from("exercises").delete().eq("workout_id", workoutId),
       supabase.from("workout_sections").delete().eq("workout_id", workoutId),
     ]);
+    if (exercisesDelete.error) {
+      toast({ title: "Operation failed", description: exercisesDelete.error.message, variant: "destructive" });
+      return;
+    }
+    if (sectionsDelete.error) {
+      toast({ title: "Operation failed", description: sectionsDelete.error.message, variant: "destructive" });
+      return;
+    }
     const { error } = await supabase.from("workouts").delete().eq("id", workoutId);
     if (error) {
       toast({ title: "Error deleting workout", description: error.message, variant: "destructive" });
