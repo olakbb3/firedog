@@ -471,10 +471,18 @@ const WorkoutsTab = () => {
 
     // NOW delete old data — only after new data is ready
     if (editingId) {
-      await Promise.all([
+      const [exercisesDelete, sectionsDelete] = await Promise.all([
         supabase.from("exercises").delete().eq("workout_id", editingId),
         supabase.from("workout_sections").delete().eq("workout_id", editingId),
       ]);
+      if (exercisesDelete.error) {
+        toast({ title: "Operation failed", description: exercisesDelete.error.message, variant: "destructive" });
+        return;
+      }
+      if (sectionsDelete.error) {
+        toast({ title: "Operation failed", description: sectionsDelete.error.message, variant: "destructive" });
+        return;
+      }
     }
 
     // Insert sections
