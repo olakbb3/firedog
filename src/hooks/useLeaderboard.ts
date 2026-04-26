@@ -85,8 +85,8 @@ export const useLeaderboard = (workoutId: string | undefined, sections: WorkoutS
       const { data: logs } = await supabase.rpc('get_leaderboard_logs', {
         _workout_id: firedogChallenge.id,
         _section_id: null,
-        _from: monthStart.toISOString(),
-        _to: monthEnd.toISOString(),
+        _from: null,
+        _to: null,
         _weight_only: true,
       });
 
