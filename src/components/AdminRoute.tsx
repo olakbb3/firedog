@@ -2,7 +2,7 @@ import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 
 const AdminRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, role, loading, sessionChecked } = useAuth();
+  const { session, role, loading, sessionChecked } = useAuth();
 
   if (loading || !sessionChecked) {
     return (
@@ -12,7 +12,7 @@ const AdminRoute = ({ children }: { children: React.ReactNode }) => {
     );
   }
 
-  if (!user || role !== 'admin') {
+  if (!session || role !== 'admin') {
     return <Navigate to="/" replace />;
   }
 

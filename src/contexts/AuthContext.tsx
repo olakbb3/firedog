@@ -80,17 +80,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         } = await supabase.auth.getSession();
 
         if (initialSession?.user) {
-          // Fetch profile BEFORE setting session so router has the role immediately
           await fetchProfile(initialSession.user.id, initialSession.user.email);
           if (mounted) {
             setSession(initialSession);
             setUser(initialSession.user);
           }
-        } else if (mounted) {
-          setSession(null);
-          setUser(null);
-          setRole(null);
-          setAcceptedTerms(false);
         }
       } catch (error) {
         console.error("Auth init error:", error);
@@ -106,25 +100,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, nextSession) => {
-      // Skip initial session — already handled by initializeAuth
-      if (event === "INITIAL_SESSION") return;
+    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      if (!mounted) return;
+
+      setSession(nextSession);
+      setUser(nextSession?.user ?? null);
 
       if (nextSession?.user) {
-        // Fetch profile first so role is always available to the router
-        await fetchProfile(nextSession.user.id, nextSession.user.email);
-        if (mounted) {
-          setSession(nextSession);
-          setUser(nextSession.user);
-        }
+        void fetchProfile(nextSession.user.id, nextSession.user.email);
       } else {
-        // User signed out — clear everything
-        if (mounted) {
-          setSession(null);
-          setUser(null);
-          setRole(null);
-          setAcceptedTerms(false);
-        }
+        setRole(null);
+        setAcceptedTerms(false);
       }
     });
 
@@ -140,7 +126,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setUser(null);
     setRole(null);
     setAcceptedTerms(false);
-    setSessionChecked(true);
   };
 
   return (
