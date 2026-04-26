@@ -82,13 +82,13 @@ export const useLeaderboard = (workoutId: string | undefined, sections: WorkoutS
         return;
       }
 
-      const { data: logs } = await supabase
-        .from('workout_logs')
-        .select('user_id, workout_section_id, weight, is_rx, completion_date')
-        .eq('workout_id', firedogChallenge.id)
-        .gte('completion_date', monthStart.toISOString())
-        .lt('completion_date', monthEnd.toISOString())
-        .not('weight', 'is', null);
+      const { data: logs } = await supabase.rpc('get_leaderboard_logs', {
+        _workout_id: firedogChallenge.id,
+        _section_id: null,
+        _from: monthStart.toISOString(),
+        _to: monthEnd.toISOString(),
+        _weight_only: true,
+      });
 
       if (!logs || logs.length === 0) {
         setCrew([]);
@@ -96,15 +96,9 @@ export const useLeaderboard = (workoutId: string | undefined, sections: WorkoutS
         return;
       }
 
-      const allUserIds = [...new Set(logs.map(l => l.user_id))];
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('id, full_name, gym_affiliation, fd_affiliation, fd_career_volunteer')
-        .in('id', allUserIds);
-
-      const nameMap = new Map((profiles || []).map(p => [p.id, p.full_name || 'Athlete']));
+      const nameMap = new Map<string, string>((logs || []).map(p => [p.user_id, p.user_name || 'Athlete']));
       const affMap = new Map<string, AthleteAffiliationLite>(
-        (profiles || []).map(p => [p.id, {
+        (logs || []).map(p => [p.user_id, {
           gym_affiliation: (p as any).gym_affiliation,
           fd_affiliation: (p as any).fd_affiliation,
           fd_career_volunteer: (p as any).fd_career_volunteer,
@@ -182,20 +176,19 @@ export const useLeaderboard = (workoutId: string | undefined, sections: WorkoutS
       const todayEnd = new Date();
       todayEnd.setHours(23, 59, 59, 999);
 
-      let query = supabase
-        .from('workout_logs')
-        .select('user_id, result_type, time, rounds, reps, calories, meters, weight, is_rx, completion_date')
-        .eq('workout_id', workoutId)
-        .gte('completion_date', todayStart.toISOString())
-        .lte('completion_date', todayEnd.toISOString())
-        .order('completion_date', { ascending: false })
-        .limit(50);
-
-      if (firstInSectionIds.length > 0) {
-        query = query.in('workout_section_id', firstInSectionIds);
-      }
-
-      const { data: crewLogs } = await query;
+      const fetchLogsForSection = (sectionId: string | null) => supabase.rpc('get_leaderboard_logs', {
+        _workout_id: workoutId,
+        _section_id: sectionId,
+        _from: todayStart.toISOString(),
+        _to: todayEnd.toISOString(),
+        _weight_only: false,
+      });
+      const logResults = firstInSectionIds.length > 0
+        ? await Promise.all(firstInSectionIds.map(sectionId => fetchLogsForSection(sectionId)))
+        : [await fetchLogsForSection(null)];
+      const crewLogs = logResults.flatMap(res => res.data || [])
+        .sort((a, b) => new Date(b.completion_date || 0).getTime() - new Date(a.completion_date || 0).getTime())
+        .slice(0, 50);
 
       if (crewLogs && crewLogs.length > 0) {
         const latestByUser = new Map<string, typeof crewLogs[0]>();
@@ -220,15 +213,9 @@ export const useLeaderboard = (workoutId: string | undefined, sections: WorkoutS
           return 0;
         });
 
-        const userIds = sorted.map(l => l.user_id);
-        const { data: profiles } = await supabase
-          .from('profiles')
-          .select('id, full_name, gym_affiliation, fd_affiliation, fd_career_volunteer')
-          .in('id', userIds);
-
-        const nameMap = new Map((profiles || []).map(p => [p.id, p.full_name || 'Athlete']));
+        const nameMap = new Map<string, string>((sorted || []).map(p => [p.user_id, p.user_name || 'Athlete']));
         const affMap = new Map<string, AthleteAffiliationLite>(
-          (profiles || []).map(p => [p.id, {
+          (sorted || []).map(p => [p.user_id, {
             gym_affiliation: (p as any).gym_affiliation,
             fd_affiliation: (p as any).fd_affiliation,
             fd_career_volunteer: (p as any).fd_career_volunteer,

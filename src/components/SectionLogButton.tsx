@@ -166,7 +166,8 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName, re
         const { error: updateErr } = await supabase
           .from('workout_logs')
           .update(payload)
-          .eq('id', existing.id);
+          .eq('id', existing.id)
+          .eq('user_id', user.id);
         if (updateErr) throw updateErr;
       } else {
         const { error: insertErr } = await supabase.from('workout_logs').insert(payload);
@@ -346,7 +347,8 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName, re
         const { error: updateErr } = await supabase
           .from('workout_logs')
           .update(payload)
-          .eq('id', existing.id);
+          .eq('id', existing.id)
+          .eq('user_id', user.id);
         if (updateErr) throw updateErr;
       } else {
         const { error: insertErr } = await supabase.from('workout_logs').insert(payload);
