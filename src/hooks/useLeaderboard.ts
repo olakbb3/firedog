@@ -69,7 +69,7 @@ export const useLeaderboard = (workoutId: string | undefined, sections: WorkoutS
       const { data: firedogChallenge } = await supabase
         .from('challenges')
         .select('id')
-        .eq('title', 'FIREDOG TOTAL')
+        .ilike('title', 'FIREDOG TOTAL')
         .lte('start_date', monthStart.toLocaleDateString('en-CA'))
         .gte('end_date', new Date(now.getFullYear(), now.getMonth(), now.getDate()).toLocaleDateString('en-CA'))
         .order('start_date', { ascending: false })

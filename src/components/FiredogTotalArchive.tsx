@@ -55,7 +55,7 @@ const FiredogTotalArchive = () => {
     supabase
       .from('challenges')
       .select('id, title, description, start_date, end_date')
-      .eq('title', 'FIREDOG TOTAL')
+      .ilike('title', 'FIREDOG TOTAL')
       .lt('end_date', today)
       .order('end_date', { ascending: false })
       .then(({ data }) => setMonths((data as ChallengeMonth[]) || []));
