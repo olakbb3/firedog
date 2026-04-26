@@ -22,6 +22,7 @@ const PerLiftLeaderboard = ({ rawLogs, sections }: Props) => {
   const { user } = useAuth();
 
   const perLiftLeaders = useMemo(() => {
+    console.log('STEP 8 — GROUPING INPUT:', rawLogs);
     const sectionMap = new Map(sections.map(s => [s.id, s.section_name]));
     const grouped = new Map<string, any[]>();
 
