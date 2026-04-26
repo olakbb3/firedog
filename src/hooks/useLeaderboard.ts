@@ -108,6 +108,7 @@ export const useLeaderboard = (workoutId: string | undefined, sections: WorkoutS
       // Attach names to logs
       const logsWithNames = logs.map(log => ({
         ...log,
+        section_id: log.section_id || log.workout_section_id,
         user_name: nameMap.get(log.user_id) || 'Athlete'
       }));
       setRawLogs(logsWithNames);
@@ -115,17 +116,17 @@ export const useLeaderboard = (workoutId: string | undefined, sections: WorkoutS
       // Group by user, then by section, keep max weight per section
       const userSections = new Map<string, Map<string, { weight: number; is_rx: boolean }>>();
 
-      for (const log of logs) {
-        if (!log.workout_section_id || log.weight == null) continue;
+      for (const log of logsWithNames) {
+        if (!log.section_id || log.weight == null) continue;
 
         if (!userSections.has(log.user_id)) {
           userSections.set(log.user_id, new Map());
         }
         const sectionMap = userSections.get(log.user_id)!;
-        const existing = sectionMap.get(log.workout_section_id);
+        const existing = sectionMap.get(log.section_id);
 
         if (!existing || log.weight > existing.weight) {
-          sectionMap.set(log.workout_section_id, { weight: log.weight, is_rx: log.is_rx ?? true });
+          sectionMap.set(log.section_id, { weight: log.weight, is_rx: log.is_rx ?? true });
         }
       }
 
