@@ -82,13 +82,13 @@ export const useLeaderboard = (workoutId: string | undefined, sections: WorkoutS
         return;
       }
 
-      const { data: logs } = await supabase
-        .from('workout_logs')
-        .select('user_id, workout_section_id, weight, is_rx, completion_date')
-        .eq('workout_id', firedogChallenge.id)
-        .gte('completion_date', monthStart.toISOString())
-        .lt('completion_date', monthEnd.toISOString())
-        .not('weight', 'is', null);
+      const { data: logs } = await supabase.rpc('get_leaderboard_logs', {
+        _workout_id: firedogChallenge.id,
+        _section_id: null,
+        _from: monthStart.toISOString(),
+        _to: monthEnd.toISOString(),
+        _weight_only: true,
+      });
 
       if (!logs || logs.length === 0) {
         setCrew([]);
@@ -96,15 +96,9 @@ export const useLeaderboard = (workoutId: string | undefined, sections: WorkoutS
         return;
       }
 
-      const allUserIds = [...new Set(logs.map(l => l.user_id))];
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('id, full_name, gym_affiliation, fd_affiliation, fd_career_volunteer')
-        .in('id', allUserIds);
-
-      const nameMap = new Map((profiles || []).map(p => [p.id, p.full_name || 'Athlete']));
+      const nameMap = new Map((logs || []).map(p => [p.user_id, p.user_name || 'Athlete']));
       const affMap = new Map<string, AthleteAffiliationLite>(
-        (profiles || []).map(p => [p.id, {
+        (logs || []).map(p => [p.user_id, {
           gym_affiliation: (p as any).gym_affiliation,
           fd_affiliation: (p as any).fd_affiliation,
           fd_career_volunteer: (p as any).fd_career_volunteer,
