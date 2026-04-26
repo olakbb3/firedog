@@ -193,10 +193,14 @@ const WorkoutsTab = () => {
   const [pendingSave, setPendingSave] = useState(false);
 
   const fetchWorkouts = async () => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("workouts")
       .select("*")
       .order("workout_date", { ascending: false, nullsFirst: false });
+    if (error) {
+      toast({ title: "Operation failed", description: error.message, variant: "destructive" });
+      return;
+    }
     if (data) setWorkouts(data);
   };
 
@@ -298,6 +302,15 @@ const WorkoutsTab = () => {
       supabase.from("exercises").select("*").eq("workout_id", workoutId).order("order_index"),
     ]);
 
+    if (sectionsRes.error) {
+      toast({ title: "Operation failed", description: sectionsRes.error.message, variant: "destructive" });
+      return;
+    }
+    if (exercisesRes.error) {
+      toast({ title: "Operation failed", description: exercisesRes.error.message, variant: "destructive" });
+      return;
+    }
+
     const dbSections = sectionsRes.data || [];
     const dbExercises = exercisesRes.data || [];
 
@@ -305,6 +318,7 @@ const WorkoutsTab = () => {
       setSections(
         dbSections
           .map((s) => ({
+            id: s.id,
             section_name: s.section_name,
             result_type: (s.result_type as SectionResultType) || "completed",
             input_mode: (s.input_mode as SectionInputMode) || "single",
@@ -362,10 +376,18 @@ const WorkoutsTab = () => {
 
   const handleDelete = async (workoutId: string) => {
     // Delete exercises and sections first, then workout
-    await Promise.all([
+    const [exercisesDelete, sectionsDelete] = await Promise.all([
       supabase.from("exercises").delete().eq("workout_id", workoutId),
       supabase.from("workout_sections").delete().eq("workout_id", workoutId),
     ]);
+    if (exercisesDelete.error) {
+      toast({ title: "Operation failed", description: exercisesDelete.error.message, variant: "destructive" });
+      return;
+    }
+    if (sectionsDelete.error) {
+      toast({ title: "Operation failed", description: sectionsDelete.error.message, variant: "destructive" });
+      return;
+    }
     const { error } = await supabase.from("workouts").delete().eq("id", workoutId);
     if (error) {
       toast({ title: "Error deleting workout", description: error.message, variant: "destructive" });
@@ -410,10 +432,13 @@ const WorkoutsTab = () => {
       workoutId = workout.id;
     }
 
-    // Build section rows
-    const sectionRows = sections
-      .filter((s) => s.section_name.trim())
-      .map((s, i) => ({
+    // Update or insert sections first so a failed insert never leaves the workout without sections.
+    const sectionMap: Record<number, string> = {};
+    const keptSectionIds = new Set<string>();
+    for (let i = 0; i < sections.length; i++) {
+      const s = sections[i];
+      if (!s.section_name.trim()) continue;
+      const sectionPayload = {
         workout_id: workoutId,
         section_name: s.section_name,
         result_type: s.result_type || "completed",
@@ -423,24 +448,50 @@ const WorkoutsTab = () => {
             ? Math.max(0, parseInt(s.time_cap_minutes))
             : null,
         order_index: i,
-      }));
+      };
+
+      if (editingId && s.id) {
+        const { error: sectionUpdateError } = await supabase
+          .from("workout_sections")
+          .update(sectionPayload)
+          .eq("id", s.id);
+        if (sectionUpdateError) {
+          toast({ title: "Operation failed", description: sectionUpdateError.message, variant: "destructive" });
+          return;
+        }
+        sectionMap[i] = s.id;
+        keptSectionIds.add(s.id);
+      } else {
+        const { data: insertedSection, error: sectionInsertError } = await supabase
+          .from("workout_sections")
+          .insert(sectionPayload)
+          .select("id")
+          .single();
+        if (sectionInsertError || !insertedSection) {
+          toast({ title: "Operation failed", description: sectionInsertError?.message, variant: "destructive" });
+          return;
+        }
+        sectionMap[i] = insertedSection.id;
+        keptSectionIds.add(insertedSection.id);
+      }
+    }
 
     // Build exercise rows with null safety
     const exerciseRows: any[] = [];
     sections.forEach((section, si) => {
       section.exercises
-        .filter((ex) => ex.exercise_name.trim())
+        .filter((ex) => ex.exercise_name && String(ex.exercise_name).trim())
         .forEach((ex, ei) => {
           exerciseRows.push({
             workout_id: workoutId,
             section_id: null, // will be updated after sections insert
             exercise_name: ex.exercise_name,
-            sets: ex.sets ? parseInt(ex.sets) : null,
-            reps: ex.reps ? parseInt(ex.reps) : null,
-            duration: ex.duration || null,
+            sets: ex.sets && String(ex.sets).trim() !== "" ? parseInt(ex.sets) : null,
+            reps: ex.reps && String(ex.reps).trim() !== "" ? parseInt(ex.reps) : null,
+            duration: ex.duration ? String(ex.duration).trim() || null : null,
             calories: ex.calories && String(ex.calories).trim() !== "" ? parseInt(ex.calories) : null,
             meters: ex.meters && String(ex.meters).trim() !== "" ? parseInt(ex.meters) : null,
-            notes: ex.notes || null,
+            notes: ex.notes ? String(ex.notes).trim() || null : null,
             scaling_notes: ex.scaling_notes ? ex.scaling_notes.trim() || null : null,
             order_index: ei,
             _sectionIndex: si,
@@ -448,29 +499,21 @@ const WorkoutsTab = () => {
         });
     });
 
-    // NOW delete old data — only after new data is ready
+    // Delete old exercises only after section writes have succeeded.
     if (editingId) {
-      await Promise.all([
-        supabase.from("exercises").delete().eq("workout_id", editingId),
-        supabase.from("workout_sections").delete().eq("workout_id", editingId),
-      ]);
-    }
-
-    // Insert sections
-    let sectionMap: Record<number, string> = {};
-    if (sectionRows.length > 0) {
-      const { data: insertedSections, error: secError } = await supabase
-        .from("workout_sections")
-        .insert(sectionRows)
-        .select();
-      if (secError) {
-        toast({ title: "Error saving sections", description: secError.message, variant: "destructive" });
+      const exercisesDelete = await supabase.from("exercises").delete().eq("workout_id", editingId);
+      if (exercisesDelete.error) {
+        toast({ title: "Operation failed", description: exercisesDelete.error.message, variant: "destructive" });
         return;
       }
-      if (insertedSections) {
-        insertedSections.forEach((s, i) => {
-          sectionMap[i] = s.id;
-        });
+      const sectionsDelete = await supabase
+        .from("workout_sections")
+        .delete()
+        .eq("workout_id", editingId)
+        .not("id", "in", `(${Array.from(keptSectionIds).join(",") || "00000000-0000-0000-0000-000000000000"})`);
+      if (sectionsDelete.error) {
+        toast({ title: "Operation failed", description: sectionsDelete.error.message, variant: "destructive" });
+        return;
       }
     }
 
@@ -1004,7 +1047,11 @@ const ChallengesTab = () => {
       .eq("title", "FIREDOG TOTAL")
       .gte("end_date", todayLocal)
       .order("start_date", { ascending: true })
-      .then(({ data }) => {
+      .then(({ data, error }) => {
+        if (error) {
+          toast({ title: "Operation failed", description: error.message, variant: "destructive" });
+          return;
+        }
         const rows = (data as ChallengeRow[]) || [];
         setChallenges(rows);
         setHasFuture(rows.some((c) => c.start_date > todayLocal));
@@ -1020,11 +1067,15 @@ const ChallengesTab = () => {
     setDesc(challenge.description || "");
     setStartDate(challenge.start_date ? new Date(`${challenge.start_date}T00:00:00`) : undefined);
     setEndDate(challenge.end_date ? new Date(`${challenge.end_date}T00:00:00`) : undefined);
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("workout_sections")
       .select("id, section_name")
       .eq("workout_id", challenge.id)
       .order("order_index");
+    if (error) {
+      toast({ title: "Operation failed", description: error.message, variant: "destructive" });
+      return;
+    }
     setLifts(((data as any[]) || []).map((s) => ({ id: s.id, section_name: s.section_name })));
   };
 
@@ -1034,12 +1085,16 @@ const ChallengesTab = () => {
     const nextEnd = new Date(now.getFullYear(), now.getMonth() + 2, 0);
     const nextStartStr = format(nextStart, "yyyy-MM-dd");
     const nextEndStr = format(nextEnd, "yyyy-MM-dd");
-    const { data: existing } = await supabase
+    const { data: existing, error: existingError } = await supabase
       .from("challenges")
       .select("*")
       .eq("title", "FIREDOG TOTAL")
       .eq("start_date", nextStartStr)
       .maybeSingle();
+    if (existingError) {
+      toast({ title: "Operation failed", description: existingError.message, variant: "destructive" });
+      return;
+    }
     if (existing) {
       await openEdit(existing as ChallengeRow);
       return;
@@ -1050,9 +1105,14 @@ const ChallengesTab = () => {
           c.start_date <= new Date().toLocaleDateString("en-CA") &&
           c.end_date >= new Date().toLocaleDateString("en-CA"),
       ) || challenges[0];
-    const { data: currentLifts } = current
+    const currentLiftsRes = current
       ? await supabase.from("workout_sections").select("section_name").eq("workout_id", current.id).order("order_index")
-      : { data: [] as any[] };
+      : { data: [] as any[], error: null };
+    if (currentLiftsRes.error) {
+      toast({ title: "Operation failed", description: currentLiftsRes.error.message, variant: "destructive" });
+      return;
+    }
+    const currentLifts = currentLiftsRes.data;
     const draft: ChallengeRow = {
       id: "",
       title: "FIREDOG TOTAL",
@@ -1102,20 +1162,30 @@ const ChallengesTab = () => {
     }
     if (!challengeId) challengeId = (challengeRes.data as any).id;
     const existingIds = cleanLifts.map((l) => l.id).filter(Boolean) as string[];
-    await supabase
+    const { error: deleteLiftError } = await supabase
       .from("workout_sections")
       .delete()
       .eq("workout_id", challengeId)
       .not("id", "in", `(${existingIds.join(",") || "00000000-0000-0000-0000-000000000000"})`);
+    if (deleteLiftError) {
+      setSaving(false);
+      toast({ title: "Operation failed", description: deleteLiftError.message, variant: "destructive" });
+      return;
+    }
     for (let i = 0; i < cleanLifts.length; i++) {
       const lift = cleanLifts[i];
-      if (lift.id)
-        await supabase
+      if (lift.id) {
+        const { error: liftUpdateError } = await supabase
           .from("workout_sections")
           .update({ order_index: i, result_type: "weight", input_mode: "single" })
           .eq("id", lift.id);
-      else
-        await supabase
+        if (liftUpdateError) {
+          setSaving(false);
+          toast({ title: "Operation failed", description: liftUpdateError.message, variant: "destructive" });
+          return;
+        }
+      } else {
+        const { error: liftInsertError } = await supabase
           .from("workout_sections")
           .insert({
             workout_id: challengeId,
@@ -1124,6 +1194,12 @@ const ChallengesTab = () => {
             result_type: "weight",
             input_mode: "single",
           });
+        if (liftInsertError) {
+          setSaving(false);
+          toast({ title: "Operation failed", description: liftInsertError.message, variant: "destructive" });
+          return;
+        }
+      }
     }
     setSaving(false);
     setEditing(null);

@@ -62,7 +62,28 @@ const WorkoutPage = () => {
         supabase.from("workout_sections").select("*").eq("workout_id", id).order("order_index"),
         supabase.from("exercises").select("*").eq("workout_id", id).order("order_index"),
       ]);
-      if (workoutRes.data) setWorkout(workoutRes.data);
+      if (workoutRes.data) {
+        setWorkout(workoutRes.data);
+      } else {
+        const { data: challengeData } = await supabase
+          .from("challenges")
+          .select("id, title, description, start_date, end_date")
+          .eq("id", id)
+          .maybeSingle();
+
+        if (challengeData) {
+          setWorkout({
+            id: challengeData.id,
+            title: challengeData.title,
+            description: challengeData.description || "",
+            exercises: [],
+            coach_notes: challengeData.description || null,
+            video_url: null,
+            date: challengeData.start_date,
+            workout_date: challengeData.start_date,
+          });
+        }
+      }
       if (sectionsRes.data) setSections(sectionsRes.data);
       if (exercisesRes.data) setExercises(exercisesRes.data);
       setLoading(false);

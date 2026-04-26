@@ -123,11 +123,15 @@ const AdminProgramPage = () => {
 
   const fetchWorkouts = async () => {
     if (!programId) return;
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('workouts')
       .select('id, title, description, workout_date, date')
       .eq('program_id', programId)
       .order('workout_date', { ascending: false, nullsFirst: false });
+    if (error) {
+      toast({ title: 'Operation failed', description: error.message, variant: 'destructive' });
+      return;
+    }
     if (data) setWorkouts(data);
   };
 
@@ -174,6 +178,15 @@ const AdminProgramPage = () => {
       supabase.from('workout_sections').select('*').eq('workout_id', workoutId).order('order_index'),
       supabase.from('exercises').select('*').eq('workout_id', workoutId).order('order_index'),
     ]);
+
+    if (sectionsRes.error) {
+      toast({ title: 'Save failed', description: sectionsRes.error.message, variant: 'destructive' });
+      return;
+    }
+    if (exercisesRes.error) {
+      toast({ title: 'Save failed', description: exercisesRes.error.message, variant: 'destructive' });
+      return;
+    }
 
     const dbSections = sectionsRes.data || [];
     const dbExercises = exercisesRes.data || [];
@@ -240,7 +253,11 @@ const AdminProgramPage = () => {
       }
 
       // DELETE only exercises (safe — they have no external references)
-      await supabase.from('exercises').delete().eq('workout_id', editingId);
+      const { error: deleteExercisesError } = await supabase.from('exercises').delete().eq('workout_id', editingId);
+      if (deleteExercisesError) {
+        toast({ title: 'Save failed', description: deleteExercisesError.message, variant: 'destructive' });
+        return;
+      }
 
       // UPDATE or INSERT sections — never delete them
       const sectionMap: Record<number, string> = {};
@@ -256,7 +273,11 @@ const AdminProgramPage = () => {
           if (!s.locked) {
             updatePayload.section_name = s.section_name;
           }
-          await supabase.from('workout_sections').update(updatePayload).eq('id', s.id);
+          const { error: secUpdateError } = await supabase.from('workout_sections').update(updatePayload).eq('id', s.id);
+          if (secUpdateError) {
+            toast({ title: 'Save failed', description: secUpdateError.message, variant: 'destructive' });
+            return;
+          }
           sectionMap[i] = s.id;
         } else {
           // INSERT new section
@@ -274,7 +295,8 @@ const AdminProgramPage = () => {
             .single();
 
           if (secErr) {
-            toast({ title: 'Error creating section', description: secErr.message, variant: 'destructive' });
+            toast({ title: 'Save failed', description: secErr.message, variant: 'destructive' });
+            return;
           }
           if (inserted) {
             sectionMap[i] = inserted.id;
@@ -286,26 +308,30 @@ const AdminProgramPage = () => {
       const exerciseRows: any[] = [];
       sections.forEach((section, si) => {
         section.exercises
-          .filter(ex => ex.exercise_name.trim())
+          .filter(ex => ex.exercise_name && String(ex.exercise_name).trim())
           .forEach((ex, ei) => {
             exerciseRows.push({
               workout_id: workoutId,
               section_id: sectionMap[si] || null,
               exercise_name: ex.exercise_name,
-              sets: ex.sets ? parseInt(ex.sets) : null,
-              reps: ex.reps ? parseInt(ex.reps) : null,
-              duration: ex.duration || null,
-              calories: ex.calories.trim() !== '' ? parseInt(ex.calories) : null,
-              meters: ex.meters.trim() !== '' ? parseInt(ex.meters) : null,
-              notes: ex.notes || null,
-              scaling_notes: ex.scaling_notes.trim() || null,
+              sets: ex.sets && String(ex.sets).trim() !== '' ? parseInt(ex.sets) : null,
+              reps: ex.reps && String(ex.reps).trim() !== '' ? parseInt(ex.reps) : null,
+              duration: ex.duration ? String(ex.duration).trim() || null : null,
+              calories: ex.calories && String(ex.calories).trim() !== '' ? parseInt(ex.calories) : null,
+              meters: ex.meters && String(ex.meters).trim() !== '' ? parseInt(ex.meters) : null,
+              notes: ex.notes ? String(ex.notes).trim() || null : null,
+              scaling_notes: ex.scaling_notes ? ex.scaling_notes.trim() || null : null,
               order_index: ei,
             });
           });
       });
 
       if (exerciseRows.length > 0) {
-        await supabase.from('exercises').insert(exerciseRows);
+        const { error: exerciseInsertError } = await supabase.from('exercises').insert(exerciseRows);
+        if (exerciseInsertError) {
+          toast({ title: 'Save failed', description: exerciseInsertError.message, variant: 'destructive' });
+          return;
+        }
       }
     } else {
       // CREATE new workout
@@ -350,7 +376,8 @@ const AdminProgramPage = () => {
           .select();
 
         if (secError) {
-          toast({ title: 'Error creating sections', description: secError.message, variant: 'destructive' });
+          toast({ title: 'Save failed', description: secError.message, variant: 'destructive' });
+          return;
         }
 
         if (insertedSections) {
@@ -362,26 +389,30 @@ const AdminProgramPage = () => {
       const exerciseRows: any[] = [];
       sections.forEach((section, si) => {
         section.exercises
-          .filter(ex => ex.exercise_name.trim())
+          .filter(ex => ex.exercise_name && String(ex.exercise_name).trim())
           .forEach((ex, ei) => {
             exerciseRows.push({
               workout_id: workoutId,
               section_id: sectionMap[si] || null,
               exercise_name: ex.exercise_name,
-              sets: ex.sets ? parseInt(ex.sets) : null,
-              reps: ex.reps ? parseInt(ex.reps) : null,
-              duration: ex.duration || null,
-              calories: ex.calories.trim() !== '' ? parseInt(ex.calories) : null,
-              meters: ex.meters.trim() !== '' ? parseInt(ex.meters) : null,
-              notes: ex.notes || null,
-              scaling_notes: ex.scaling_notes.trim() || null,
+              sets: ex.sets && String(ex.sets).trim() !== '' ? parseInt(ex.sets) : null,
+              reps: ex.reps && String(ex.reps).trim() !== '' ? parseInt(ex.reps) : null,
+              duration: ex.duration ? String(ex.duration).trim() || null : null,
+              calories: ex.calories && String(ex.calories).trim() !== '' ? parseInt(ex.calories) : null,
+              meters: ex.meters && String(ex.meters).trim() !== '' ? parseInt(ex.meters) : null,
+              notes: ex.notes ? String(ex.notes).trim() || null : null,
+              scaling_notes: ex.scaling_notes ? ex.scaling_notes.trim() || null : null,
               order_index: ei,
             });
           });
       });
 
       if (exerciseRows.length > 0) {
-        await supabase.from('exercises').insert(exerciseRows);
+        const { error: exerciseInsertError } = await supabase.from('exercises').insert(exerciseRows);
+        if (exerciseInsertError) {
+          toast({ title: 'Save failed', description: exerciseInsertError.message, variant: 'destructive' });
+          return;
+        }
       }
     }
 
