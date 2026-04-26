@@ -197,7 +197,8 @@ export default function PerExerciseLogButton({ workoutId, sectionId, sectionName
           const { error: updateErr } = await supabase
             .from('workout_logs')
             .update(payload)
-            .eq('id', existing.id);
+            .eq('id', existing.id)
+            .eq('user_id', user.id);
           if (updateErr) throw updateErr;
         } else {
           const { error: insertErr } = await supabase.from('workout_logs').insert(payload);
