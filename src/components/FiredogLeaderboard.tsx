@@ -14,6 +14,7 @@ interface Props {
 
 const FiredogLeaderboard = ({ crew, rawLogs, sections }: Props) => {
   const unit = useUnitPreference();
+  console.log('STEP 7 — rawLogs IN UI:', rawLogs);
 
   return (
     <div className="space-y-4 mb-4">

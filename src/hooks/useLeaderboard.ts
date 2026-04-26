@@ -90,6 +90,12 @@ export const useLeaderboard = (workoutId: string | undefined, sections: WorkoutS
         _weight_only: true,
       });
 
+      console.log('STEP 1 — RAW DB LOGS:', logs);
+      console.log('STEP 2 — QUERY CHECK:', {
+        hasLogs: logs?.length,
+        sample: logs?.[0]
+      });
+
       if (!logs || logs.length === 0) {
         setCrew([]);
         setRawLogs([]);
@@ -105,13 +111,25 @@ export const useLeaderboard = (workoutId: string | undefined, sections: WorkoutS
         }])
       );
 
+      console.log('STEP 3 — PROFILES:', logs);
+
       // Attach names to logs
       const logsWithNames = logs.map(log => ({
         ...log,
         section_id: log.section_id || log.workout_section_id,
         user_name: nameMap.get(log.user_id) || 'Athlete'
       }));
+      console.log('STEP 3 — LOGS WITH NAMES:', logsWithNames);
       setRawLogs(logsWithNames);
+      console.log('STEP 4 — rawLogs STATE SET:', logsWithNames);
+      console.log(
+        'STEP 5 — SECTION IDS:',
+        logsWithNames.map(l => l.workout_section_id)
+      );
+      console.log(
+        'STEP 6 — WEIGHT TYPES:',
+        logsWithNames.map(l => typeof l.weight)
+      );
 
       // Group by user, then by section, keep max weight per section
       const userSections = new Map<string, Map<string, { weight: number; is_rx: boolean }>>();
