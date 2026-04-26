@@ -104,6 +104,118 @@ CREATE POLICY "Admins can insert challenges" ON public.challenges FOR INSERT TO 
 CREATE POLICY "Admins can update challenges" ON public.challenges FOR UPDATE TO authenticated USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));
 CREATE POLICY "Admins can delete challenges" ON public.challenges FOR DELETE TO authenticated USING (public.has_role(auth.uid(), 'admin'));
 
+-- Workout logs: private by default. Users can manage only their own raw log rows;
+-- leaderboard UIs use the limited SECURITY DEFINER RPCs below instead of broad table reads.
+ALTER TABLE public.workout_logs ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can view own logs" ON public.workout_logs;
+DROP POLICY IF EXISTS "Admins can view all logs" ON public.workout_logs;
+DROP POLICY IF EXISTS "Users can insert own logs" ON public.workout_logs;
+DROP POLICY IF EXISTS "Users can update own logs" ON public.workout_logs;
+DROP POLICY IF EXISTS "Users can delete own logs" ON public.workout_logs;
+
+CREATE POLICY "Users can view own logs" ON public.workout_logs
+FOR SELECT TO authenticated
+USING (auth.uid() = user_id);
+
+CREATE POLICY "Admins can view all logs" ON public.workout_logs
+FOR SELECT TO authenticated
+USING (public.has_role(auth.uid(), 'admin'));
+
+CREATE POLICY "Users can insert own logs" ON public.workout_logs
+FOR INSERT TO authenticated
+WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own logs" ON public.workout_logs
+FOR UPDATE TO authenticated
+USING (auth.uid() = user_id)
+WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete own logs" ON public.workout_logs
+FOR DELETE TO authenticated
+USING (auth.uid() = user_id);
+
+CREATE OR REPLACE FUNCTION public.get_leaderboard_logs(
+  _workout_id uuid,
+  _section_id uuid DEFAULT NULL,
+  _from timestamptz DEFAULT NULL,
+  _to timestamptz DEFAULT NULL,
+  _weight_only boolean DEFAULT false
+)
+RETURNS TABLE (
+  user_id uuid,
+  user_name text,
+  gym_affiliation text,
+  fd_affiliation text,
+  fd_career_volunteer text,
+  workout_section_id uuid,
+  result_type text,
+  time text,
+  rounds integer,
+  reps integer,
+  calories integer,
+  meters integer,
+  weight numeric,
+  is_rx boolean,
+  completion_date timestamptz
+)
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT
+    wl.user_id,
+    COALESCE(p.full_name, 'Athlete') AS user_name,
+    p.gym_affiliation,
+    p.fd_affiliation,
+    p.fd_career_volunteer,
+    wl.workout_section_id,
+    wl.result_type,
+    wl.time,
+    wl.rounds,
+    wl.reps,
+    wl.calories,
+    wl.meters,
+    wl.weight,
+    wl.is_rx,
+    wl.completion_date
+  FROM public.workout_logs wl
+  LEFT JOIN public.profiles p ON p.id = wl.user_id
+  WHERE auth.uid() IS NOT NULL
+    AND wl.workout_id = _workout_id
+    AND (_section_id IS NULL OR wl.workout_section_id = _section_id)
+    AND (_from IS NULL OR wl.completion_date >= _from)
+    AND (_to IS NULL OR wl.completion_date < _to)
+    AND (_weight_only = false OR wl.weight IS NOT NULL);
+$$;
+
+CREATE OR REPLACE FUNCTION public.get_today_log_counts(
+  _from timestamptz,
+  _to timestamptz
+)
+RETURNS TABLE (
+  user_id uuid,
+  log_count bigint
+)
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT wl.user_id, COUNT(*)::bigint AS log_count
+  FROM public.workout_logs wl
+  WHERE auth.uid() IS NOT NULL
+    AND wl.completion_date >= _from
+    AND wl.completion_date < _to
+  GROUP BY wl.user_id;
+$$;
+
+REVOKE ALL ON FUNCTION public.get_leaderboard_logs(uuid, uuid, timestamptz, timestamptz, boolean) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.get_today_log_counts(timestamptz, timestamptz) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.get_leaderboard_logs(uuid, uuid, timestamptz, timestamptz, boolean) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.get_today_log_counts(timestamptz, timestamptz) TO authenticated;
+
 -- Program image storage: authenticated read, admin-only writes.
 UPDATE storage.buckets
 SET public = false
