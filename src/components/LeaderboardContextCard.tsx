@@ -35,11 +35,10 @@ export default function LeaderboardContextCard() {
       const dayEnd = new Date(dayStart);
       dayEnd.setDate(dayEnd.getDate() + 1);
 
-      const { data, error } = await supabase
-        .from('workout_logs')
-        .select('user_id, workout_section_id, completion_date')
-        .gte('completion_date', dayStart.toISOString())
-        .lt('completion_date', dayEnd.toISOString());
+      const { data, error } = await supabase.rpc('get_today_log_counts', {
+        _from: dayStart.toISOString(),
+        _to: dayEnd.toISOString(),
+      });
 
       if (cancelled) return;
       if (error || !data) {
@@ -48,11 +47,9 @@ export default function LeaderboardContextCard() {
         return;
       }
 
-      // Count distinct section logs per user today.
       const counts = new Map<string, number>();
       for (const row of data) {
-        const uid = (row as { user_id: string }).user_id;
-        counts.set(uid, (counts.get(uid) ?? 0) + 1);
+        counts.set(row.user_id, Number(row.log_count) || 0);
       }
 
       const total = counts.size;
