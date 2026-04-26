@@ -175,6 +175,15 @@ const AdminProgramPage = () => {
       supabase.from('exercises').select('*').eq('workout_id', workoutId).order('order_index'),
     ]);
 
+    if (sectionsRes.error) {
+      toast({ title: 'Save failed', description: sectionsRes.error.message, variant: 'destructive' });
+      return;
+    }
+    if (exercisesRes.error) {
+      toast({ title: 'Save failed', description: exercisesRes.error.message, variant: 'destructive' });
+      return;
+    }
+
     const dbSections = sectionsRes.data || [];
     const dbExercises = exercisesRes.data || [];
 
@@ -240,7 +249,11 @@ const AdminProgramPage = () => {
       }
 
       // DELETE only exercises (safe — they have no external references)
-      await supabase.from('exercises').delete().eq('workout_id', editingId);
+      const { error: deleteExercisesError } = await supabase.from('exercises').delete().eq('workout_id', editingId);
+      if (deleteExercisesError) {
+        toast({ title: 'Save failed', description: deleteExercisesError.message, variant: 'destructive' });
+        return;
+      }
 
       // UPDATE or INSERT sections — never delete them
       const sectionMap: Record<number, string> = {};
@@ -256,7 +269,11 @@ const AdminProgramPage = () => {
           if (!s.locked) {
             updatePayload.section_name = s.section_name;
           }
-          await supabase.from('workout_sections').update(updatePayload).eq('id', s.id);
+          const { error: secUpdateError } = await supabase.from('workout_sections').update(updatePayload).eq('id', s.id);
+          if (secUpdateError) {
+            toast({ title: 'Save failed', description: secUpdateError.message, variant: 'destructive' });
+            return;
+          }
           sectionMap[i] = s.id;
         } else {
           // INSERT new section
@@ -274,7 +291,8 @@ const AdminProgramPage = () => {
             .single();
 
           if (secErr) {
-            toast({ title: 'Error creating section', description: secErr.message, variant: 'destructive' });
+            toast({ title: 'Save failed', description: secErr.message, variant: 'destructive' });
+            return;
           }
           if (inserted) {
             sectionMap[i] = inserted.id;
