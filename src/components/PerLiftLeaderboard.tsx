@@ -24,24 +24,27 @@ const PerLiftLeaderboard = ({ rawLogs, sections }: Props) => {
   const perLiftLeaders = useMemo(() => {
     console.log('STEP 8 — GROUPING INPUT:', rawLogs);
     const sectionMap = new Map(sections.map(s => [s.id, s.section_name]));
-    const grouped = new Map<string, any[]>();
+    const grouped = rawLogs.reduce<Record<string, any[]>>((acc, log) => {
+      if (!log.section_id || log.weight == null) return acc;
 
-    rawLogs.forEach(log => {
-      if (!log.workout_section_id || log.weight == null) return;
-      const resolvedName = sectionMap.get(log.workout_section_id) || log.workout_section_id;
-      const key = normalizeLift(resolvedName);
-      if (!grouped.has(key)) grouped.set(key, []);
-      grouped.get(key)!.push(log);
-    });
+      if (!acc[log.section_id]) {
+        acc[log.section_id] = [];
+      }
+      acc[log.section_id].push(log);
+      return acc;
+    }, {});
 
-    return Array.from(grouped.entries()).map(([liftName, logs]) => {
+    return Object.entries(grouped).map(([sectionId, logs]) => {
       const userMax = new Map<string, any>();
       logs.forEach(log => {
+        const weight = Number(log.weight);
+        if (!Number.isFinite(weight)) return;
         const existing = userMax.get(log.user_id);
-        if (!existing || (log.weight ?? 0) > (existing.weight ?? 0)) userMax.set(log.user_id, log);
+        if (!existing || weight > Number(existing.weight ?? 0)) userMax.set(log.user_id, { ...log, weight });
       });
       const ranked = Array.from(userMax.values()).sort((a, b) => (b.weight ?? 0) - (a.weight ?? 0));
-      return { liftName, sectionName: displayLiftName(liftName), leader: ranked[0], top3: ranked.slice(0, 3), userEntry: user?.id ? ranked.find(l => l.user_id === user.id) : null };
+      const liftName = normalizeLift(sectionMap.get(sectionId) || sectionId);
+      return { liftName, sectionName: displayLiftName(sectionMap.get(sectionId) || 'Unknown Lift'), leader: ranked[0], top3: ranked.slice(0, 3), userEntry: user?.id ? ranked.find(l => l.user_id === user.id) : null };
     });
   }, [rawLogs, sections, user?.id]);
 
