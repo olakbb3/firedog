@@ -115,7 +115,13 @@ const ProfilePage = () => {
       }
       const [sectionsRes, logsRes] = await Promise.all([
         supabase.from('workout_sections').select('id, section_name').eq('workout_id', challenge.id),
-        supabase.from('workout_logs').select('user_id, workout_section_id, weight').eq('workout_id', challenge.id).not('weight', 'is', null),
+        supabase.rpc('get_leaderboard_logs', {
+          _workout_id: challenge.id,
+          _section_id: null,
+          _from: null,
+          _to: null,
+          _weight_only: true,
+        }),
       ]);
       const sectionMap = new Map(((sectionsRes.data as any[]) || []).map(s => [s.id, s.section_name]));
       const groups = new Map<string, any[]>();
