@@ -50,7 +50,7 @@ const FiredogLeaderboard = ({ crew, rawLogs, sections }: Props) => {
       </div>
 
       <PerLiftLeaderboard rawLogs={rawLogs} sections={sections} />
-      <LiveActivityFeed rawLogs={rawLogs} sections={sections} />
+      <LiveActivityFeed logs={rawLogs} sections={sections} />
     </div>
   );
 };

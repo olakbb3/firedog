@@ -118,7 +118,7 @@ const FiredogTotalArchive = () => {
               )) : <p className="text-xs text-muted-foreground text-center py-3 italic">No totals logged.</p>}
             </div>
             <PerLiftLeaderboard rawLogs={details.logs} sections={details.sections} />
-            <LiveActivityFeed rawLogs={details.logs} sections={details.sections} />
+            <LiveActivityFeed logs={details.logs} sections={details.sections} />
           </div>
         </DrawerContent>
       </Drawer>
