@@ -123,11 +123,15 @@ const AdminProgramPage = () => {
 
   const fetchWorkouts = async () => {
     if (!programId) return;
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('workouts')
       .select('id, title, description, workout_date, date')
       .eq('program_id', programId)
       .order('workout_date', { ascending: false, nullsFirst: false });
+    if (error) {
+      toast({ title: 'Operation failed', description: error.message, variant: 'destructive' });
+      return;
+    }
     if (data) setWorkouts(data);
   };
 
