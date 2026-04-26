@@ -1033,7 +1033,11 @@ const ChallengesTab = () => {
       .eq("title", "FIREDOG TOTAL")
       .gte("end_date", todayLocal)
       .order("start_date", { ascending: true })
-      .then(({ data }) => {
+      .then(({ data, error }) => {
+        if (error) {
+          toast({ title: "Operation failed", description: error.message, variant: "destructive" });
+          return;
+        }
         const rows = (data as ChallengeRow[]) || [];
         setChallenges(rows);
         setHasFuture(rows.some((c) => c.start_date > todayLocal));
@@ -1049,11 +1053,15 @@ const ChallengesTab = () => {
     setDesc(challenge.description || "");
     setStartDate(challenge.start_date ? new Date(`${challenge.start_date}T00:00:00`) : undefined);
     setEndDate(challenge.end_date ? new Date(`${challenge.end_date}T00:00:00`) : undefined);
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("workout_sections")
       .select("id, section_name")
       .eq("workout_id", challenge.id)
       .order("order_index");
+    if (error) {
+      toast({ title: "Operation failed", description: error.message, variant: "destructive" });
+      return;
+    }
     setLifts(((data as any[]) || []).map((s) => ({ id: s.id, section_name: s.section_name })));
   };
 
@@ -1063,12 +1071,16 @@ const ChallengesTab = () => {
     const nextEnd = new Date(now.getFullYear(), now.getMonth() + 2, 0);
     const nextStartStr = format(nextStart, "yyyy-MM-dd");
     const nextEndStr = format(nextEnd, "yyyy-MM-dd");
-    const { data: existing } = await supabase
+    const { data: existing, error: existingError } = await supabase
       .from("challenges")
       .select("*")
       .eq("title", "FIREDOG TOTAL")
       .eq("start_date", nextStartStr)
       .maybeSingle();
+    if (existingError) {
+      toast({ title: "Operation failed", description: existingError.message, variant: "destructive" });
+      return;
+    }
     if (existing) {
       await openEdit(existing as ChallengeRow);
       return;
