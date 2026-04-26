@@ -5,7 +5,7 @@ import { displayWeightValue, useUnitPreference } from '@/lib/units';
 import { displayLiftName } from '@/components/PerLiftLeaderboard';
 
 interface Props {
-  rawLogs: any[];
+  logs: any[];
   sections: WorkoutSection[];
 }
 
@@ -19,15 +19,15 @@ const timeAgo = (dateStr: string) => {
   return `${Math.floor(hrs / 24)}d ago`;
 };
 
-const LiveActivityFeed = ({ rawLogs, sections }: Props) => {
+const LiveActivityFeed = ({ logs, sections }: Props) => {
   const unit = useUnitPreference();
   const sectionMap = useMemo(() => new Map(sections.map(s => [s.id, s.section_name])), [sections]);
   const recentLogs = useMemo(() =>
-    [...rawLogs]
+    [...logs]
       .filter(log => log.weight != null)
       .sort((a, b) => new Date(b.completion_date).getTime() - new Date(a.completion_date).getTime())
       .slice(0, 10),
-    [rawLogs]
+    [logs]
   );
 
   return (
@@ -40,13 +40,18 @@ const LiveActivityFeed = ({ rawLogs, sections }: Props) => {
         <div className="space-y-2">
           {recentLogs.map((log, i) => (
             <div key={`${log.user_id}-${log.completion_date}-${i}`} className="flex items-center justify-between gap-2 text-xs font-body min-w-0">
+              {(() => {
+                const sectionName = sectionMap.get(log.section_id) || 'Unknown Lift';
+                return (
               <span className="text-foreground min-w-0 flex-1">
                 <span className="font-semibold">{log.user_name}</span>
                 {' logged '}
                 <span className="font-semibold">{displayWeightValue(log.weight, unit)} {unit === 'metric' ? 'kg' : 'lbs'}</span>
                 {' on '}
-                <span className="text-primary">{displayLiftName(sectionMap.get(log.workout_section_id) || 'Unknown')}</span>
+                <span className="text-primary">{displayLiftName(sectionName)}</span>
               </span>
+                );
+              })()}
               <span className="text-muted-foreground whitespace-nowrap shrink-0">{timeAgo(log.completion_date)}</span>
             </div>
           ))}
