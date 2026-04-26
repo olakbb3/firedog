@@ -318,6 +318,7 @@ const WorkoutsTab = () => {
       setSections(
         dbSections
           .map((s) => ({
+            id: s.id,
             section_name: s.section_name,
             result_type: (s.result_type as SectionResultType) || "completed",
             input_mode: (s.input_mode as SectionInputMode) || "single",
