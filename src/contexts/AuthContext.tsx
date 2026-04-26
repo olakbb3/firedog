@@ -11,6 +11,7 @@ interface AuthContextType {
   role: AppRole | null;
   acceptedTerms: boolean;
   setAcceptedTerms: (v: boolean) => void;
+  sessionChecked: boolean;
   loading: boolean;
   signOut: () => Promise<void>;
 }
@@ -24,6 +25,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [role, setRole] = useState<AppRole | null>(null);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [sessionChecked, setSessionChecked] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const claimPendingPurchases = async (userId: string, email: string) => {
@@ -84,11 +86,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             setSession(initialSession);
             setUser(initialSession.user);
           }
+        } else if (mounted) {
+          setSession(null);
+          setUser(null);
+          setRole(null);
+          setAcceptedTerms(false);
         }
       } catch (error) {
         console.error("Auth init error:", error);
       } finally {
-        if (mounted) setLoading(false);
+        if (mounted) {
+          setSessionChecked(true);
+          setLoading(false);
+        }
       }
     };
 
@@ -130,10 +140,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setUser(null);
     setRole(null);
     setAcceptedTerms(false);
+    setSessionChecked(true);
   };
 
   return (
-    <AuthContext.Provider value={{ session, user, role, acceptedTerms, setAcceptedTerms, loading, signOut }}>
+    <AuthContext.Provider value={{ session, user, role, acceptedTerms, setAcceptedTerms, sessionChecked, loading, signOut }}>
       {children}
     </AuthContext.Provider>
   );
