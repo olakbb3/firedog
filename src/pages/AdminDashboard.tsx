@@ -506,6 +506,15 @@ const WorkoutsTab = () => {
         toast({ title: "Operation failed", description: exercisesDelete.error.message, variant: "destructive" });
         return;
       }
+      const sectionsDelete = await supabase
+        .from("workout_sections")
+        .delete()
+        .eq("workout_id", editingId)
+        .not("id", "in", `(${Array.from(keptSectionIds).join(",") || "00000000-0000-0000-0000-000000000000"})`);
+      if (sectionsDelete.error) {
+        toast({ title: "Operation failed", description: sectionsDelete.error.message, variant: "destructive" });
+        return;
+      }
     }
 
     // Assign section IDs to exercises
