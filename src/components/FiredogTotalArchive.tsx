@@ -67,15 +67,15 @@ const FiredogTotalArchive = () => {
     (async () => {
       const [sectionsRes, logsRes] = await Promise.all([
         supabase.from('workout_sections').select('*').eq('workout_id', selected.id).order('order_index'),
-        supabase.from('workout_logs').select('user_id, workout_section_id, weight, is_rx, completion_date').eq('workout_id', selected.id).not('weight', 'is', null),
+        supabase.rpc('get_leaderboard_logs', {
+          _workout_id: selected.id,
+          _section_id: null,
+          _from: null,
+          _to: null,
+          _weight_only: true,
+        }),
       ]);
-      const logs = logsRes.data || [];
-      const userIds = [...new Set(logs.map(l => l.user_id).filter(Boolean))];
-      const profilesRes = userIds.length
-        ? await supabase.from('profiles').select('id, full_name').in('id', userIds)
-        : { data: [] as any[] };
-      const names = new Map((profilesRes.data || []).map((p: any) => [p.id, p.full_name || 'Athlete']));
-      const logsWithNames = logs.map(log => ({ ...log, user_name: names.get(log.user_id) || 'Athlete' }));
+      const logsWithNames = logsRes.data || [];
       if (!cancelled) setDetails({ logs: logsWithNames, sections: (sectionsRes.data as WorkoutSection[]) || [], crew: buildCrew(logsWithNames) });
     })();
     return () => { cancelled = true; };
