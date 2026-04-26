@@ -451,18 +451,18 @@ const WorkoutsTab = () => {
     const exerciseRows: any[] = [];
     sections.forEach((section, si) => {
       section.exercises
-        .filter((ex) => ex.exercise_name.trim())
+        .filter((ex) => ex.exercise_name && String(ex.exercise_name).trim())
         .forEach((ex, ei) => {
           exerciseRows.push({
             workout_id: workoutId,
             section_id: null, // will be updated after sections insert
             exercise_name: ex.exercise_name,
-            sets: ex.sets ? parseInt(ex.sets) : null,
-            reps: ex.reps ? parseInt(ex.reps) : null,
-            duration: ex.duration || null,
+            sets: ex.sets && String(ex.sets).trim() !== "" ? parseInt(ex.sets) : null,
+            reps: ex.reps && String(ex.reps).trim() !== "" ? parseInt(ex.reps) : null,
+            duration: ex.duration ? String(ex.duration).trim() || null : null,
             calories: ex.calories && String(ex.calories).trim() !== "" ? parseInt(ex.calories) : null,
             meters: ex.meters && String(ex.meters).trim() !== "" ? parseInt(ex.meters) : null,
-            notes: ex.notes || null,
+            notes: ex.notes ? String(ex.notes).trim() || null : null,
             scaling_notes: ex.scaling_notes ? ex.scaling_notes.trim() || null : null,
             order_index: ei,
             _sectionIndex: si,
