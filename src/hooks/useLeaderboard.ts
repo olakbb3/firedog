@@ -96,7 +96,7 @@ export const useLeaderboard = (workoutId: string | undefined, sections: WorkoutS
         return;
       }
 
-      const nameMap = new Map((logs || []).map(p => [p.user_id, p.user_name || 'Athlete']));
+      const nameMap = new Map<string, string>((logs || []).map(p => [p.user_id, p.user_name || 'Athlete']));
       const affMap = new Map<string, AthleteAffiliationLite>(
         (logs || []).map(p => [p.user_id, {
           gym_affiliation: (p as any).gym_affiliation,
