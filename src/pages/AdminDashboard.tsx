@@ -1091,9 +1091,14 @@ const ChallengesTab = () => {
           c.start_date <= new Date().toLocaleDateString("en-CA") &&
           c.end_date >= new Date().toLocaleDateString("en-CA"),
       ) || challenges[0];
-    const { data: currentLifts } = current
+    const currentLiftsRes = current
       ? await supabase.from("workout_sections").select("section_name").eq("workout_id", current.id).order("order_index")
-      : { data: [] as any[] };
+      : { data: [] as any[], error: null };
+    if (currentLiftsRes.error) {
+      toast({ title: "Operation failed", description: currentLiftsRes.error.message, variant: "destructive" });
+      return;
+    }
+    const currentLifts = currentLiftsRes.data;
     const draft: ChallengeRow = {
       id: "",
       title: "FIREDOG TOTAL",
@@ -1143,20 +1148,30 @@ const ChallengesTab = () => {
     }
     if (!challengeId) challengeId = (challengeRes.data as any).id;
     const existingIds = cleanLifts.map((l) => l.id).filter(Boolean) as string[];
-    await supabase
+    const { error: deleteLiftError } = await supabase
       .from("workout_sections")
       .delete()
       .eq("workout_id", challengeId)
       .not("id", "in", `(${existingIds.join(",") || "00000000-0000-0000-0000-000000000000"})`);
+    if (deleteLiftError) {
+      setSaving(false);
+      toast({ title: "Operation failed", description: deleteLiftError.message, variant: "destructive" });
+      return;
+    }
     for (let i = 0; i < cleanLifts.length; i++) {
       const lift = cleanLifts[i];
-      if (lift.id)
-        await supabase
+      if (lift.id) {
+        const { error: liftUpdateError } = await supabase
           .from("workout_sections")
           .update({ order_index: i, result_type: "weight", input_mode: "single" })
           .eq("id", lift.id);
-      else
-        await supabase
+        if (liftUpdateError) {
+          setSaving(false);
+          toast({ title: "Operation failed", description: liftUpdateError.message, variant: "destructive" });
+          return;
+        }
+      } else {
+        const { error: liftInsertError } = await supabase
           .from("workout_sections")
           .insert({
             workout_id: challengeId,
@@ -1165,6 +1180,12 @@ const ChallengesTab = () => {
             result_type: "weight",
             input_mode: "single",
           });
+        if (liftInsertError) {
+          setSaving(false);
+          toast({ title: "Operation failed", description: liftInsertError.message, variant: "destructive" });
+          return;
+        }
+      }
     }
     setSaving(false);
     setEditing(null);
