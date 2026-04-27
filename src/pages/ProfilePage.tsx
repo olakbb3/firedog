@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { toast } from '@/hooks/use-toast';
 import firedogLogo from '@/assets/firedog-logo.png';
 import EditProfileModal, { AthleteProfileFields } from '@/components/EditProfileModal';
+import PointsGuideModal from '@/components/PointsGuideModal';
 import { useUnitPreference, convertWeight, convertHeight, type UnitSystem } from '@/lib/units';
 import { Skeleton } from '@/components/ui/skeleton';
 import { displayLiftName, normalizeLift } from '@/components/PerLiftLeaderboard';
@@ -315,6 +316,16 @@ const ProfilePage = () => {
           <p className="text-lg font-bold">{profile?.rank || '—'}</p>
           <p className="text-[10px] text-muted-foreground">Rank</p>
         </div>
+      </div>
+      <div className="-mt-3 mb-6 flex justify-end">
+        <PointsGuideModal points={profile?.points ?? 0} rank={profile?.rank}>
+          <button
+            type="button"
+            className="text-xs text-muted-foreground hover:text-foreground hover:underline transition-colors"
+          >
+            ℹ️ How Points Work
+          </button>
+        </PointsGuideModal>
       </div>
 
       {/* Programs */}
