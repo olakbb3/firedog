@@ -270,8 +270,10 @@ const WorkoutPage = () => {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      <div className="animate-pulse space-y-4 p-4 max-w-lg mx-auto">
+        <div className="h-8 bg-muted rounded w-3/4" />
+        <div className="h-4 bg-muted rounded w-1/2" />
+        <div className="h-32 bg-muted rounded" />
       </div>
     );
   }

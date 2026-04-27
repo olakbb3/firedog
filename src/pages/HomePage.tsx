@@ -47,6 +47,7 @@ const HomePage = () => {
   const [profile, setProfile] = useState<ProfileRow | null>(null);
   const [allWorkouts, setAllWorkouts] = useState<WorkoutRow[]>([]);
   const [activeFiredogChallenge, setActiveFiredogChallenge] = useState<ChallengeRow | null>(null);
+  const [loading, setLoading] = useState(true);
   
   
   const [selectedDate, setSelectedDate] = useState<Date>(() => {
@@ -57,26 +58,29 @@ const HomePage = () => {
 
   useEffect(() => {
     const fetchData = async () => {
+      setLoading(true);
       const todayLocal = new Date().toLocaleDateString('en-CA');
-      const workoutsRes = await supabase.from('workouts').select('*').order('workout_date', { ascending: false });
-      const challengeRes = await supabase
-        .from('challenges')
-        .select('id, title, description, start_date, end_date')
-        .eq('title', 'FIREDOG TOTAL')
-        .eq('is_hidden', false)
-        .lte('start_date', todayLocal)
-        .gte('end_date', todayLocal)
-        .order('start_date', { ascending: true })
-        .limit(1)
-        .maybeSingle();
+      const [workoutsRes, challengeRes, profileRes] = await Promise.all([
+        supabase.from('workouts').select('*').order('workout_date', { ascending: false }),
+        supabase
+          .from('challenges')
+          .select('id, title, description, start_date, end_date')
+          .eq('title', 'FIREDOG TOTAL')
+          .eq('is_hidden', false)
+          .lte('start_date', todayLocal)
+          .gte('end_date', todayLocal)
+          .order('start_date', { ascending: true })
+          .limit(1)
+          .maybeSingle(),
+        user
+          ? supabase.from('profiles').select('full_name, points').eq('id', user.id).maybeSingle()
+          : Promise.resolve({ data: null }),
+      ]);
 
       if (workoutsRes.data) setAllWorkouts(workoutsRes.data);
       setActiveFiredogChallenge((challengeRes.data as ChallengeRow | null) || null);
-
-      if (user) {
-        const profileRes = await supabase.from('profiles').select('full_name, points').eq('id', user.id).maybeSingle();
-        if (profileRes.data) setProfile(profileRes.data);
-      }
+      if (profileRes.data) setProfile(profileRes.data as ProfileRow);
+      setLoading(false);
     };
 
     fetchData();
@@ -103,6 +107,14 @@ const HomePage = () => {
       navigate(`/workout/${workoutId}`);
     }
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full" />
+      </div>
+    );
+  }
 
 
 
@@ -187,9 +199,9 @@ const HomePage = () => {
       ) : (
         <div className="mb-6 rounded-xl bg-card border border-border p-8 text-center shadow-card">
           <p className="text-3xl mb-2">🐾</p>
-          <h3 className="text-lg font-bold font-display">Rest Day</h3>
+          <h3 className="text-lg font-bold font-display">No workout scheduled yet</h3>
           <p className="text-sm text-muted-foreground mt-1">
-            Enjoy your recovery. No workout scheduled for {format(selectedDate, 'MMMM d')}.
+            No workout scheduled yet — check back soon!
           </p>
           {!isSelectedToday && (
             <button

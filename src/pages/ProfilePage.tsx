@@ -46,71 +46,67 @@ const ProfilePage = () => {
 
   useEffect(() => {
     if (!user) return;
+    let cancelled = false;
 
-    const fetchProfile = async () => {
+    const fetchProfileData = async () => {
+      setLeaderBadgeLoading(true);
       const baseCols = 'full_name, points, completed_workouts, avatar_url, weight_lbs, height_inches, gym_affiliation, fd_affiliation, fd_career_volunteer, fd_rank, rank';
-      let profileRes = await supabase
-        .from('profiles')
-        .select(`${baseCols}, preferred_unit`)
-        .eq('id', user.id)
-        .maybeSingle();
-      // Fallback if migration hasn't been applied yet.
-      if (profileRes.error && /preferred_unit/i.test(profileRes.error.message || '')) {
-        profileRes = await supabase
+      const today = new Date();
+      const todayStr = today.toLocaleDateString('en-CA');
+      const monthStart = new Date(today.getFullYear(), today.getMonth(), 1).toLocaleDateString('en-CA');
+      const fetchProfile = async () => {
+        let profileRes = await supabase
           .from('profiles')
-          .select(baseCols)
+          .select(`${baseCols}, preferred_unit`)
           .eq('id', user.id)
           .maybeSingle();
-      }
+        // Fallback if migration hasn't been applied yet.
+        if (profileRes.error && /preferred_unit/i.test(profileRes.error.message || '')) {
+          profileRes = await supabase
+            .from('profiles')
+            .select(baseCols)
+            .eq('id', user.id)
+            .maybeSingle();
+        }
+        return profileRes;
+      };
+
+      const [profileRes, enrolledRes, freeWodRes, challengeRes] = await Promise.all([
+        fetchProfile(),
+        supabase.from('user_programs').select('program_sku').eq('user_id', user.id),
+        supabase.from('programs').select('id, title').eq('sku', 'FREE_WOD').maybeSingle(),
+        supabase
+          .from('challenges')
+          .select('id, start_date')
+          .eq('title', 'FIREDOG TOTAL')
+          .lte('start_date', monthStart)
+          .gte('end_date', todayStr)
+          .order('start_date', { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+      ]);
+
+      if (cancelled) return;
       if (profileRes.data) setProfile(profileRes.data as ProfileData);
 
-      // Fetch active programs: enrolled + Free WOD
       try {
-        const [enrolledRes, freeWodRes] = await Promise.all([
-          supabase.from('user_programs').select('program_sku').eq('user_id', user.id),
-          supabase.from('programs').select('id, title').eq('sku', 'FREE_WOD').maybeSingle(),
-        ]);
-
         let activePrograms: ProgramRow[] = [];
-
-        // Fetch enrolled program details
         const enrolledSkus = (enrolledRes.data || []).map(r => r.program_sku).filter(Boolean);
         if (enrolledSkus.length > 0) {
           const { data } = await supabase.from('programs').select('id, title').in('sku', enrolledSkus);
           if (data) activePrograms = data;
         }
 
-        // Always include Free WOD, deduplicate
         if (freeWodRes.data && !activePrograms.some(p => p.id === freeWodRes.data!.id)) {
           activePrograms.push(freeWodRes.data);
         }
 
-        setPrograms(activePrograms);
+        if (!cancelled) setPrograms(activePrograms);
       } catch {
-        setPrograms([]);
+        if (!cancelled) setPrograms([]);
       }
-    };
 
-    fetchProfile();
-  }, [user]);
-
-  useEffect(() => {
-    if (!user) return;
-    let cancelled = false;
-    const fetchLeaderBadge = async () => {
-      setLeaderBadgeLoading(true);
-      const today = new Date();
-      const todayStr = today.toLocaleDateString('en-CA');
-      const monthStart = new Date(today.getFullYear(), today.getMonth(), 1).toLocaleDateString('en-CA');
-      const { data: challenge } = await supabase
-        .from('challenges')
-        .select('id, start_date')
-        .eq('title', 'FIREDOG TOTAL')
-        .lte('start_date', monthStart)
-        .gte('end_date', todayStr)
-        .order('start_date', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+      const challenge = challengeRes.data;
       if (!challenge) {
         if (!cancelled) { setLeaderBadge(null); setLeaderBadgeLoading(false); }
         return;
@@ -147,7 +143,7 @@ const ProfilePage = () => {
       });
       if (!cancelled) { setLeaderBadge(badge); setLeaderBadgeLoading(false); }
     };
-    fetchLeaderBadge();
+    fetchProfileData();
     return () => { cancelled = true; };
   }, [user]);
 
