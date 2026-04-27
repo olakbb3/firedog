@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { Flame, Zap, ShoppingBag, Instagram } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
-import { useAuthGate } from '@/hooks/useAuthGate';
 import { supabase } from '@/lib/supabaseClient';
 import WeeklyDateStrip from '@/components/WeeklyDateStrip';
 import NewMonthBanner from '@/components/NewMonthBanner';
@@ -43,7 +42,7 @@ interface ProfileRow {
 const HomePage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { requireAuth, isGuest } = useAuthGate();
+  const isGuest = !user;
   const [profile, setProfile] = useState<ProfileRow | null>(null);
   const [allWorkouts, setAllWorkouts] = useState<WorkoutRow[]>([]);
   const [activeFiredogChallenge, setActiveFiredogChallenge] = useState<ChallengeRow | null>(null);
@@ -101,12 +100,6 @@ const HomePage = () => {
   const displayWorkout = todayWorkout || (isSelectedToday ? latestWod || null : null);
 
   const displayName = profile?.full_name?.split(' ')[0] || user?.user_metadata?.full_name?.split(' ')[0] || 'Athlete';
-
-  const handleStartWorkout = (workoutId: string) => {
-    if (requireAuth('Start Workout')) {
-      navigate(`/workout/${workoutId}`);
-    }
-  };
 
   if (loading) {
     return (
@@ -201,7 +194,9 @@ const HomePage = () => {
           <p className="text-3xl mb-2">🐾</p>
           <h3 className="text-lg font-bold font-display">No workout scheduled yet</h3>
           <p className="text-sm text-muted-foreground mt-1">
-            No workout scheduled yet — check back soon!
+            {isGuest
+              ? 'No workout scheduled for today — check back soon!'
+              : 'No workout scheduled yet — check back soon!'}
           </p>
           {!isSelectedToday && (
             <button
