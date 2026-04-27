@@ -102,20 +102,6 @@ export const useLeaderboard = (workoutId: string | undefined, sections: WorkoutS
         return;
       }
 
-      const userIds = Array.from(new Set((logs || []).map(log => log.user_id).filter(Boolean)));
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('id, full_name')
-        .in('id', userIds);
-
-      const rawLogNameMap = new Map<string, string>(
-        (profiles || []).map(p => [
-          p.id,
-          p.full_name && p.full_name.trim().length > 0
-            ? p.full_name
-            : 'Athlete'
-        ])
-      );
       const nameMap = new Map<string, string>((logs || []).map(p => [p.user_id, p.user_name || 'Athlete']));
       const affMap = new Map<string, AthleteAffiliationLite>(
         (logs || []).map(p => [p.user_id, {
@@ -130,8 +116,8 @@ export const useLeaderboard = (workoutId: string | undefined, sections: WorkoutS
       // Attach names to logs
       const logsWithNames = logs.map(log => ({
         ...log,
-        section_id: log.workout_section_id ?? log.section_id,
-        user_name: rawLogNameMap.get(log.user_id) || 'Athlete'
+        section_id: log.section_id,
+        user_name: log.full_name || 'Athlete'
       }));
       console.log('STEP 3 — LOGS WITH NAMES:', logsWithNames);
       setRawLogs(logsWithNames);
