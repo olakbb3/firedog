@@ -77,7 +77,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       try {
         const {
           data: { session: initialSession },
+          error,
         } = await supabase.auth.getSession();
+
+        if (error && (error.message?.includes("Refresh Token Not Found") || error.status === 400)) {
+          if (mounted) {
+            setSession(null);
+            setUser(null);
+            setLoading(false);
+          }
+          return;
+        }
 
         if (initialSession?.user) {
           await fetchProfile(initialSession.user.id, initialSession.user.email);
@@ -87,7 +97,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           }
         }
       } catch (error) {
-        console.error("Auth init error:", error);
+        console.log("Auth init: no session found (guest mode)");
       } finally {
         if (mounted) {
           setSessionChecked(true);
