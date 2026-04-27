@@ -232,7 +232,18 @@ export const useLeaderboard = (workoutId: string | undefined, sections: WorkoutS
           return 0;
         });
 
-        const nameMap = new Map<string, string>((sorted || []).map(p => [p.user_id, p.user_name || 'Athlete']));
+        const userIds = Array.from(new Set(sorted.map(log => log.user_id))).filter(Boolean);
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, full_name')
+          .in('id', userIds);
+
+        const nameMap = new Map<string, string>(
+          (profiles || []).map(p => [
+            p.id,
+            p.full_name && p.full_name.trim().length > 0 ? p.full_name : 'Athlete'
+          ])
+        );
         const affMap = new Map<string, AthleteAffiliationLite>(
           (sorted || []).map(p => [p.user_id, {
             gym_affiliation: (p as any).gym_affiliation,
