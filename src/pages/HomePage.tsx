@@ -203,6 +203,30 @@ const HomePage = () => {
       )}
 
 
+      {/* Active Challenges */}
+      {activeFiredogChallenge && (
+        <div className="mb-6">
+          <h2 className="text-lg font-bold mb-3">🔥 ACTIVE CHALLENGES</h2>
+          <div className="space-y-3">
+            <div className="rounded-xl bg-card border border-border p-4 shadow-card">
+              <h3 className="font-bold font-display text-sm">🔥 FIREDOG TOTAL</h3>
+              <p className="text-xs text-muted-foreground mt-1">{activeFiredogChallenge.description}</p>
+              <div className="mt-2 flex items-center justify-end">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="text-xs h-7 border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+                  onClick={() => navigate(`/workout/${activeFiredogChallenge.id}`)}
+                >
+                  View Challenge
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+
       {/* Program Cards */}
       <div className="mb-6">
         <h2 className="text-lg font-bold mb-3">PROGRAMS</h2>
@@ -233,29 +257,6 @@ const HomePage = () => {
           </button>
         </div>
       </div>
-
-      {/* Active Challenges */}
-      {activeFiredogChallenge && (
-        <div className="mb-6">
-          <h2 className="text-lg font-bold mb-3">🔥 ACTIVE CHALLENGES</h2>
-          <div className="space-y-3">
-            <div className="rounded-xl bg-card border border-border p-4 shadow-card">
-              <h3 className="font-bold font-display text-sm">🔥 FIREDOG TOTAL</h3>
-              <p className="text-xs text-muted-foreground mt-1">{activeFiredogChallenge.description}</p>
-              <div className="mt-2 flex items-center justify-end">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="text-xs h-7 border-primary text-primary hover:bg-primary hover:text-primary-foreground"
-                  onClick={() => navigate(`/workout/${activeFiredogChallenge.id}`)}
-                >
-                  View Challenge
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Our Philosophy */}
       <div className="mb-6">
