@@ -312,7 +312,7 @@ const ProfilePage = () => {
         </div>
         <div className="rounded-xl bg-card border border-border p-3 text-center shadow-card">
           <Trophy className="h-4 w-4 mx-auto text-fire-yellow mb-1" />
-          <p className="text-lg font-bold">—</p>
+          <p className="text-lg font-bold">{profile?.rank || '—'}</p>
           <p className="text-[10px] text-muted-foreground">Rank</p>
         </div>
       </div>
