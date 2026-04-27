@@ -416,6 +416,16 @@ const WorkoutPage = () => {
           </ScalingGuideDrawer>
         </div>
 
+        {!user && (
+          <div className="mt-4 rounded-lg border border-primary/30 bg-primary/5 p-3">
+            <p className="text-sm font-semibold text-foreground">Sign up to log your results</p>
+            <div className="mt-3 flex gap-2">
+              <Button size="sm" onClick={() => navigate('/signup')}>Sign Up</Button>
+              <Button size="sm" variant="outline" onClick={() => navigate('/login')}>Login</Button>
+            </div>
+          </div>
+        )}
+
         {/* === ATHLETE SNAPSHOT === */}
         {user && (snapshot.lastDate || snapshot.completedCount > 0) && (
           <div className="mt-4 flex items-center gap-4 border-t border-border pt-3">
@@ -490,7 +500,7 @@ const WorkoutPage = () => {
               </div>
               {/* Per-section Log Result button — route by input_mode.
                   AMRAP (rounds_reps) ALWAYS uses single-score UI regardless of exercise count. */}
-              {(() => {
+              {user && (() => {
                 const sectionResultType = (section as any).result_type || "completed";
                 const isAmrap = sectionResultType === "rounds_reps";
                 const explicitMode = (section as any).input_mode as SectionInputMode | undefined | null;
