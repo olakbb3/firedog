@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 import dalmatianReward from '@/assets/dalmatian-reward.jpeg';
@@ -12,7 +13,6 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { useAuth } from '@/contexts/AuthContext';
-import { useAuthGate } from '@/hooks/useAuthGate';
 import { supabase } from '@/lib/supabaseClient';
 import { parseWeightToLbs, useUnitPreference } from '@/lib/units';
 import type { SectionResultType, ExerciseRow } from '@/types/index';
@@ -71,7 +71,7 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName, re
   // Total reps required to complete one full round across all movements (AMRAP)
   const totalRoundReps = exercises.reduce((sum, ex) => sum + (ex.reps || 0), 0);
   const { user } = useAuth();
-  const { requireAuth } = useAuthGate();
+  const navigate = useNavigate();
   const unit = useUnitPreference(user?.id);
   const submittingRef = useRef(false);
   const lastSubmitAtRef = useRef(0);
@@ -120,7 +120,10 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName, re
   };
 
   const handleOpen = () => {
-    if (!requireAuth('Log Result')) return;
+    if (!user) {
+      navigate('/onboarding');
+      return;
+    }
     if (!needsInput) {
       // 'completed' — skip modal, submit immediately with Rx=true
       handleSubmitCompleted();
