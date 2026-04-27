@@ -22,6 +22,7 @@ interface ProfileData {
   fd_affiliation: string | null;
   fd_career_volunteer: string | null;
   fd_rank: string | null;
+  rank: string | null;
   preferred_unit: UnitSystem | null;
 }
 
@@ -46,7 +47,7 @@ const ProfilePage = () => {
     if (!user) return;
 
     const fetchProfile = async () => {
-      const baseCols = 'full_name, points, completed_workouts, avatar_url, weight_lbs, height_inches, gym_affiliation, fd_affiliation, fd_career_volunteer, fd_rank';
+      const baseCols = 'full_name, points, completed_workouts, avatar_url, weight_lbs, height_inches, gym_affiliation, fd_affiliation, fd_career_volunteer, fd_rank, rank';
       let profileRes = await supabase
         .from('profiles')
         .select(`${baseCols}, preferred_unit`)
@@ -242,10 +243,18 @@ const ProfilePage = () => {
         )}
 
         {(() => {
+          const rankLabels: Record<string, string> = {
+            Chief: '💎 Chief',
+            Captain: '⭐ Captain',
+            'Senior Firefighter': '🔥 Senior Firefighter',
+            Firefighter: '🚒 Firefighter',
+            Recruit: '🔰 Recruit',
+          };
           const stats = [
             profile?.weight_lbs ? convertWeight(profile.weight_lbs, unit) : null,
             profile?.height_inches ? convertHeight(profile.height_inches, unit) : null,
             profile?.fd_rank || null,
+            profile?.rank ? rankLabels[profile.rank] || profile.rank : null,
           ].filter(Boolean);
           return stats.length > 0 ? (
             <p className="text-xs text-muted-foreground mt-2">{stats.join(' • ')}</p>
