@@ -840,8 +840,17 @@ const WorkoutsTab = () => {
             ))}
           </div>
 
-          <Button onClick={handleSave} className="w-full gradient-fire text-primary-foreground shadow-fire">
-            <Save className="h-4 w-4 mr-2" /> {editingId ? "UPDATE WORKOUT" : "SAVE WORKOUT"}
+          <Button
+            onClick={handleSave}
+            disabled={isSubmitting}
+            className="w-full gradient-fire text-primary-foreground shadow-fire"
+          >
+            <Save className="h-4 w-4 mr-2" />
+            {isSubmitting
+              ? "SAVING..."
+              : editingId || existingWorkoutForDate
+                ? "UPDATE EXISTING WORKOUT"
+                : "SAVE NEW WORKOUT"}
           </Button>
         </div>
       )}
