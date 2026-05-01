@@ -191,6 +191,8 @@ const WorkoutsTab = () => {
   );
   const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
   const [pendingSave, setPendingSave] = useState(false);
+  const [existingWorkoutForDate, setExistingWorkoutForDate] = useState<{ id: string; title: string } | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const fetchWorkouts = async () => {
     const { data, error } = await supabase
