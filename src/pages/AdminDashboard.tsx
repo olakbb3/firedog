@@ -224,15 +224,17 @@ const WorkoutsTab = () => {
         .from("workouts")
         .select("id, title")
         .eq("workout_date", workoutDate)
-        .is("program_id", null)
-        .limit(1);
+        .maybeSingle();
       if (cancelled) return;
       if (error) {
         setExistingWorkoutForDate(null);
         return;
       }
-      const match = (data || []).find((w) => w.id !== editingId);
-      setExistingWorkoutForDate(match ? { id: match.id, title: match.title } : null);
+      if (data && data.id !== editingId) {
+        setExistingWorkoutForDate({ id: data.id, title: data.title });
+      } else {
+        setExistingWorkoutForDate(null);
+      }
     })();
     return () => {
       cancelled = true;
@@ -560,12 +562,26 @@ const WorkoutsTab = () => {
     try {
       await executeSave();
     } catch (err: any) {
-      if (err?.code === "23505") {
-        toast({ title: "A workout already exists for this date.", variant: "destructive" });
+      const msg = err?.message || "";
+      const details = err?.details || "";
+      const isDuplicate =
+        err?.code === "23505" ||
+        msg.includes("unique_workout_date") ||
+        msg.includes("duplicate key") ||
+        details.includes("unique_workout_date") ||
+        details.includes("duplicate key");
+
+      if (isDuplicate) {
+        toast({
+          title: "Workout Already Exists",
+          description:
+            "This date already has a workout. Click 'Update Existing Workout' to overwrite it.",
+          variant: "destructive",
+        });
       } else {
         toast({
           title: "Operation failed",
-          description: err?.message || "Could not save workout.",
+          description: msg || "Could not save workout.",
           variant: "destructive",
         });
       }
