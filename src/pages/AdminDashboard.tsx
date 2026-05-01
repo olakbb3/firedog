@@ -210,6 +210,35 @@ const WorkoutsTab = () => {
     fetchWorkouts();
   }, []);
 
+  // Proactive duplicate-date check: whenever the selected date changes while the form is open,
+  // look up whether a workout already exists for that date (excluding the one being edited).
+  useEffect(() => {
+    if (!showForm || !formDate) {
+      setExistingWorkoutForDate(null);
+      return;
+    }
+    const workoutDate = format(formDate, "yyyy-MM-dd");
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await supabase
+        .from("workouts")
+        .select("id, title")
+        .eq("workout_date", workoutDate)
+        .is("program_id", null)
+        .limit(1);
+      if (cancelled) return;
+      if (error) {
+        setExistingWorkoutForDate(null);
+        return;
+      }
+      const match = (data || []).find((w) => w.id !== editingId);
+      setExistingWorkoutForDate(match ? { id: match.id, title: match.title } : null);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [formDate, showForm, editingId]);
+
   const resetForm = () => {
     setFormTitle("");
     setFormDesc("");
