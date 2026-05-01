@@ -610,6 +610,11 @@ const WorkoutsTab = () => {
 
       {showForm && (
         <div className="rounded-xl bg-card border border-border p-5 mb-6 shadow-card space-y-4">
+          {existingWorkoutForDate && (
+            <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
+              ⚠️ A workout already exists for this date{existingWorkoutForDate.title ? ` ("${existingWorkoutForDate.title}")` : ""}. Saving will overwrite the existing workout.
+            </div>
+          )}
           <Input
             placeholder="Workout Title"
             value={formTitle}
