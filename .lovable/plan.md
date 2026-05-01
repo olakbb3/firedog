@@ -1,70 +1,71 @@
+# Fix Admin Form Duplicate Handling & Error Toast
 
+Two small, scoped edits in `src/pages/AdminDashboard.tsx`. No DB changes, no layout/styling changes.
 
-## Premium Firedog Timer — Build Plan
+## Fix 1 — Proactive date check (useEffect, lines ~215–240)
 
-### Summary
-Replace the existing `WorkoutTimer` with a new premium timer at `src/components/workout/WorkoutTimer.tsx`. Add interval mode, 10-second pre-start countdown, Wake Lock, and sticky positioning.
+Current behavior: the lookup filters with `.is("program_id", null)` and uses `.limit(1)` instead of `.maybeSingle()`. If an existing standalone WOD was ever saved with a non-null `program_id` (or RLS hides it under that filter), the check silently misses it — so the banner never appears and the form falls through to an INSERT, which then trips the unique constraint.
 
-### Files Changed
+Change the query to match exactly what the unique constraint covers (the date), and use `maybeSingle()`:
 
-**1. `src/components/workout/WorkoutTimer.tsx` (NEW)**
+```ts
+const workoutDate = format(formDate, "yyyy-MM-dd");
+const { data, error } = await supabase
+  .from("workouts")
+  .select("id, title")
+  .eq("workout_date", workoutDate)
+  .maybeSingle();
 
-Full rewrite of the timer component with:
-
-- **Three modes** via tabbed selector: Stopwatch, Countdown, Intervals
-- **State machine**: `idle` → `preStart` (10s) → `running` → `paused` → `finished`
-- **Pre-start countdown**: On START click, initialize AudioContext (browser safety), show large "10...1" countdown with beeps at 3/2/1 and a long high-pitch beep at GO, then auto-transition to selected mode
-- **Interval mode state**: `workTime`, `restTime`, `totalRounds`, `currentRound`, `phase` (work/rest). Display "Round X/Y" and "WORK"/"REST" labels with color coding
-- **Massive display**: `font-mono text-6xl` for the main time, centered
-- **Controls**: START (idle/paused), PAUSE (running), RESET (any). Disable mode tabs while running
-- **Audio**: Reuse existing `playBeep` helper. Short beeps (3×) at pre-start 3/2/1 and interval transitions. Long high beep at GO
-- **Wake Lock**: `navigator.wakeLock.request('screen')` on start, release on stop/unmount
-- **Cleanup**: All intervals and wake locks cleared in `useEffect` cleanup
-
-**2. `src/pages/WorkoutPage.tsx`**
-
-- Update import path: `from '@/components/workout/WorkoutTimer'`
-- Wrap timer in sticky container: `<div className="sticky top-0 z-50 bg-card border-b border-border shadow-md rounded-b-xl">` — placed **above** the whiteboard container (outside the card), so it sticks to viewport top
-- Move the `WorkoutTimer` render from inside the whiteboard card to the new sticky wrapper
-
-**3. Delete `src/components/WorkoutTimer.tsx`** (old location)
-
-### Technical Details
-
-**State machine flow:**
-```text
-idle ──START──> preStart(10s) ──0──> running ──PAUSE──> paused
-  ^                                    │                  │
-  └────────────RESET───────────────────┴──────────────────┘
-                                       │
-                                  (finish) ──> finished
-```
-
-**Interval tick logic:**
-- Decrement phase timer each second
-- When phase timer hits 0: if WORK → switch to REST timer; if REST → increment round, if last round → finish, else → switch to WORK timer
-- Beep pattern at each phase transition (3 short beeps)
-
-**Wake Lock:**
-```typescript
-const wakeLockRef = useRef<WakeLockSentinel | null>(null);
-// Acquire on start
-if ('wakeLock' in navigator) {
-  wakeLockRef.current = await navigator.wakeLock.request('screen');
+if (cancelled) return;
+if (error) {
+  setExistingWorkoutForDate(null);
+  return;
 }
-// Release on stop/unmount
-wakeLockRef.current?.release();
+if (data && data.id !== editingId) {
+  setExistingWorkoutForDate({ id: data.id, title: data.title });
+} else {
+  setExistingWorkoutForDate(null);
+}
 ```
 
-**Sticky wrapper in WorkoutPage (outside whiteboard card):**
-```tsx
-{!isFiredogTotal && (
-  <div className="sticky top-0 z-50 bg-card border-b border-border shadow-md rounded-b-xl px-5 py-3">
-    <WorkoutTimer ... />
-  </div>
-)}
+Keep the `cancelled` guard, the `[formDate, showForm, editingId]` deps, and the early return when the form is closed or `formDate` is unset. The date is already formatted with `date-fns` `format(..., "yyyy-MM-dd")`, so no timezone drift.
+
+## Fix 2 — Friendly error toast (handleSave catch, lines ~560–574)
+
+Current catch only matches `err?.code === "23505"`. Supabase sometimes surfaces the constraint violation through `message`/`details` without a top-level `code` (e.g. when the error bubbles from a nested call). Broaden the detection and ensure the raw Postgres message is never shown for that case:
+
+```ts
+} catch (err: any) {
+  const msg = err?.message || "";
+  const details = err?.details || "";
+  const isDuplicate =
+    err?.code === "23505" ||
+    msg.includes("unique_workout_date") ||
+    msg.includes("duplicate key") ||
+    details.includes("unique_workout_date") ||
+    details.includes("duplicate key");
+
+  if (isDuplicate) {
+    toast({
+      title: "Workout Already Exists",
+      description:
+        "This date already has a workout. Click 'Update Existing Workout' to overwrite it.",
+      variant: "destructive",
+    });
+  } else {
+    toast({
+      title: "Operation failed",
+      description: msg || "Could not save workout.",
+      variant: "destructive",
+    });
+  }
+} finally {
+  setIsSubmitting(false);
+}
 ```
 
-### Props unchanged
-Same `WorkoutTimerProps` interface — no changes needed to parent data flow.
+## Out of scope
 
+- No changes to `executeSave`, section/exercise write order, or the duplicate-confirm dialog.
+- No changes to the inline amber warning banner, button labels, mobile layout, or dark-mode styling.
+- No DB migrations; the unique constraint stays as-is.

@@ -224,15 +224,17 @@ const WorkoutsTab = () => {
         .from("workouts")
         .select("id, title")
         .eq("workout_date", workoutDate)
-        .is("program_id", null)
-        .limit(1);
+        .maybeSingle();
       if (cancelled) return;
       if (error) {
         setExistingWorkoutForDate(null);
         return;
       }
-      const match = (data || []).find((w) => w.id !== editingId);
-      setExistingWorkoutForDate(match ? { id: match.id, title: match.title } : null);
+      if (data && data.id !== editingId) {
+        setExistingWorkoutForDate({ id: data.id, title: data.title });
+      } else {
+        setExistingWorkoutForDate(null);
+      }
     })();
     return () => {
       cancelled = true;
