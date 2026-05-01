@@ -430,9 +430,11 @@ const WorkoutsTab = () => {
 
   const executeSave = async () => {
     const workoutDate = formDate ? format(formDate, "yyyy-MM-dd") : null;
-    let workoutId = editingId;
+    // If not already editing but a workout exists for this date, treat that workout as the edit target.
+    const effectiveId = editingId || existingWorkoutForDate?.id || null;
+    let workoutId = effectiveId;
 
-    if (editingId) {
+    if (effectiveId) {
       const { error } = await supabase
         .from("workouts")
         .update({
@@ -440,11 +442,8 @@ const WorkoutsTab = () => {
           description: formDesc,
           workout_date: workoutDate,
         })
-        .eq("id", editingId);
-      if (error) {
-        toast({ title: "Error updating workout", description: error.message, variant: "destructive" });
-        return;
-      }
+        .eq("id", effectiveId);
+      if (error) throw error;
     } else {
       const { data: workout, error } = await supabase
         .from("workouts")
@@ -456,10 +455,7 @@ const WorkoutsTab = () => {
         })
         .select()
         .single();
-      if (error || !workout) {
-        toast({ title: "Error creating workout", description: error?.message, variant: "destructive" });
-        return;
-      }
+      if (error || !workout) throw error || new Error("Failed to create workout");
       workoutId = workout.id;
     }
 
@@ -486,10 +482,7 @@ const WorkoutsTab = () => {
           .from("workout_sections")
           .update(sectionPayload)
           .eq("id", s.id);
-        if (sectionUpdateError) {
-          toast({ title: "Operation failed", description: sectionUpdateError.message, variant: "destructive" });
-          return;
-        }
+        if (sectionUpdateError) throw sectionUpdateError;
         sectionMap[i] = s.id;
         keptSectionIds.add(s.id);
       } else {
@@ -498,10 +491,7 @@ const WorkoutsTab = () => {
           .insert(sectionPayload)
           .select("id")
           .single();
-        if (sectionInsertError || !insertedSection) {
-          toast({ title: "Operation failed", description: sectionInsertError?.message, variant: "destructive" });
-          return;
-        }
+        if (sectionInsertError || !insertedSection) throw sectionInsertError || new Error("Failed to create section");
         sectionMap[i] = insertedSection.id;
         keptSectionIds.add(insertedSection.id);
       }
@@ -531,21 +521,15 @@ const WorkoutsTab = () => {
     });
 
     // Delete old exercises only after section writes have succeeded.
-    if (editingId) {
-      const exercisesDelete = await supabase.from("exercises").delete().eq("workout_id", editingId);
-      if (exercisesDelete.error) {
-        toast({ title: "Operation failed", description: exercisesDelete.error.message, variant: "destructive" });
-        return;
-      }
+    if (effectiveId) {
+      const exercisesDelete = await supabase.from("exercises").delete().eq("workout_id", effectiveId);
+      if (exercisesDelete.error) throw exercisesDelete.error;
       const sectionsDelete = await supabase
         .from("workout_sections")
         .delete()
-        .eq("workout_id", editingId)
+        .eq("workout_id", effectiveId)
         .not("id", "in", `(${Array.from(keptSectionIds).join(",") || "00000000-0000-0000-0000-000000000000"})`);
-      if (sectionsDelete.error) {
-        toast({ title: "Operation failed", description: sectionsDelete.error.message, variant: "destructive" });
-        return;
-      }
+      if (sectionsDelete.error) throw sectionsDelete.error;
     }
 
     // Assign section IDs to exercises
@@ -557,13 +541,10 @@ const WorkoutsTab = () => {
     // Insert exercises
     if (finalExerciseRows.length > 0) {
       const { error: exError } = await supabase.from("exercises").insert(finalExerciseRows);
-      if (exError) {
-        toast({ title: "Error saving exercises", description: exError.message, variant: "destructive" });
-        return;
-      }
+      if (exError) throw exError;
     }
 
-    toast({ title: editingId ? "Workout updated!" : "Workout created!" });
+    toast({ title: effectiveId ? "Workout updated!" : "Workout created!" });
     setShowForm(false);
     resetForm();
     fetchWorkouts();
