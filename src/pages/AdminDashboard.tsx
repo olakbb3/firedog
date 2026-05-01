@@ -555,29 +555,28 @@ const WorkoutsTab = () => {
       toast({ title: "Please add a Workout Title.", variant: "destructive" });
       return;
     }
-
-    // Duplicate date check (only for new workouts)
-    if (!editingId && formDate) {
-      const workoutDate = format(formDate, "yyyy-MM-dd");
-      const { data: existing } = await supabase
-        .from("workouts")
-        .select("id")
-        .eq("workout_date", workoutDate)
-        .is("program_id", null)
-        .limit(1);
-
-      if (existing && existing.length > 0) {
-        setShowDuplicateDialog(true);
-        return;
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    try {
+      await executeSave();
+    } catch (err: any) {
+      if (err?.code === "23505") {
+        toast({ title: "A workout already exists for this date.", variant: "destructive" });
+      } else {
+        toast({
+          title: "Operation failed",
+          description: err?.message || "Could not save workout.",
+          variant: "destructive",
+        });
       }
+    } finally {
+      setIsSubmitting(false);
     }
-
-    await executeSave();
   };
 
   const confirmDuplicateSave = async () => {
     setShowDuplicateDialog(false);
-    await executeSave();
+    await handleSave();
   };
 
   return (
