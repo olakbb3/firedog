@@ -27,7 +27,7 @@ export default function QuickLogFab({ onLogged }: Props) {
         type="button"
         onClick={handleClick}
         aria-label="Log workout"
-        className="fixed bottom-20 right-4 z-40 flex items-center gap-2 rounded-full bg-primary text-primary-foreground shadow-fire px-4 py-3 font-display text-sm font-bold tracking-wider hover:opacity-90 active:scale-95 transition safe-bottom"
+        className="fixed bottom-24 right-6 z-[9999] flex items-center gap-2 rounded-full bg-primary text-primary-foreground shadow-fire px-4 py-3 font-display text-sm font-bold tracking-wider hover:opacity-90 active:scale-95 transition safe-bottom"
       >
         <Plus className="h-5 w-5" />
         LOG WORKOUT
