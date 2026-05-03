@@ -325,7 +325,7 @@ const ProgressPage = () => {
         );
       })()}
 
-      <QuickLogFab onLogged={() => setRefreshTick((t) => t + 1)} />
+      {user && <QuickLogFab onLogged={() => setRefreshTick((t) => t + 1)} />}
     </div>
   );
 };
