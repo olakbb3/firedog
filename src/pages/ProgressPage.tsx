@@ -16,7 +16,7 @@ type ResultType = 'completed' | 'time' | 'rounds_reps' | 'calories' | 'meters' |
 
 interface WorkoutLog {
   id: string;
-  workout_id: string;
+  workout_id: string | null;
   workout_section_id?: string | null;
   exercise_name?: string | null;
   result_type?: ResultType | null;
