@@ -89,6 +89,7 @@ const ProgressPage = () => {
   const [points, setPoints] = useState(0);
   const [loading, setLoading] = useState(true);
   const [detailKey, setDetailKey] = useState<string | null>(null);
+  const [refreshTick, setRefreshTick] = useState(0);
 
   const { prLogIds } = usePersonalRecords(user?.id);
 
