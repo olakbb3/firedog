@@ -75,9 +75,13 @@ interface SectionInput {
   time_cap_minutes?: string;
   locked: boolean;
   exercises: ExerciseInput[];
+  userOverrode?: boolean;
 }
 
 const emptyExercise = (): ExerciseInput => ({ exercise_name: '', sets: '', reps: '', duration: '', calories: '', meters: '', notes: '', scaling_notes: '' });
+
+const autoDetectInputMode = (exerciseCount: number): SectionInputMode =>
+  exerciseCount >= 2 ? 'per_exercise' : 'single';
 
 const AdminProgramPage = () => {
   const { programId } = useParams<{ programId: string }>();
