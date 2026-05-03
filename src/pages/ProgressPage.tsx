@@ -238,28 +238,36 @@ const ProgressPage = () => {
         <div className="space-y-3">
           {logs
             .filter((log) => {
+              const isFreestyle = !log.workout_id;
+              if (isFreestyle) {
+                return formatScore(log, unit) !== '—';
+              }
               if (!workouts[log.workout_id]) return false;
               const isRestDay = !workoutHasContent[log.workout_id];
               if (isRestDay) return true;
               return formatScore(log, unit) !== '—' || log.result_type === 'completed';
             })
             .map((log) => {
-              const title = workouts[log.workout_id] || 'Workout';
-              const isRestDay = !workoutHasContent[log.workout_id];
+              const isFreestyle = !log.workout_id;
+              const title = isFreestyle
+                ? (log.exercise_name || 'Freestyle')
+                : (workouts[log.workout_id] || 'Workout');
+              const isRestDay = !isFreestyle && !workoutHasContent[log.workout_id];
               const score = isRestDay ? 'Rest Day 🐾' : formatScore(log, unit);
-              const showBadge = !isRestDay && log.result_type !== 'completed';
+              const showBadge = !isFreestyle && !isRestDay && log.result_type !== 'completed';
               const isRx = log.is_rx ?? true;
               const dateLabel = formatLogDate(log.completion_date);
               const isPR = !isRestDay && !!log.id && prLogIds.has(log.id);
               const day = log.completion_date.split('T')[0];
-              const groupKey = `${log.workout_id}::${day}`;
+              const groupKey = isFreestyle ? `freestyle::${log.id}` : `${log.workout_id}::${day}`;
+              const clickable = !isRestDay && !isFreestyle;
 
               return (
                 <button
                   key={log.id}
                   type="button"
-                  onClick={() => !isRestDay && setDetailKey(groupKey)}
-                  disabled={isRestDay}
+                  onClick={() => clickable && setDetailKey(groupKey)}
+                  disabled={!clickable}
                   className="w-full text-left rounded-xl bg-card border border-border p-4 shadow-card transition-opacity active:opacity-80 hover:border-primary/40 disabled:cursor-default disabled:hover:border-border"
                 >
                   <div className="flex items-center justify-between gap-3">
@@ -272,6 +280,11 @@ const ProgressPage = () => {
                           title="Personal Record"
                         >
                           🔥 PR
+                        </span>
+                      )}
+                      {isFreestyle && (
+                        <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground whitespace-nowrap">
+                          Freestyle
                         </span>
                       )}
                       {showBadge && (
