@@ -212,25 +212,29 @@ const AdminProgramPage = () => {
       const template = getTemplate();
       setSections(dbSections.map(s => {
         const templateMatch = template.find(t => t.section_name === s.section_name);
+        const exercises = dbExercises
+          .filter((e: any) => e.section_id === s.id)
+          .map((e: any) => ({
+            exercise_name: e.exercise_name || '',
+            sets: e.sets?.toString() || '',
+            reps: e.reps?.toString() || '',
+            duration: e.duration || '',
+            calories: e.calories != null ? String(e.calories) : '',
+            meters: e.meters != null ? String(e.meters) : '',
+            notes: e.notes || '',
+            scaling_notes: (e as any).scaling_notes || '',
+          }));
+        const savedMode = (s.input_mode as SectionInputMode) || 'single';
+        const userOverrode = savedMode !== autoDetectInputMode(exercises.length);
         return {
           id: s.id,
           section_name: s.section_name,
           result_type: (s.result_type as SectionResultType) || 'completed',
-          input_mode: (s.input_mode as SectionInputMode) || 'single',
+          input_mode: savedMode,
           time_cap_minutes: (s as any).time_cap_minutes != null ? String((s as any).time_cap_minutes) : '',
           locked: templateMatch?.locked ?? false,
-          exercises: dbExercises
-            .filter((e: any) => e.section_id === s.id)
-            .map((e: any) => ({
-              exercise_name: e.exercise_name || '',
-              sets: e.sets?.toString() || '',
-              reps: e.reps?.toString() || '',
-              duration: e.duration || '',
-              calories: e.calories != null ? String(e.calories) : '',
-              meters: e.meters != null ? String(e.meters) : '',
-              notes: e.notes || '',
-              scaling_notes: (e as any).scaling_notes || '',
-            })),
+          exercises,
+          userOverrode,
         };
       }).map(s => s.exercises.length === 0 ? { ...s, exercises: [emptyExercise()] } : s));
     } else {
