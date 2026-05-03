@@ -290,7 +290,7 @@ const HomePage = () => {
         </button>
       </div>
 
-      <QuickLogFab />
+      {user && <QuickLogFab />}
     </div>
   );
 };
