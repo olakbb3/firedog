@@ -528,7 +528,7 @@ const AdminProgramPage = () => {
                       <div className="flex items-center justify-between mb-1">
                         <label className="text-[10px] text-muted-foreground font-display uppercase tracking-wider block">Input Mode</label>
                         {section.userOverrode && (
-                          <span className="text-[9px] text-amber-500 font-medium">🔒 Manual override</span>
+                          <span className="text-xs text-orange-500 font-medium">🔒 Manual override</span>
                         )}
                       </div>
                       <Select value={section.input_mode} onValueChange={(v) => setSections(prev => prev.map((s, i) => i === si ? { ...s, input_mode: v as SectionInputMode, userOverrode: true } : s))}>
