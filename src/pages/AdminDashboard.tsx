@@ -191,6 +191,7 @@ const WorkoutsTab = () => {
       result_type: "completed" as SectionResultType,
       input_mode: "single" as SectionInputMode,
       exercises: [emptyExercise()],
+      userOverrode: false,
     })),
   );
   const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
