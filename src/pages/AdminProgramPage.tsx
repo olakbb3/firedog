@@ -105,12 +105,12 @@ const AdminProgramPage = () => {
 
   const getTemplate = (): SectionInput[] => {
     if (isFiredog) {
-      return FIREDOG_TEMPLATE.map(t => ({ ...t, input_mode: 'single' as SectionInputMode, time_cap_minutes: '', locked: true, exercises: [emptyExercise()] }));
+      return FIREDOG_TEMPLATE.map(t => ({ ...t, input_mode: 'single' as SectionInputMode, time_cap_minutes: '', locked: true, exercises: [emptyExercise()], userOverrode: false }));
     }
     if (isEngine) {
-      return ENGINE_TEMPLATE.map(t => ({ ...t, input_mode: 'single' as SectionInputMode, time_cap_minutes: '', locked: true, exercises: [emptyExercise()] }));
+      return ENGINE_TEMPLATE.map(t => ({ ...t, input_mode: 'single' as SectionInputMode, time_cap_minutes: '', locked: true, exercises: [emptyExercise()], userOverrode: false }));
     }
-    return [{ section_name: '', result_type: 'completed', input_mode: 'single' as SectionInputMode, time_cap_minutes: '', locked: false, exercises: [emptyExercise()] }];
+    return [{ section_name: '', result_type: 'completed', input_mode: 'single' as SectionInputMode, time_cap_minutes: '', locked: false, exercises: [emptyExercise()], userOverrode: false }];
   };
 
   useEffect(() => {
