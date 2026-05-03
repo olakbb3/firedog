@@ -8,7 +8,7 @@ interface Props {
   onLogged?: () => void;
 }
 
-export default function QuickLogFab({ onLogged }: Props) {
+export default function QuickLogButton({ onLogged }: Props) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
@@ -27,7 +27,7 @@ export default function QuickLogFab({ onLogged }: Props) {
         type="button"
         onClick={handleClick}
         aria-label="Log workout"
-        className="fixed bottom-24 right-6 z-[9999] flex items-center gap-2 rounded-full bg-primary text-primary-foreground shadow-fire px-4 py-3 font-display text-sm font-bold tracking-wider hover:opacity-90 active:scale-95 transition safe-bottom"
+        className="w-full rounded-xl py-4 flex items-center justify-center gap-2 font-bold transition-transform active:scale-95 shadow-md bg-primary text-primary-foreground font-display tracking-wider"
       >
         <Plus className="h-5 w-5" />
         LOG WORKOUT

@@ -12,7 +12,7 @@ import firedogLogo from '@/assets/firedog-logo.png';
 import philosophyImage from '@/assets/100-words.jpeg';
 import inferno45Cover from '@/assets/inferno-45-cover.jpg';
 import stationStrengthCover from '@/assets/station-strength-cover.jpg';
-import QuickLogFab from '@/components/QuickLogFab';
+import QuickLogButton from '@/components/QuickLogButton';
 
 interface WorkoutRow {
   id: string;
@@ -210,6 +210,11 @@ const HomePage = () => {
         </div>
       )}
 
+      {user && (
+        <div className="my-6">
+          <QuickLogButton />
+        </div>
+      )}
 
       {/* Active Challenges */}
       {activeFiredogChallenge && (
@@ -290,7 +295,7 @@ const HomePage = () => {
         </button>
       </div>
 
-      {user && <QuickLogFab />}
+      
     </div>
   );
 };

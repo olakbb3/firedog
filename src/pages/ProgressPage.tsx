@@ -9,7 +9,7 @@ import { usePersonalRecords } from '@/hooks/usePersonalRecords';
 import PRCard from '@/components/PRCard';
 import LeaderboardContextCard from '@/components/LeaderboardContextCard';
 import WorkoutHistoryDetailModal, { type HistoryDetailLog } from '@/components/WorkoutHistoryDetailModal';
-import QuickLogFab from '@/components/QuickLogFab';
+import QuickLogButton from '@/components/QuickLogButton';
 import { useUnitPreference, convertWeight, type UnitSystem } from '@/lib/units';
 
 type ResultType = 'completed' | 'time' | 'rounds_reps' | 'calories' | 'meters' | 'weight';
@@ -325,7 +325,11 @@ const ProgressPage = () => {
         );
       })()}
 
-      {user && <QuickLogFab onLogged={() => setRefreshTick((t) => t + 1)} />}
+      {user && (
+        <div className="my-6">
+          <QuickLogButton onLogged={() => setRefreshTick((t) => t + 1)} />
+        </div>
+      )}
     </div>
   );
 };
