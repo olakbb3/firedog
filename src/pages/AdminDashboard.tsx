@@ -309,9 +309,13 @@ const WorkoutsTab = () => {
     setSections((prev) =>
       prev.map((s, i) => {
         if (i !== sectionIdx) return s;
-        const exercises = [...s.exercises, emptyExercise()];
-        const input_mode = s.userOverrode ? s.input_mode : autoDetectInputMode(exercises.length);
-        return { ...s, exercises, input_mode };
+        const newExercises = [...s.exercises, emptyExercise()];
+        const newMode: SectionInputMode = s.userOverrode
+          ? s.input_mode
+          : newExercises.length >= 2
+            ? "per_exercise"
+            : "single";
+        return { ...s, exercises: newExercises, input_mode: newMode };
       }),
     );
   };
