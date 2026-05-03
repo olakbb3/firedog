@@ -185,14 +185,17 @@ export default function FreestyleLogModal({ open, onOpenChange, onLogged }: Prop
       if (hasPR) {
         const msg =
           prItems.length === 1
-            ? `You beat your best on ${prItems[0]} 💪`
-            : 'New best 💪';
-        toast(msg, { duration: 3500 });
+            ? `New PR on ${prItems[0]} 💪 Saved to your history.`
+            : 'New best 💪 Saved to your history.';
+        toast.success(msg, { duration: 3500 });
       } else {
-        toast(
+        toast.success(
           <div className="flex items-center gap-3">
-            <img src={dalmatianReward} alt="Logged" className="w-16 h-16 rounded-lg object-cover" />
-            <span className="font-semibold text-sm">Workout logged 🐾</span>
+            <img src={dalmatianReward} alt="Logged" className="w-14 h-14 rounded-lg object-cover" />
+            <div className="flex flex-col">
+              <span className="font-semibold text-sm">Workout logged 🐾</span>
+              <span className="text-xs text-muted-foreground">Saved to your history</span>
+            </div>
           </div>,
           { duration: 3000 }
         );
