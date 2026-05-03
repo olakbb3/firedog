@@ -84,6 +84,9 @@ const INPUT_MODE_OPTIONS: { value: SectionInputMode; label: string }[] = [
 
 const DEFAULT_SECTIONS = ["Morning Meeting", "Dispatch", "First-In", "Overhaul", "Rehab"];
 
+const autoDetectInputMode = (exerciseCount: number): SectionInputMode =>
+  exerciseCount >= 2 ? "per_exercise" : "single";
+
 interface SectionInput {
   id?: string;
   section_name: string;
@@ -91,6 +94,7 @@ interface SectionInput {
   input_mode: SectionInputMode;
   time_cap_minutes?: string;
   exercises: ExerciseInput[];
+  userOverrode?: boolean;
 }
 
 interface ExerciseInput {
@@ -281,7 +285,7 @@ const WorkoutsTab = () => {
   };
 
   const updateSectionInputMode = (idx: number, mode: SectionInputMode) => {
-    setSections((prev) => prev.map((s, i) => (i === idx ? { ...s, input_mode: mode } : s)));
+    setSections((prev) => prev.map((s, i) => (i === idx ? { ...s, input_mode: mode, userOverrode: true } : s)));
   };
 
   const updateSectionTimeCap = (idx: number, value: string) => {
@@ -300,13 +304,26 @@ const WorkoutsTab = () => {
 
   const addExercise = (sectionIdx: number) => {
     setSections((prev) =>
-      prev.map((s, i) => (i === sectionIdx ? { ...s, exercises: [...s.exercises, emptyExercise()] } : s)),
+      prev.map((s, i) => {
+        if (i !== sectionIdx) return s;
+        const exercises = [...s.exercises, emptyExercise()];
+        const input_mode = s.userOverrode ? s.input_mode : autoDetectInputMode(exercises.length);
+        return { ...s, exercises, input_mode };
+      }),
     );
   };
 
   const removeExercise = (sectionIdx: number, exIdx: number) => {
     setSections((prev) =>
-      prev.map((s, i) => (i === sectionIdx ? { ...s, exercises: s.exercises.filter((_, j) => j !== exIdx) } : s)),
+      prev.map((s, i) => {
+        if (i !== sectionIdx) return s;
+        const exercises = s.exercises.filter((_, j) => j !== exIdx);
+        if (exercises.length === 0) {
+          return { ...s, exercises, userOverrode: false, input_mode: autoDetectInputMode(0) };
+        }
+        const input_mode = s.userOverrode ? s.input_mode : autoDetectInputMode(exercises.length);
+        return { ...s, exercises, input_mode };
+      }),
     );
   };
 
@@ -350,13 +367,8 @@ const WorkoutsTab = () => {
     if (dbSections.length > 0) {
       setSections(
         dbSections
-          .map((s) => ({
-            id: s.id,
-            section_name: s.section_name,
-            result_type: (s.result_type as SectionResultType) || "completed",
-            input_mode: (s.input_mode as SectionInputMode) || "single",
-            time_cap_minutes: (s as any).time_cap_minutes != null ? String((s as any).time_cap_minutes) : "",
-            exercises: dbExercises
+          .map((s) => {
+            const exercises = dbExercises
               .filter((e: any) => e.section_id === s.id)
               .map((e: any) => ({
                 exercise_name: e.exercise_name || "",
@@ -367,8 +379,19 @@ const WorkoutsTab = () => {
                 meters: e.meters != null ? String(e.meters) : "",
                 notes: e.notes || "",
                 scaling_notes: (e as any).scaling_notes || "",
-              })),
-          }))
+              }));
+            const savedMode = (s.input_mode as SectionInputMode) || "single";
+            const userOverrode = savedMode !== autoDetectInputMode(exercises.length);
+            return {
+              id: s.id,
+              section_name: s.section_name,
+              result_type: (s.result_type as SectionResultType) || "completed",
+              input_mode: savedMode,
+              time_cap_minutes: (s as any).time_cap_minutes != null ? String((s as any).time_cap_minutes) : "",
+              exercises,
+              userOverrode,
+            };
+          })
           .map((s) => (s.exercises.length === 0 ? { ...s, exercises: [emptyExercise()] } : s)),
       );
     } else {
@@ -735,9 +758,14 @@ const WorkoutsTab = () => {
                     </Select>
                   </div>
                   <div>
-                    <label className="text-[10px] text-muted-foreground font-display uppercase tracking-wider mb-1 block">
-                      Input Mode
-                    </label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-[10px] text-muted-foreground font-display uppercase tracking-wider block">
+                        Input Mode
+                      </label>
+                      {section.userOverrode && (
+                        <span className="text-[9px] text-amber-500 font-medium">🔒 Manual override</span>
+                      )}
+                    </div>
                     <Select
                       value={section.input_mode || "single"}
                       onValueChange={(v) => updateSectionInputMode(si, v as SectionInputMode)}

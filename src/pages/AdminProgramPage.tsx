@@ -75,9 +75,13 @@ interface SectionInput {
   time_cap_minutes?: string;
   locked: boolean;
   exercises: ExerciseInput[];
+  userOverrode?: boolean;
 }
 
 const emptyExercise = (): ExerciseInput => ({ exercise_name: '', sets: '', reps: '', duration: '', calories: '', meters: '', notes: '', scaling_notes: '' });
+
+const autoDetectInputMode = (exerciseCount: number): SectionInputMode =>
+  exerciseCount >= 2 ? 'per_exercise' : 'single';
 
 const AdminProgramPage = () => {
   const { programId } = useParams<{ programId: string }>();
@@ -150,11 +154,24 @@ const AdminProgramPage = () => {
   };
 
   const addExercise = (sectionIdx: number) => {
-    setSections(prev => prev.map((s, i) => i === sectionIdx ? { ...s, exercises: [...s.exercises, emptyExercise()] } : s));
+    setSections(prev => prev.map((s, i) => {
+      if (i !== sectionIdx) return s;
+      const exercises = [...s.exercises, emptyExercise()];
+      const input_mode = s.userOverrode ? s.input_mode : autoDetectInputMode(exercises.length);
+      return { ...s, exercises, input_mode };
+    }));
   };
 
   const removeExercise = (sectionIdx: number, exIdx: number) => {
-    setSections(prev => prev.map((s, i) => i === sectionIdx ? { ...s, exercises: s.exercises.filter((_, j) => j !== exIdx) } : s));
+    setSections(prev => prev.map((s, i) => {
+      if (i !== sectionIdx) return s;
+      const exercises = s.exercises.filter((_, j) => j !== exIdx);
+      if (exercises.length === 0) {
+        return { ...s, exercises, userOverrode: false, input_mode: autoDetectInputMode(0) };
+      }
+      const input_mode = s.userOverrode ? s.input_mode : autoDetectInputMode(exercises.length);
+      return { ...s, exercises, input_mode };
+    }));
   };
 
   const updateExercise = (sectionIdx: number, exIdx: number, field: keyof ExerciseInput, value: string) => {
@@ -195,25 +212,29 @@ const AdminProgramPage = () => {
       const template = getTemplate();
       setSections(dbSections.map(s => {
         const templateMatch = template.find(t => t.section_name === s.section_name);
+        const exercises = dbExercises
+          .filter((e: any) => e.section_id === s.id)
+          .map((e: any) => ({
+            exercise_name: e.exercise_name || '',
+            sets: e.sets?.toString() || '',
+            reps: e.reps?.toString() || '',
+            duration: e.duration || '',
+            calories: e.calories != null ? String(e.calories) : '',
+            meters: e.meters != null ? String(e.meters) : '',
+            notes: e.notes || '',
+            scaling_notes: (e as any).scaling_notes || '',
+          }));
+        const savedMode = (s.input_mode as SectionInputMode) || 'single';
+        const userOverrode = savedMode !== autoDetectInputMode(exercises.length);
         return {
           id: s.id,
           section_name: s.section_name,
           result_type: (s.result_type as SectionResultType) || 'completed',
-          input_mode: (s.input_mode as SectionInputMode) || 'single',
+          input_mode: savedMode,
           time_cap_minutes: (s as any).time_cap_minutes != null ? String((s as any).time_cap_minutes) : '',
           locked: templateMatch?.locked ?? false,
-          exercises: dbExercises
-            .filter((e: any) => e.section_id === s.id)
-            .map((e: any) => ({
-              exercise_name: e.exercise_name || '',
-              sets: e.sets?.toString() || '',
-              reps: e.reps?.toString() || '',
-              duration: e.duration || '',
-              calories: e.calories != null ? String(e.calories) : '',
-              meters: e.meters != null ? String(e.meters) : '',
-              notes: e.notes || '',
-              scaling_notes: (e as any).scaling_notes || '',
-            })),
+          exercises,
+          userOverrode,
         };
       }).map(s => s.exercises.length === 0 ? { ...s, exercises: [emptyExercise()] } : s));
     } else {
@@ -502,8 +523,13 @@ const AdminProgramPage = () => {
                       </Select>
                     </div>
                     <div>
-                      <label className="text-[10px] text-muted-foreground font-display uppercase tracking-wider mb-1 block">Input Mode</label>
-                      <Select value={section.input_mode} onValueChange={(v) => setSections(prev => prev.map((s, i) => i === si ? { ...s, input_mode: v as SectionInputMode } : s))}>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-[10px] text-muted-foreground font-display uppercase tracking-wider block">Input Mode</label>
+                        {section.userOverrode && (
+                          <span className="text-[9px] text-amber-500 font-medium">🔒 Manual override</span>
+                        )}
+                      </div>
+                      <Select value={section.input_mode} onValueChange={(v) => setSections(prev => prev.map((s, i) => i === si ? { ...s, input_mode: v as SectionInputMode, userOverrode: true } : s))}>
                         <SelectTrigger className="bg-background text-xs h-8">
                           <SelectValue />
                         </SelectTrigger>
