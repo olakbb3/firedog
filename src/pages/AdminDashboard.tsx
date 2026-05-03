@@ -758,9 +758,14 @@ const WorkoutsTab = () => {
                     </Select>
                   </div>
                   <div>
-                    <label className="text-[10px] text-muted-foreground font-display uppercase tracking-wider mb-1 block">
-                      Input Mode
-                    </label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-[10px] text-muted-foreground font-display uppercase tracking-wider block">
+                        Input Mode
+                      </label>
+                      {section.userOverrode && (
+                        <span className="text-[9px] text-amber-500 font-medium">🔒 Manual override</span>
+                      )}
+                    </div>
                     <Select
                       value={section.input_mode || "single"}
                       onValueChange={(v) => updateSectionInputMode(si, v as SectionInputMode)}
