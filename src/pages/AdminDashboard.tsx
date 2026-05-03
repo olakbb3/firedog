@@ -84,6 +84,9 @@ const INPUT_MODE_OPTIONS: { value: SectionInputMode; label: string }[] = [
 
 const DEFAULT_SECTIONS = ["Morning Meeting", "Dispatch", "First-In", "Overhaul", "Rehab"];
 
+const autoDetectInputMode = (exerciseCount: number): SectionInputMode =>
+  exerciseCount >= 2 ? "per_exercise" : "single";
+
 interface SectionInput {
   id?: string;
   section_name: string;
@@ -91,6 +94,7 @@ interface SectionInput {
   input_mode: SectionInputMode;
   time_cap_minutes?: string;
   exercises: ExerciseInput[];
+  userOverrode?: boolean;
 }
 
 interface ExerciseInput {
