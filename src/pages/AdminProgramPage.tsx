@@ -523,8 +523,13 @@ const AdminProgramPage = () => {
                       </Select>
                     </div>
                     <div>
-                      <label className="text-[10px] text-muted-foreground font-display uppercase tracking-wider mb-1 block">Input Mode</label>
-                      <Select value={section.input_mode} onValueChange={(v) => setSections(prev => prev.map((s, i) => i === si ? { ...s, input_mode: v as SectionInputMode } : s))}>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-[10px] text-muted-foreground font-display uppercase tracking-wider block">Input Mode</label>
+                        {section.userOverrode && (
+                          <span className="text-[9px] text-amber-500 font-medium">🔒 Manual override</span>
+                        )}
+                      </div>
+                      <Select value={section.input_mode} onValueChange={(v) => setSections(prev => prev.map((s, i) => i === si ? { ...s, input_mode: v as SectionInputMode, userOverrode: true } : s))}>
                         <SelectTrigger className="bg-background text-xs h-8">
                           <SelectValue />
                         </SelectTrigger>
