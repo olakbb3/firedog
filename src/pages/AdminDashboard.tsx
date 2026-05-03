@@ -770,11 +770,11 @@ const WorkoutsTab = () => {
                         Input Mode
                       </label>
                       {section.userOverrode && (
-                        <span className="text-[9px] text-amber-500 font-medium">🔒 Manual override</span>
+                        <span className="text-xs text-orange-500 font-medium">🔒 Manual override</span>
                       )}
                     </div>
                     <Select
-                      value={section.input_mode || "single"}
+                      value={section.input_mode}
                       onValueChange={(v) => updateSectionInputMode(si, v as SectionInputMode)}
                     >
                       <SelectTrigger className="bg-background text-xs h-8">
