@@ -285,7 +285,7 @@ const WorkoutsTab = () => {
   };
 
   const updateSectionInputMode = (idx: number, mode: SectionInputMode) => {
-    setSections((prev) => prev.map((s, i) => (i === idx ? { ...s, input_mode: mode } : s)));
+    setSections((prev) => prev.map((s, i) => (i === idx ? { ...s, input_mode: mode, userOverrode: true } : s)));
   };
 
   const updateSectionTimeCap = (idx: number, value: string) => {
@@ -304,13 +304,26 @@ const WorkoutsTab = () => {
 
   const addExercise = (sectionIdx: number) => {
     setSections((prev) =>
-      prev.map((s, i) => (i === sectionIdx ? { ...s, exercises: [...s.exercises, emptyExercise()] } : s)),
+      prev.map((s, i) => {
+        if (i !== sectionIdx) return s;
+        const exercises = [...s.exercises, emptyExercise()];
+        const input_mode = s.userOverrode ? s.input_mode : autoDetectInputMode(exercises.length);
+        return { ...s, exercises, input_mode };
+      }),
     );
   };
 
   const removeExercise = (sectionIdx: number, exIdx: number) => {
     setSections((prev) =>
-      prev.map((s, i) => (i === sectionIdx ? { ...s, exercises: s.exercises.filter((_, j) => j !== exIdx) } : s)),
+      prev.map((s, i) => {
+        if (i !== sectionIdx) return s;
+        const exercises = s.exercises.filter((_, j) => j !== exIdx);
+        if (exercises.length === 0) {
+          return { ...s, exercises, userOverrode: false, input_mode: autoDetectInputMode(0) };
+        }
+        const input_mode = s.userOverrode ? s.input_mode : autoDetectInputMode(exercises.length);
+        return { ...s, exercises, input_mode };
+      }),
     );
   };
 
