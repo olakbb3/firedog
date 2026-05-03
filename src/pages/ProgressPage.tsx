@@ -124,7 +124,7 @@ const ProgressPage = () => {
       setLoading(false);
     };
     fetchData();
-  }, [user]);
+  }, [user, refreshTick]);
 
   // Calculate streak
   const dayStreak = (() => {
