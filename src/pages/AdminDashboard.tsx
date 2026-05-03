@@ -191,6 +191,7 @@ const WorkoutsTab = () => {
       result_type: "completed" as SectionResultType,
       input_mode: "single" as SectionInputMode,
       exercises: [emptyExercise()],
+      userOverrode: false,
     })),
   );
   const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
@@ -256,6 +257,7 @@ const WorkoutsTab = () => {
         result_type: "completed" as SectionResultType,
         input_mode: "single" as SectionInputMode,
         exercises: [emptyExercise()],
+        userOverrode: false,
       })),
     );
   };
@@ -268,6 +270,7 @@ const WorkoutsTab = () => {
         result_type: "completed" as SectionResultType,
         input_mode: "single" as SectionInputMode,
         exercises: [emptyExercise()],
+        userOverrode: false,
       },
     ]);
   };
@@ -306,9 +309,13 @@ const WorkoutsTab = () => {
     setSections((prev) =>
       prev.map((s, i) => {
         if (i !== sectionIdx) return s;
-        const exercises = [...s.exercises, emptyExercise()];
-        const input_mode = s.userOverrode ? s.input_mode : autoDetectInputMode(exercises.length);
-        return { ...s, exercises, input_mode };
+        const newExercises = [...s.exercises, emptyExercise()];
+        const newMode: SectionInputMode = s.userOverrode
+          ? s.input_mode
+          : newExercises.length >= 2
+            ? "per_exercise"
+            : "single";
+        return { ...s, exercises: newExercises, input_mode: newMode };
       }),
     );
   };
@@ -763,11 +770,11 @@ const WorkoutsTab = () => {
                         Input Mode
                       </label>
                       {section.userOverrode && (
-                        <span className="text-[9px] text-amber-500 font-medium">🔒 Manual override</span>
+                        <span className="text-xs text-orange-500 font-medium">🔒 Manual override</span>
                       )}
                     </div>
                     <Select
-                      value={section.input_mode || "single"}
+                      value={section.input_mode}
                       onValueChange={(v) => updateSectionInputMode(si, v as SectionInputMode)}
                     >
                       <SelectTrigger className="bg-background text-xs h-8">

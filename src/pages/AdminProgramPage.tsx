@@ -105,12 +105,12 @@ const AdminProgramPage = () => {
 
   const getTemplate = (): SectionInput[] => {
     if (isFiredog) {
-      return FIREDOG_TEMPLATE.map(t => ({ ...t, input_mode: 'single' as SectionInputMode, time_cap_minutes: '', locked: true, exercises: [emptyExercise()] }));
+      return FIREDOG_TEMPLATE.map(t => ({ ...t, input_mode: 'single' as SectionInputMode, time_cap_minutes: '', locked: true, exercises: [emptyExercise()], userOverrode: false }));
     }
     if (isEngine) {
-      return ENGINE_TEMPLATE.map(t => ({ ...t, input_mode: 'single' as SectionInputMode, time_cap_minutes: '', locked: true, exercises: [emptyExercise()] }));
+      return ENGINE_TEMPLATE.map(t => ({ ...t, input_mode: 'single' as SectionInputMode, time_cap_minutes: '', locked: true, exercises: [emptyExercise()], userOverrode: false }));
     }
-    return [{ section_name: '', result_type: 'completed', input_mode: 'single' as SectionInputMode, time_cap_minutes: '', locked: false, exercises: [emptyExercise()] }];
+    return [{ section_name: '', result_type: 'completed', input_mode: 'single' as SectionInputMode, time_cap_minutes: '', locked: false, exercises: [emptyExercise()], userOverrode: false }];
   };
 
   useEffect(() => {
@@ -156,9 +156,11 @@ const AdminProgramPage = () => {
   const addExercise = (sectionIdx: number) => {
     setSections(prev => prev.map((s, i) => {
       if (i !== sectionIdx) return s;
-      const exercises = [...s.exercises, emptyExercise()];
-      const input_mode = s.userOverrode ? s.input_mode : autoDetectInputMode(exercises.length);
-      return { ...s, exercises, input_mode };
+      const newExercises = [...s.exercises, emptyExercise()];
+      const newMode: SectionInputMode = s.userOverrode
+        ? s.input_mode
+        : newExercises.length >= 2 ? 'per_exercise' : 'single';
+      return { ...s, exercises: newExercises, input_mode: newMode };
     }));
   };
 
@@ -526,7 +528,7 @@ const AdminProgramPage = () => {
                       <div className="flex items-center justify-between mb-1">
                         <label className="text-[10px] text-muted-foreground font-display uppercase tracking-wider block">Input Mode</label>
                         {section.userOverrode && (
-                          <span className="text-[9px] text-amber-500 font-medium">🔒 Manual override</span>
+                          <span className="text-xs text-orange-500 font-medium">🔒 Manual override</span>
                         )}
                       </div>
                       <Select value={section.input_mode} onValueChange={(v) => setSections(prev => prev.map((s, i) => i === si ? { ...s, input_mode: v as SectionInputMode, userOverrode: true } : s))}>
@@ -593,7 +595,7 @@ const AdminProgramPage = () => {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setSections(prev => [...prev, { section_name: '', result_type: 'completed', input_mode: 'single' as SectionInputMode, time_cap_minutes: '', locked: false, exercises: [emptyExercise()] }])}
+                  onClick={() => setSections(prev => [...prev, { section_name: '', result_type: 'completed', input_mode: 'single' as SectionInputMode, time_cap_minutes: '', locked: false, exercises: [emptyExercise()], userOverrode: false }])}
                   className="text-xs"
                 >
                   <Plus className="h-3 w-3 mr-1" /> Add Section
