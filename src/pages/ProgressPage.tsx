@@ -9,13 +9,14 @@ import { usePersonalRecords } from '@/hooks/usePersonalRecords';
 import PRCard from '@/components/PRCard';
 import LeaderboardContextCard from '@/components/LeaderboardContextCard';
 import WorkoutHistoryDetailModal, { type HistoryDetailLog } from '@/components/WorkoutHistoryDetailModal';
+import QuickLogFab from '@/components/QuickLogFab';
 import { useUnitPreference, convertWeight, type UnitSystem } from '@/lib/units';
 
 type ResultType = 'completed' | 'time' | 'rounds_reps' | 'calories' | 'meters' | 'weight';
 
 interface WorkoutLog {
   id: string;
-  workout_id: string;
+  workout_id: string | null;
   workout_section_id?: string | null;
   exercise_name?: string | null;
   result_type?: ResultType | null;
@@ -88,6 +89,7 @@ const ProgressPage = () => {
   const [points, setPoints] = useState(0);
   const [loading, setLoading] = useState(true);
   const [detailKey, setDetailKey] = useState<string | null>(null);
+  const [refreshTick, setRefreshTick] = useState(0);
 
   const { prLogIds } = usePersonalRecords(user?.id);
 
@@ -122,7 +124,7 @@ const ProgressPage = () => {
       setLoading(false);
     };
     fetchData();
-  }, [user]);
+  }, [user, refreshTick]);
 
   // Calculate streak
   const dayStreak = (() => {
@@ -236,28 +238,38 @@ const ProgressPage = () => {
         <div className="space-y-3">
           {logs
             .filter((log) => {
-              if (!workouts[log.workout_id]) return false;
-              const isRestDay = !workoutHasContent[log.workout_id];
+              const isFreestyle = !log.workout_id;
+              if (isFreestyle) {
+                return formatScore(log, unit) !== '—';
+              }
+              const wid = log.workout_id as string;
+              if (!workouts[wid]) return false;
+              const isRestDay = !workoutHasContent[wid];
               if (isRestDay) return true;
               return formatScore(log, unit) !== '—' || log.result_type === 'completed';
             })
             .map((log) => {
-              const title = workouts[log.workout_id] || 'Workout';
-              const isRestDay = !workoutHasContent[log.workout_id];
+              const isFreestyle = !log.workout_id;
+              const wid = log.workout_id as string;
+              const title = isFreestyle
+                ? (log.exercise_name || 'Freestyle')
+                : (workouts[wid] || 'Workout');
+              const isRestDay = !isFreestyle && !workoutHasContent[wid];
               const score = isRestDay ? 'Rest Day 🐾' : formatScore(log, unit);
-              const showBadge = !isRestDay && log.result_type !== 'completed';
+              const showBadge = !isFreestyle && !isRestDay && log.result_type !== 'completed';
               const isRx = log.is_rx ?? true;
               const dateLabel = formatLogDate(log.completion_date);
               const isPR = !isRestDay && !!log.id && prLogIds.has(log.id);
               const day = log.completion_date.split('T')[0];
-              const groupKey = `${log.workout_id}::${day}`;
+              const groupKey = isFreestyle ? `freestyle::${log.id}` : `${wid}::${day}`;
+              const clickable = !isRestDay && !isFreestyle;
 
               return (
                 <button
                   key={log.id}
                   type="button"
-                  onClick={() => !isRestDay && setDetailKey(groupKey)}
-                  disabled={isRestDay}
+                  onClick={() => clickable && setDetailKey(groupKey)}
+                  disabled={!clickable}
                   className="w-full text-left rounded-xl bg-card border border-border p-4 shadow-card transition-opacity active:opacity-80 hover:border-primary/40 disabled:cursor-default disabled:hover:border-border"
                 >
                   <div className="flex items-center justify-between gap-3">
@@ -270,6 +282,11 @@ const ProgressPage = () => {
                           title="Personal Record"
                         >
                           🔥 PR
+                        </span>
+                      )}
+                      {isFreestyle && (
+                        <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground whitespace-nowrap">
+                          Freestyle
                         </span>
                       )}
                       {showBadge && (
@@ -307,6 +324,8 @@ const ProgressPage = () => {
           />
         );
       })()}
+
+      <QuickLogFab onLogged={() => setRefreshTick((t) => t + 1)} />
     </div>
   );
 };
