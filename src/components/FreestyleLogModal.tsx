@@ -1,0 +1,313 @@
+import { useState, useRef } from 'react';
+import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import dalmatianReward from '@/assets/dalmatian-reward.jpeg';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/lib/supabaseClient';
+import { parseWeightToLbs, useUnitPreference } from '@/lib/units';
+import {
+  evaluatePRBatch,
+  PR_LOG_COLUMNS,
+  type PRLog,
+} from '@/utils/personalRecords';
+
+type FreestyleResultType = 'weight' | 'time' | 'rounds_reps' | 'calories' | 'meters';
+
+interface Props {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onLogged?: () => void;
+}
+
+const RESULT_TYPE_LABELS: Record<FreestyleResultType, string> = {
+  weight: 'Weight',
+  time: 'Time',
+  rounds_reps: 'Reps',
+  calories: 'Calories',
+  meters: 'Meters',
+};
+
+const autoFormatTime = (raw: string): string => {
+  const digits = raw.replace(/\D/g, '').slice(0, 6);
+  if (digits.length <= 2) return digits;
+  if (digits.length <= 4) {
+    return digits.slice(0, digits.length - 2) + ':' + digits.slice(digits.length - 2);
+  }
+  return (
+    digits.slice(0, digits.length - 4) +
+    ':' +
+    digits.slice(digits.length - 4, digits.length - 2) +
+    ':' +
+    digits.slice(digits.length - 2)
+  );
+};
+
+const validateTimeFormat = (t: string) => /^(\d{1,3}:)?\d{1,3}:\d{2}$/.test(t);
+
+export default function FreestyleLogModal({ open, onOpenChange, onLogged }: Props) {
+  const { user } = useAuth();
+  const unit = useUnitPreference(user?.id);
+  const submittingRef = useRef(false);
+
+  const [movementName, setMovementName] = useState('');
+  const [resultType, setResultType] = useState<FreestyleResultType>('weight');
+  const [valueStr, setValueStr] = useState('');
+  const [notes, setNotes] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
+
+  const reset = () => {
+    setMovementName('');
+    setResultType('weight');
+    setValueStr('');
+    setNotes('');
+    setError('');
+  };
+
+  const handleClose = (next: boolean) => {
+    if (!next) reset();
+    onOpenChange(next);
+  };
+
+  const validate = (): boolean => {
+    setError('');
+    if (!movementName.trim()) {
+      setError('Movement name is required');
+      return false;
+    }
+    if (!valueStr.trim()) {
+      setError('Enter a result');
+      return false;
+    }
+    switch (resultType) {
+      case 'weight':
+        if (!parseWeightToLbs(valueStr, unit)) {
+          setError('Enter a weight greater than 0');
+          return false;
+        }
+        return true;
+      case 'time':
+        if (!validateTimeFormat(valueStr.trim())) {
+          setError('Enter a valid time (mm:ss or hh:mm:ss)');
+          return false;
+        }
+        return true;
+      case 'rounds_reps':
+      case 'calories':
+      case 'meters': {
+        const n = parseInt(valueStr, 10);
+        if (!Number.isFinite(n) || n <= 0) {
+          setError('Enter a number greater than 0');
+          return false;
+        }
+        return true;
+      }
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (!user || submittingRef.current) return;
+    if (!validate()) return;
+
+    submittingRef.current = true;
+    setSubmitting(true);
+
+    try {
+      const completionDate = new Date().toISOString();
+      const payload: Record<string, any> = {
+        user_id: user.id,
+        workout_id: null,
+        workout_section_id: null,
+        exercise_name: movementName.trim(),
+        result_type: resultType,
+        is_rx: true,
+        completion_date: completionDate,
+      };
+
+      if (resultType === 'weight') {
+        payload.weight = parseWeightToLbs(valueStr, unit) ?? 0;
+      } else if (resultType === 'time') {
+        payload.time = valueStr.trim();
+      } else if (resultType === 'rounds_reps') {
+        payload.rounds = 0;
+        payload.reps = Math.max(0, parseInt(valueStr, 10));
+      } else if (resultType === 'calories') {
+        payload.calories = Math.max(0, parseInt(valueStr, 10));
+      } else if (resultType === 'meters') {
+        payload.meters = Math.max(0, parseInt(valueStr, 10));
+      }
+
+      if (notes.trim()) payload.notes = notes.trim();
+
+      // Fetch prior logs for PR evaluation BEFORE insert
+      const { data: priorRows } = await supabase
+        .from('workout_logs')
+        .select(PR_LOG_COLUMNS)
+        .eq('user_id', user.id);
+      const priorLogs: PRLog[] = (priorRows ?? []) as PRLog[];
+
+      const candidate: PRLog = {
+        workout_id: null as unknown as string,
+        workout_section_id: null,
+        exercise_name: payload.exercise_name,
+        result_type: resultType,
+        weight: payload.weight ?? null,
+        time: payload.time ?? null,
+        rounds: payload.rounds ?? null,
+        reps: payload.reps ?? null,
+        calories: payload.calories ?? null,
+        meters: payload.meters ?? null,
+      };
+      const { hasPR, prItems } = evaluatePRBatch(
+        [{ label: payload.exercise_name, log: candidate }],
+        priorLogs
+      );
+
+      const { error: insertErr } = await supabase.from('workout_logs').insert(payload);
+      if (insertErr) throw insertErr;
+
+      if (hasPR) {
+        const msg =
+          prItems.length === 1
+            ? `You beat your best on ${prItems[0]} 💪`
+            : 'New best 💪';
+        toast(msg, { duration: 3500 });
+      } else {
+        toast(
+          <div className="flex items-center gap-3">
+            <img src={dalmatianReward} alt="Logged" className="w-16 h-16 rounded-lg object-cover" />
+            <span className="font-semibold text-sm">Workout logged 🐾</span>
+          </div>,
+          { duration: 3000 }
+        );
+      }
+
+      reset();
+      onOpenChange(false);
+      onLogged?.();
+    } catch (err: any) {
+      toast.error('Failed to save. Please check your connection and try again.');
+    } finally {
+      setSubmitting(false);
+      submittingRef.current = false;
+    }
+  };
+
+  const valuePlaceholder = (() => {
+    switch (resultType) {
+      case 'weight':
+        return unit === 'metric' ? 'e.g., 100 (kg)' : 'e.g., 225 (lbs)';
+      case 'time':
+        return 'e.g., 8:00 or 1:08:00';
+      case 'rounds_reps':
+        return 'e.g., 50';
+      case 'calories':
+        return 'e.g., 30';
+      case 'meters':
+        return 'e.g., 2000';
+    }
+  })();
+
+  return (
+    <Dialog open={open} onOpenChange={handleClose}>
+      <DialogContent className="sm:max-w-sm bg-card border-border">
+        <DialogHeader>
+          <DialogTitle className="text-center text-sm tracking-widest text-muted-foreground">
+            QUICK LOG
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-3 mt-1">
+          <div className="space-y-1.5">
+            <Label htmlFor="movement-name" className="text-xs text-muted-foreground">
+              Movement
+            </Label>
+            <Input
+              id="movement-name"
+              autoFocus
+              placeholder="e.g., 1 mile run, Bench Press"
+              value={movementName}
+              onChange={(e) => setMovementName(e.target.value)}
+              maxLength={80}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">Type</Label>
+              <Select value={resultType} onValueChange={(v) => { setResultType(v as FreestyleResultType); setValueStr(''); }}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {(Object.keys(RESULT_TYPE_LABELS) as FreestyleResultType[]).map((rt) => (
+                    <SelectItem key={rt} value={rt}>{RESULT_TYPE_LABELS[rt]}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="value-input" className="text-xs text-muted-foreground">
+                Result {resultType === 'weight' ? `(${unit === 'metric' ? 'kg' : 'lbs'})` : ''}
+              </Label>
+              <Input
+                id="value-input"
+                inputMode={resultType === 'time' ? 'numeric' : 'decimal'}
+                placeholder={valuePlaceholder}
+                value={valueStr}
+                onChange={(e) => {
+                  if (resultType === 'time') {
+                    setValueStr(autoFormatTime(e.target.value));
+                  } else {
+                    setValueStr(e.target.value);
+                  }
+                }}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="notes" className="text-xs text-muted-foreground">Notes (optional)</Label>
+            <Textarea
+              id="notes"
+              placeholder="Anything to remember?"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              maxLength={500}
+              rows={2}
+            />
+          </div>
+
+          {error && (
+            <p className="text-xs text-destructive font-semibold text-center">{error}</p>
+          )}
+
+          <Button
+            className="w-full"
+            onClick={handleSubmit}
+            disabled={submitting}
+          >
+            {submitting ? 'Saving…' : 'Log Workout'}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
