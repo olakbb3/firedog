@@ -289,6 +289,8 @@ const HomePage = () => {
           @firedogworks
         </button>
       </div>
+
+      <QuickLogFab />
     </div>
   );
 };
