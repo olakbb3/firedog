@@ -242,24 +242,26 @@ const ProgressPage = () => {
               if (isFreestyle) {
                 return formatScore(log, unit) !== '—';
               }
-              if (!workouts[log.workout_id]) return false;
-              const isRestDay = !workoutHasContent[log.workout_id];
+              const wid = log.workout_id as string;
+              if (!workouts[wid]) return false;
+              const isRestDay = !workoutHasContent[wid];
               if (isRestDay) return true;
               return formatScore(log, unit) !== '—' || log.result_type === 'completed';
             })
             .map((log) => {
               const isFreestyle = !log.workout_id;
+              const wid = log.workout_id as string;
               const title = isFreestyle
                 ? (log.exercise_name || 'Freestyle')
-                : (workouts[log.workout_id] || 'Workout');
-              const isRestDay = !isFreestyle && !workoutHasContent[log.workout_id];
+                : (workouts[wid] || 'Workout');
+              const isRestDay = !isFreestyle && !workoutHasContent[wid];
               const score = isRestDay ? 'Rest Day 🐾' : formatScore(log, unit);
               const showBadge = !isFreestyle && !isRestDay && log.result_type !== 'completed';
               const isRx = log.is_rx ?? true;
               const dateLabel = formatLogDate(log.completion_date);
               const isPR = !isRestDay && !!log.id && prLogIds.has(log.id);
               const day = log.completion_date.split('T')[0];
-              const groupKey = isFreestyle ? `freestyle::${log.id}` : `${log.workout_id}::${day}`;
+              const groupKey = isFreestyle ? `freestyle::${log.id}` : `${wid}::${day}`;
               const clickable = !isRestDay && !isFreestyle;
 
               return (
