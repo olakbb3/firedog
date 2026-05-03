@@ -154,11 +154,24 @@ const AdminProgramPage = () => {
   };
 
   const addExercise = (sectionIdx: number) => {
-    setSections(prev => prev.map((s, i) => i === sectionIdx ? { ...s, exercises: [...s.exercises, emptyExercise()] } : s));
+    setSections(prev => prev.map((s, i) => {
+      if (i !== sectionIdx) return s;
+      const exercises = [...s.exercises, emptyExercise()];
+      const input_mode = s.userOverrode ? s.input_mode : autoDetectInputMode(exercises.length);
+      return { ...s, exercises, input_mode };
+    }));
   };
 
   const removeExercise = (sectionIdx: number, exIdx: number) => {
-    setSections(prev => prev.map((s, i) => i === sectionIdx ? { ...s, exercises: s.exercises.filter((_, j) => j !== exIdx) } : s));
+    setSections(prev => prev.map((s, i) => {
+      if (i !== sectionIdx) return s;
+      const exercises = s.exercises.filter((_, j) => j !== exIdx);
+      if (exercises.length === 0) {
+        return { ...s, exercises, userOverrode: false, input_mode: autoDetectInputMode(0) };
+      }
+      const input_mode = s.userOverrode ? s.input_mode : autoDetectInputMode(exercises.length);
+      return { ...s, exercises, input_mode };
+    }));
   };
 
   const updateExercise = (sectionIdx: number, exIdx: number, field: keyof ExerciseInput, value: string) => {
