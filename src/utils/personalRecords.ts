@@ -134,6 +134,14 @@ const groupKey = (l: PRLog): string => {
 export const PR_LOG_COLUMNS =
   'id, exercise_name, movement_id, movements(id, name, category), workout_id, workout_section_id, result_type, weight, time, rounds, reps, calories, meters, completion_date';
 
+/** Normalize the joined movement (PostgREST returns array for some shapes). */
+export const movementName = (l: PRLog): string | null => {
+  const m = l.movements;
+  if (!m) return null;
+  if (Array.isArray(m)) return m[0]?.name?.trim() ?? null;
+  return m.name?.trim() ?? null;
+};
+
 const isScoreable = (l: PRLog): boolean => {
   if (!l.result_type || l.result_type === 'completed') return false;
   switch (l.result_type) {
@@ -248,7 +256,7 @@ export const computePersonalRecords = (
     records.push({
       id: best.id ?? `${groupKey(best)}`,
       movement_name:
-        best.movements?.name?.trim() ||
+        movementName(best) ||
         best.exercise_name?.trim() ||
         (best.workout_id ? workoutTitles[best.workout_id] : null) ||
         'Workout',
