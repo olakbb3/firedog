@@ -91,7 +91,8 @@ export default function FreestyleLogModal({ open, onOpenChange, onLogged }: Prop
 
   const validate = (): boolean => {
     setError('');
-    if (!movementName.trim()) {
+    const displayName = movement?.name?.trim() || movementName.trim();
+    if (!displayName) {
       setError('Movement name is required');
       return false;
     }
@@ -134,11 +135,18 @@ export default function FreestyleLogModal({ open, onOpenChange, onLogged }: Prop
 
     try {
       const completionDate = new Date().toISOString();
+      // Strict mutual exclusivity: movement_id XOR exercise_name.
+      const usingMovement = !!movement?.id;
+      const displayLabel = usingMovement
+        ? movement!.name
+        : movementName.trim();
+
       const payload: Record<string, any> = {
         user_id: user.id,
         workout_id: null,
         workout_section_id: null,
-        exercise_name: movementName.trim(),
+        movement_id: usingMovement ? movement!.id : null,
+        exercise_name: usingMovement ? null : displayLabel,
         result_type: resultType,
         is_rx: true,
         completion_date: completionDate,
@@ -164,11 +172,12 @@ export default function FreestyleLogModal({ open, onOpenChange, onLogged }: Prop
         .from('workout_logs')
         .select(PR_LOG_COLUMNS)
         .eq('user_id', user.id);
-      const priorLogs: PRLog[] = (priorRows ?? []) as PRLog[];
+      const priorLogs: PRLog[] = (priorRows ?? []) as unknown as PRLog[];
 
       const candidate: PRLog = {
-        workout_id: null as unknown as string,
+        workout_id: null,
         workout_section_id: null,
+        movement_id: payload.movement_id,
         exercise_name: payload.exercise_name,
         result_type: resultType,
         weight: payload.weight ?? null,
@@ -179,7 +188,7 @@ export default function FreestyleLogModal({ open, onOpenChange, onLogged }: Prop
         meters: payload.meters ?? null,
       };
       const { hasPR, prItems } = evaluatePRBatch(
-        [{ label: payload.exercise_name, log: candidate }],
+        [{ label: displayLabel, log: candidate }],
         priorLogs
       );
 
