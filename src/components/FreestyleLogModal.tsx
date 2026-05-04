@@ -27,6 +27,8 @@ import {
   type PRLog,
 } from '@/utils/personalRecords';
 
+import MovementSelector, { type Movement } from '@/components/workout/MovementSelector';
+
 type FreestyleResultType = 'weight' | 'time' | 'rounds_reps' | 'calories' | 'meters';
 
 interface Props {
@@ -65,6 +67,7 @@ export default function FreestyleLogModal({ open, onOpenChange, onLogged }: Prop
   const unit = useUnitPreference(user?.id);
   const submittingRef = useRef(false);
 
+  const [movement, setMovement] = useState<Movement | null>(null);
   const [movementName, setMovementName] = useState('');
   const [resultType, setResultType] = useState<FreestyleResultType>('weight');
   const [valueStr, setValueStr] = useState('');
@@ -73,6 +76,7 @@ export default function FreestyleLogModal({ open, onOpenChange, onLogged }: Prop
   const [error, setError] = useState('');
 
   const reset = () => {
+    setMovement(null);
     setMovementName('');
     setResultType('weight');
     setValueStr('');
@@ -87,7 +91,8 @@ export default function FreestyleLogModal({ open, onOpenChange, onLogged }: Prop
 
   const validate = (): boolean => {
     setError('');
-    if (!movementName.trim()) {
+    const displayName = movement?.name?.trim() || movementName.trim();
+    if (!displayName) {
       setError('Movement name is required');
       return false;
     }
@@ -130,11 +135,18 @@ export default function FreestyleLogModal({ open, onOpenChange, onLogged }: Prop
 
     try {
       const completionDate = new Date().toISOString();
+      // Strict mutual exclusivity: movement_id XOR exercise_name.
+      const usingMovement = !!movement?.id;
+      const displayLabel = usingMovement
+        ? movement!.name
+        : movementName.trim();
+
       const payload: Record<string, any> = {
         user_id: user.id,
         workout_id: null,
         workout_section_id: null,
-        exercise_name: movementName.trim(),
+        movement_id: usingMovement ? movement!.id : null,
+        exercise_name: usingMovement ? null : displayLabel,
         result_type: resultType,
         is_rx: true,
         completion_date: completionDate,
@@ -160,11 +172,12 @@ export default function FreestyleLogModal({ open, onOpenChange, onLogged }: Prop
         .from('workout_logs')
         .select(PR_LOG_COLUMNS)
         .eq('user_id', user.id);
-      const priorLogs: PRLog[] = (priorRows ?? []) as PRLog[];
+      const priorLogs: PRLog[] = (priorRows ?? []) as unknown as PRLog[];
 
       const candidate: PRLog = {
-        workout_id: null as unknown as string,
+        workout_id: null,
         workout_section_id: null,
+        movement_id: payload.movement_id,
         exercise_name: payload.exercise_name,
         result_type: resultType,
         weight: payload.weight ?? null,
@@ -175,7 +188,7 @@ export default function FreestyleLogModal({ open, onOpenChange, onLogged }: Prop
         meters: payload.meters ?? null,
       };
       const { hasPR, prItems } = evaluatePRBatch(
-        [{ label: payload.exercise_name, log: candidate }],
+        [{ label: displayLabel, log: candidate }],
         priorLogs
       );
 
@@ -238,16 +251,26 @@ export default function FreestyleLogModal({ open, onOpenChange, onLogged }: Prop
 
         <div className="space-y-3 mt-1">
           <div className="space-y-1.5">
-            <Label htmlFor="movement-name" className="text-xs text-muted-foreground">
-              Movement
-            </Label>
-            <Input
-              id="movement-name"
-              autoFocus
-              placeholder="e.g., 1 mile run, Bench Press"
-              value={movementName}
-              onChange={(e) => setMovementName(e.target.value)}
-              maxLength={80}
+            <Label className="text-xs text-muted-foreground">Movement</Label>
+            <MovementSelector
+              movement={movement}
+              customName={movementName}
+              onSelectMovement={(m) => {
+                setMovement(m);
+                setMovementName('');
+                const drt = m.default_result_type as FreestyleResultType;
+                if (
+                  drt === 'weight' || drt === 'time' || drt === 'rounds_reps' ||
+                  drt === 'calories' || drt === 'meters'
+                ) {
+                  setResultType(drt);
+                  setValueStr('');
+                }
+              }}
+              onCustomNameChange={(name) => {
+                setMovement(null);
+                setMovementName(name);
+              }}
             />
           </div>
 
