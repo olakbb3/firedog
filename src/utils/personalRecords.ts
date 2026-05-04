@@ -15,10 +15,19 @@ export type PRResultType =
   | 'meters'
   | 'weight';
 
+export interface MovementRef {
+  id: string;
+  name: string;
+  category?: string | null;
+}
+
 export interface PRLog {
   id?: string;
-  workout_id: string;
+  workout_id: string | null;
   workout_section_id?: string | null;
+  movement_id?: string | null;
+  /** Optional joined movement (when select includes movements(...)). */
+  movements?: MovementRef | null;
   exercise_name?: string | null;
   result_type?: PRResultType | string | null;
   weight?: number | null;
@@ -103,10 +112,19 @@ const isBetter = (a: PRLog, b: PRLog): boolean => {
  */
 const groupKey = (l: PRLog): string => {
   const rt = l.result_type ?? '';
+  // Movement-relational logs (freestyle or programmed) group by movement_id.
+  if (l.movement_id) {
+    return `mov::${l.movement_id}::${rt}`;
+  }
+  // Legacy strength PRs group by exercise_name.
   if (rt === 'weight' && l.exercise_name) {
     return `weight::${l.exercise_name.trim().toLowerCase()}`;
   }
-  return `${rt}::${l.workout_id}::${l.workout_section_id ?? ''}`;
+  // Legacy freestyle (no workout, custom name) groups by exercise_name + rt.
+  if (!l.workout_id && l.exercise_name) {
+    return `freestyle::${l.exercise_name.trim().toLowerCase()}::${rt}`;
+  }
+  return `${rt}::${l.workout_id ?? 'none'}::${l.workout_section_id ?? ''}`;
 };
 
 /**
@@ -114,7 +132,7 @@ const groupKey = (l: PRLog): string => {
  * Keep this minimal — never include `notes` or large text fields.
  */
 export const PR_LOG_COLUMNS =
-  'id, exercise_name, workout_id, workout_section_id, result_type, weight, time, rounds, reps, calories, meters, completion_date';
+  'id, exercise_name, movement_id, movements(id, name, category), workout_id, workout_section_id, result_type, weight, time, rounds, reps, calories, meters, completion_date';
 
 const isScoreable = (l: PRLog): boolean => {
   if (!l.result_type || l.result_type === 'completed') return false;
@@ -230,8 +248,9 @@ export const computePersonalRecords = (
     records.push({
       id: best.id ?? `${groupKey(best)}`,
       movement_name:
+        best.movements?.name?.trim() ||
         best.exercise_name?.trim() ||
-        workoutTitles[best.workout_id] ||
+        (best.workout_id ? workoutTitles[best.workout_id] : null) ||
         'Workout',
       category: categoryFor(best.result_type),
       result_type: rt,
