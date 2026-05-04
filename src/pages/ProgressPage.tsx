@@ -14,10 +14,18 @@ import { useUnitPreference, convertWeight, type UnitSystem } from '@/lib/units';
 
 type ResultType = 'completed' | 'time' | 'rounds_reps' | 'calories' | 'meters' | 'weight';
 
+interface MovementJoin {
+  id: string;
+  name: string;
+  category: string | null;
+}
+
 interface WorkoutLog {
   id: string;
   workout_id: string | null;
   workout_section_id?: string | null;
+  movement_id?: string | null;
+  movements?: MovementJoin | MovementJoin[] | null;
   exercise_name?: string | null;
   result_type?: ResultType | null;
   reps?: number | null;
@@ -30,6 +38,13 @@ interface WorkoutLog {
   notes?: string | null;
   completion_date: string;
 }
+
+const movementDisplayName = (l: WorkoutLog): string | null => {
+  const m = l.movements;
+  if (!m) return null;
+  if (Array.isArray(m)) return m[0]?.name ?? null;
+  return m.name ?? null;
+};
 
 interface WorkoutBasic {
   id: string;
@@ -101,7 +116,7 @@ const ProgressPage = () => {
       const [logsRes, profileRes, workoutsRes, sectionsRes] = await Promise.all([
         supabase
           .from('workout_logs')
-          .select('id, workout_id, workout_section_id, exercise_name, result_type, reps, rounds, weight, calories, meters, time, is_rx, notes, completion_date')
+          .select('id, workout_id, workout_section_id, movement_id, movements(id, name, category), exercise_name, result_type, reps, rounds, weight, calories, meters, time, is_rx, notes, completion_date')
           .eq('user_id', user.id)
           .order('completion_date', { ascending: false }),
         supabase.from('profiles').select('points').eq('id', user.id).maybeSingle(),
