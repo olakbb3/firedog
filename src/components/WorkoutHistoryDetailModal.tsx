@@ -22,10 +22,18 @@ type ResultType =
   | 'meters'
   | 'weight';
 
+interface MovementJoin {
+  id: string;
+  name: string;
+  category: string | null;
+}
+
 export interface HistoryDetailLog {
   id: string;
   workout_id: string;
   workout_section_id?: string | null;
+  movement_id?: string | null;
+  movements?: MovementJoin | MovementJoin[] | null;
   exercise_name?: string | null;
   result_type?: ResultType | string | null;
   reps?: number | null;
@@ -38,6 +46,13 @@ export interface HistoryDetailLog {
   notes?: string | null;
   completion_date: string;
 }
+
+const movementDisplayName = (l: HistoryDetailLog): string | null => {
+  const m = l.movements;
+  if (!m) return null;
+  if (Array.isArray(m)) return m[0]?.name ?? null;
+  return m.name ?? null;
+};
 
 interface SectionRow {
   id: string;
@@ -167,6 +182,7 @@ export default function WorkoutHistoryDetailModal({
                 ? sectionMap[log.workout_section_id]?.section_name
                 : null;
               const label =
+                movementDisplayName(log) ||
                 log.exercise_name?.trim() || sectionName || 'Workout';
               const isRx = log.is_rx ?? true;
               const showBadge = log.result_type && log.result_type !== 'completed';
