@@ -251,16 +251,26 @@ export default function FreestyleLogModal({ open, onOpenChange, onLogged }: Prop
 
         <div className="space-y-3 mt-1">
           <div className="space-y-1.5">
-            <Label htmlFor="movement-name" className="text-xs text-muted-foreground">
-              Movement
-            </Label>
-            <Input
-              id="movement-name"
-              autoFocus
-              placeholder="e.g., 1 mile run, Bench Press"
-              value={movementName}
-              onChange={(e) => setMovementName(e.target.value)}
-              maxLength={80}
+            <Label className="text-xs text-muted-foreground">Movement</Label>
+            <MovementSelector
+              movement={movement}
+              customName={movementName}
+              onSelectMovement={(m) => {
+                setMovement(m);
+                setMovementName('');
+                const drt = m.default_result_type as FreestyleResultType;
+                if (
+                  drt === 'weight' || drt === 'time' || drt === 'rounds_reps' ||
+                  drt === 'calories' || drt === 'meters'
+                ) {
+                  setResultType(drt);
+                  setValueStr('');
+                }
+              }}
+              onCustomNameChange={(name) => {
+                setMovement(null);
+                setMovementName(name);
+              }}
             />
           </div>
 
