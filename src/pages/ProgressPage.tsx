@@ -267,7 +267,7 @@ const ProgressPage = () => {
               const isFreestyle = !log.workout_id;
               const wid = log.workout_id as string;
               const title = isFreestyle
-                ? (log.exercise_name || 'Freestyle')
+                ? (movementDisplayName(log) || log.exercise_name || 'Freestyle')
                 : (workouts[wid] || 'Workout');
               const isRestDay = !isFreestyle && !workoutHasContent[wid];
               const score = isRestDay ? 'Rest Day 🐾' : formatScore(log, unit);
