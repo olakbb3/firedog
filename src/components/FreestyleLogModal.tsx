@@ -27,6 +27,8 @@ import {
   type PRLog,
 } from '@/utils/personalRecords';
 
+import MovementSelector, { type Movement } from '@/components/workout/MovementSelector';
+
 type FreestyleResultType = 'weight' | 'time' | 'rounds_reps' | 'calories' | 'meters';
 
 interface Props {
@@ -65,6 +67,7 @@ export default function FreestyleLogModal({ open, onOpenChange, onLogged }: Prop
   const unit = useUnitPreference(user?.id);
   const submittingRef = useRef(false);
 
+  const [movement, setMovement] = useState<Movement | null>(null);
   const [movementName, setMovementName] = useState('');
   const [resultType, setResultType] = useState<FreestyleResultType>('weight');
   const [valueStr, setValueStr] = useState('');
@@ -73,6 +76,7 @@ export default function FreestyleLogModal({ open, onOpenChange, onLogged }: Prop
   const [error, setError] = useState('');
 
   const reset = () => {
+    setMovement(null);
     setMovementName('');
     setResultType('weight');
     setValueStr('');
