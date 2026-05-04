@@ -27,7 +27,7 @@ export interface PRLog {
   workout_section_id?: string | null;
   movement_id?: string | null;
   /** Optional joined movement (when select includes movements(...)). */
-  movements?: MovementRef | null;
+  movements?: MovementRef | MovementRef[] | null;
   exercise_name?: string | null;
   result_type?: PRResultType | string | null;
   weight?: number | null;
