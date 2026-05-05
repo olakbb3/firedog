@@ -242,6 +242,10 @@ const LeaderboardPage = () => {
         LEADERBOARD
       </h1>
 
+      <div className="mb-4">
+        <GlobalMovementLeaderboard />
+      </div>
+
       {/* Workout Selector */}
       <div className="mb-3">
         <Select
