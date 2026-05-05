@@ -188,6 +188,20 @@ const ProgressPage = () => {
     );
   }
 
+  if (!user) {
+    return (
+      <div className="px-4 pt-6 pb-4 max-w-lg mx-auto">
+        <h1 className="text-2xl font-bold mb-6">PROGRESS</h1>
+        <div className="rounded-xl bg-card border border-border p-8 shadow-card text-center">
+          <Flame className="h-8 w-8 mx-auto text-muted-foreground mb-3" />
+          <p className="text-sm text-muted-foreground">
+            Start logging workouts to track your progress
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="px-4 pt-6 pb-4 max-w-lg mx-auto">
       <h1 className="text-2xl font-bold mb-6">PROGRESS</h1>

@@ -8,7 +8,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import SplashScreen from "@/components/SplashScreen";
 import AppLayout from "@/components/AppLayout";
-import ProtectedRoute from "@/components/ProtectedRoute";
+
 import AdminRoute from "@/components/AdminRoute";
 import HomePage from "@/pages/HomePage";
 import LoginPage from "@/pages/LoginPage";
@@ -61,10 +61,10 @@ const App = () => {
                   <Route path="/programs" element={<ProgramsPage />} />
                   <Route path="/program/:id" element={<ProgramDetailPage />} />
 
-                  {/* Auth-required routes */}
-                  <Route path="/progress" element={<ProtectedRoute><ProgressPage /></ProtectedRoute>} />
-                  <Route path="/leaderboard" element={<ProtectedRoute><LeaderboardPage /></ProtectedRoute>} />
-                  <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+                  {/* Frictionless browse — viewable without auth, actions gated */}
+                  <Route path="/progress" element={<ProgressPage />} />
+                  <Route path="/leaderboard" element={<LeaderboardPage />} />
+                  <Route path="/profile" element={<ProfilePage />} />
 
                   {/* Admin-only routes */}
                   <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />

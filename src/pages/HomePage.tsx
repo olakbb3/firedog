@@ -210,11 +210,9 @@ const HomePage = () => {
         </div>
       )}
 
-      {user && (
-        <div className="my-6">
-          <QuickLogButton />
-        </div>
-      )}
+      <div className="my-6">
+        <QuickLogButton />
+      </div>
 
       {/* Active Challenges */}
       {activeFiredogChallenge && (

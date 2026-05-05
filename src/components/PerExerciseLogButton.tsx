@@ -83,6 +83,7 @@ export default function PerExerciseLogButton({ workoutId, sectionId, sectionName
 
   const handleOpen = () => {
     if (!user) {
+      toast('Create a free account to log your workout and track your progress');
       navigate('/onboarding');
       return;
     }

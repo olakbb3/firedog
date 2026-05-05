@@ -121,6 +121,7 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName, re
 
   const handleOpen = () => {
     if (!user) {
+      toast('Create a free account to log your workout and track your progress');
       navigate('/onboarding');
       return;
     }
