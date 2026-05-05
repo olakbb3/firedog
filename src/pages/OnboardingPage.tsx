@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useOnboarding } from '@/contexts/OnboardingContext';
 import firedogLogo from '@/assets/firedog-logo.png';
@@ -23,12 +23,23 @@ const steps = [
   },
 ];
 
+const ACTION_MESSAGES: Record<string, string> = {
+  log_workout: 'Save your workouts permanently',
+  submit_score: 'Join the leaderboard',
+  purchase_program: 'Unlock your program access',
+  view_premium: 'Create a free account to continue',
+};
+
 const OnboardingPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { data, setField, pendingAction } = useOnboarding();
   const [step, setStep] = useState(0);
   const current = steps[step];
   const selectedValue = data[current.field];
+
+  const action = (location.state as { action?: string } | null)?.action;
+  const contextMessage = action ? ACTION_MESSAGES[action] : null;
 
   const handleNext = () => {
     if (step < steps.length - 1) {
@@ -43,10 +54,10 @@ const OnboardingPage = () => {
       <img src={firedogLogo} alt="FiredogWorks" className="w-16 h-16 mb-6 object-contain" />
 
       {/* Pending action context */}
-      {pendingAction && (
+      {(contextMessage || pendingAction) && (
         <div className="mb-4 rounded-lg bg-primary/10 border border-primary/20 px-4 py-2">
           <p className="text-xs text-primary font-semibold text-center">
-            Sign up to {pendingAction.toLowerCase()}
+            {contextMessage ?? `Sign up to ${pendingAction!.toLowerCase()}`}
           </p>
         </div>
       )}
