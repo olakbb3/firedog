@@ -39,7 +39,8 @@ const OnboardingPage = () => {
   const selectedValue = data[current.field];
 
   const action = (location.state as { action?: string } | null)?.action;
-  const contextMessage = action ? ACTION_MESSAGES[action] : null;
+  const safeAction = action ?? 'view_premium';
+  const contextMessage = ACTION_MESSAGES[safeAction] ?? ACTION_MESSAGES.view_premium;
 
   const handleNext = () => {
     if (step < steps.length - 1) {
