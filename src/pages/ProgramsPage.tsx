@@ -74,7 +74,6 @@ const ProgramsPage = () => {
   }, [user]);
 
   const handlePurchase = (storeLink: string | null) => {
-    if (!requireAuth('Purchase Program')) return;
     window.open(storeLink || 'https://firedogworks.store', '_blank');
   };
 
