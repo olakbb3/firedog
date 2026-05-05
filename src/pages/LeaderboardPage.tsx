@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Trophy } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
+import { getWodLeaderboard } from '@/services/leaderboard.service';
 import { useAuth } from '@/contexts/AuthContext';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { SectionResultType } from '@/types/index';
@@ -122,9 +123,7 @@ const LeaderboardPage = () => {
     const fetchBoard = async () => {
       setIsLoadingLeaderboard(true);
       try {
-        const { data, error } = await supabase.rpc('get_wod_leaderboard', {
-          p_workout_id: selectedWorkoutId,
-        });
+        const { data, error } = await getWodLeaderboard(selectedWorkoutId);
 
         if (error) {
           console.error('get_wod_leaderboard error:', error);
