@@ -135,22 +135,22 @@ export default function FreestyleLogModal({ open, onOpenChange, onLogged }: Prop
     setSubmitting(true);
 
     try {
-      const completionDate = new Date().toISOString();
+      const completionDateIso = new Date().toISOString();
       // Strict mutual exclusivity: movement_id XOR exercise_name.
       const usingMovement = !!movement?.id;
       const displayLabel = usingMovement
-        ? movement!.name
+        ? (movement?.name ?? movementName.trim())
         : movementName.trim();
 
       const payload: WorkoutLogPayload = {
         user_id: user.id,
         workout_id: null,
         workout_section_id: null,
-        movement_id: usingMovement ? movement!.id : null,
-        exercise_name: usingMovement ? null : displayLabel,
+        movement_id: usingMovement ? (movement?.id ?? null) : null,
+        exercise_name: usingMovement ? null : (displayLabel ?? null),
         result_type: resultType,
         is_rx: true,
-        completion_date: completionDate,
+        completion_date: completionDateIso,
       };
 
       if (resultType === 'weight') {

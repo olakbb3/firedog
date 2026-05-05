@@ -178,7 +178,7 @@ export default function PerExerciseLogButton({ workoutId, sectionId, sectionName
           result_type: resultType,
           is_rx: true,
           completion_date: completionDateIso,
-          exercise_name: ex.exercise_name,
+          exercise_name: ex.exercise_name ?? null,
           notes: ex.notes || null,
         };
 
