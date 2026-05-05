@@ -20,6 +20,7 @@ import {
 import dalmatianReward from '@/assets/dalmatian-reward.jpeg';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabaseClient';
+import { createWorkoutLog, type WorkoutLogPayload } from '@/services/workoutLog.service';
 import { parseWeightToLbs, useUnitPreference } from '@/lib/units';
 import {
   evaluatePRBatch,
@@ -192,8 +193,8 @@ export default function FreestyleLogModal({ open, onOpenChange, onLogged }: Prop
         priorLogs
       );
 
-      const { error: insertErr } = await supabase.from('workout_logs').insert(payload);
-      if (insertErr) throw insertErr;
+      const { error: insertErr } = await createWorkoutLog(payload as WorkoutLogPayload);
+      if (insertErr) throw new Error(insertErr);
 
       if (hasPR) {
         const msg =

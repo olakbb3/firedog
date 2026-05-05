@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/dialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabaseClient';
+import { createWorkoutLog, type WorkoutLogPayload } from '@/services/workoutLog.service';
 import { parseWeightToLbs, useUnitPreference } from '@/lib/units';
 import type { ExerciseRow, SectionResultType } from '@/types/index';
 import { evaluatePRBatch, PR_LOG_COLUMNS, type PRCandidate, type PRLog } from '@/utils/personalRecords';
@@ -201,8 +202,8 @@ export default function PerExerciseLogButton({ workoutId, sectionId, sectionName
             .eq('user_id', user.id);
           if (updateErr) throw updateErr;
         } else {
-          const { error: insertErr } = await supabase.from('workout_logs').insert(payload);
-          if (insertErr) throw insertErr;
+          const { error: insertErr } = await createWorkoutLog(payload as WorkoutLogPayload);
+          if (insertErr) throw new Error(insertErr);
         }
       }
 
