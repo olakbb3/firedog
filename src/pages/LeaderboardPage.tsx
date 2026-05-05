@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import type { SectionResultType } from '@/types/index';
 import AthleteBadges, { type AthleteAffiliation } from '@/components/AthleteBadges';
 import GlobalMovementLeaderboard from '@/components/GlobalMovementLeaderboard';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 interface WorkoutOption {
   id: string;
