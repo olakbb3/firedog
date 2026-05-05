@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { SectionResultType } from '@/types/index';
 import AthleteBadges, { type AthleteAffiliation } from '@/components/AthleteBadges';
+import GlobalMovementLeaderboard from '@/components/GlobalMovementLeaderboard';
 
 interface WorkoutOption {
   id: string;
