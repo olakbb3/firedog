@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { supabase } from '@/lib/supabaseClient';
+import { updateProfile } from '@/services/profile.service';
 import { toast } from '@/hooks/use-toast';
 import { setPreferredUnit, type UnitSystem } from '@/lib/units';
 
@@ -75,15 +75,15 @@ const EditProfileModal = ({ open, onOpenChange, userId, initial, onSaved }: Prop
         preferred_unit: unit,
       };
 
-      let { error } = await supabase.from('profiles').update(payload as any).eq('id', userId);
+      let { error } = await updateProfile(userId, payload as any);
       // If preferred_unit column hasn't been migrated yet, retry without it
       // so the rest of the profile still saves cleanly.
-      if (error && /preferred_unit/i.test(error.message || '')) {
+      if (error && /preferred_unit/i.test(error || '')) {
         const { preferred_unit, ...rest } = payload;
-        const retry = await supabase.from('profiles').update(rest as any).eq('id', userId);
+        const retry = await updateProfile(userId, rest as any);
         error = retry.error;
       }
-      if (error) throw error;
+      if (error) throw new Error(error);
 
       // Broadcast unit change so dependent components re-render immediately.
       setPreferredUnit(unit);

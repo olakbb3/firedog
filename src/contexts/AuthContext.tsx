@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabaseClient";
+import { getProfile } from "@/services/profile.service";
 import { toast } from "sonner";
 
 type AppRole = "athlete" | "coach" | "admin";
@@ -57,9 +58,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const fetchProfile = async (userId: string, email?: string) => {
     try {
-      const { data } = await supabase.from("profiles").select("role, accepted_terms").eq("id", userId).maybeSingle();
-      setRole((data?.role as AppRole) || "athlete");
-      setAcceptedTerms(data?.accepted_terms === true);
+      const { data, error } = await getProfile(userId);
+      if (error) {
+        console.warn("getProfile failed:", error);
+        setRole("athlete");
+        setAcceptedTerms(false);
+      } else {
+        setRole((data?.role as AppRole) || "athlete");
+        setAcceptedTerms(data?.accepted_terms === true);
+      }
     } catch {
       setRole("athlete");
       setAcceptedTerms(false);
