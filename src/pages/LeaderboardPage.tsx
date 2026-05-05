@@ -121,105 +121,66 @@ const LeaderboardPage = () => {
     const fetchBoard = async () => {
       setIsLoadingLeaderboard(true);
       try {
-      const { data: sections } = await supabase
-        .from('workout_sections')
-        .select('id, section_name, result_type')
-        .eq('workout_id', selectedWorkoutId)
-        .order('order_index');
+        const { data, error } = await supabase.rpc('get_wod_leaderboard', {
+          p_workout_id: selectedWorkoutId,
+        });
 
-      // Find the main scoring section (First-In) or fallback to first non-completed
-      const secs = sections || [];
-      const firstIn = secs.find(s =>
-        s.section_name.toLowerCase().includes('first-in') || s.section_name.toLowerCase().includes('first in')
-      );
-      const scoringSection = firstIn || secs.find(s => s.result_type !== 'completed') || secs[0];
-
-      if (!scoringSection) { setRows([]); return; }
-
-      const resultType: SectionResultType = (scoringSection.result_type as SectionResultType) || 'completed';
-
-      const { data: logsData } = await supabase.rpc('get_leaderboard_logs', {
-        _workout_id: selectedWorkoutId,
-        _section_id: scoringSection.id,
-        _from: null,
-        _to: null,
-        _weight_only: false,
-      });
-      const logs = (logsData || [])
-        .sort((a, b) => new Date(b.completion_date || 0).getTime() - new Date(a.completion_date || 0).getTime())
-        .slice(0, 200);
-
-      if (!logs || logs.length === 0) { setRows([]); return; }
-
-      // Deduplicate: latest per user
-      const latestByUser = new Map<string, typeof logs[0]>();
-      for (const log of logs) {
-        if (!latestByUser.has(log.user_id)) latestByUser.set(log.user_id, log);
-      }
-
-      const nameMap = new Map<string, string>(Array.from(latestByUser.values()).map(p => [p.user_id, p.user_name || 'Athlete']));
-      const affMap = new Map<string, AthleteAffiliation>(
-        Array.from(latestByUser.values()).map(p => [p.user_id, {
-          gym_affiliation: (p as any).gym_affiliation,
-          fd_affiliation: (p as any).fd_affiliation,
-          fd_career_volunteer: (p as any).fd_career_volunteer,
-        }])
-      );
-
-      const entries: LeaderboardRow[] = [];
-      for (const [uid, log] of Array.from(latestByUser.entries())) {
-        let result = 'Logged';
-        let sortValue = 0;
-
-        switch (resultType) {
-          case 'time':
-            result = log.time || 'Timed';
-            // Convert MM:SS to seconds for sorting
-            if (log.time) {
-              const parts = log.time.split(':');
-              sortValue = (parseInt(parts[0]) || 0) * 60 + (parseInt(parts[1]) || 0);
-            } else {
-              sortValue = 999999;
-            }
-            break;
-          case 'rounds_reps':
-            {
-              const parts: string[] = [];
-              if (log.rounds != null) parts.push(`${log.rounds}R`);
-              if (log.reps != null) parts.push(`${log.reps}r`);
-              result = parts.join('+') || 'Logged';
-              sortValue = (log.rounds || 0) * 1000 + (log.reps || 0);
-            }
-            break;
-          case 'calories':
-            result = log.calories != null ? `${log.calories} cal` : 'Logged';
-            sortValue = log.calories || 0;
-            break;
-          case 'meters':
-            result = log.meters != null ? `${log.meters} m` : 'Logged';
-            sortValue = log.meters || 0;
-            break;
-          case 'weight':
-            result = log.weight != null ? `${log.weight} lbs` : 'Logged';
-            sortValue = log.weight || 0;
-            break;
-          case 'completed':
-            result = 'Completed';
-            sortValue = 0;
-            break;
+        if (error) {
+          console.error('get_wod_leaderboard error:', error);
+          setRows([]);
+          return;
         }
 
-        entries.push({ user_id: uid, user_name: nameMap.get(uid) || 'Athlete', result, sort_value: sortValue, is_rx: log.is_rx ?? true, affiliation: affMap.get(uid) } as LeaderboardRow);
-      }
+        console.log('get_wod_leaderboard data:', data);
 
-      // Sort: time ascending, everything else descending
-      if (resultType === 'time') {
-        entries.sort((a, b) => a.sort_value - b.sort_value);
-      } else {
-        entries.sort((a, b) => b.sort_value - a.sort_value);
-      }
+        if (!data || data.length === 0) {
+          setRows([]);
+          return;
+        }
 
-      setRows(entries);
+        const entries: LeaderboardRow[] = (data as any[]).map((row) => {
+          let result = 'Logged';
+          let sortValue = 0;
+          let resultType: 'time' | 'weight' | 'reps' | 'completed' = 'completed';
+
+          if (row.best_time) {
+            resultType = 'time';
+            result = row.best_time;
+            const parts = String(row.best_time).split(':');
+            sortValue = (parseInt(parts[0]) || 0) * 60 + (parseInt(parts[1]) || 0);
+          } else if (row.weight != null) {
+            resultType = 'weight';
+            result = `${row.weight} lbs`;
+            sortValue = Number(row.weight) || 0;
+          } else if (row.reps != null) {
+            resultType = 'reps';
+            result = `${row.reps} reps`;
+            sortValue = Number(row.reps) || 0;
+          } else {
+            result = 'Completed';
+          }
+
+          return {
+            user_id: row.user_id,
+            user_name: row.display_name || 'Athlete',
+            avatar_url: row.avatar_url || null,
+            result,
+            sort_value: sortValue,
+            is_rx: row.is_rx ?? true,
+            affiliation: undefined,
+            _resultType: resultType,
+          } as LeaderboardRow & { _resultType: string };
+        });
+
+        // If all entries are time-based, sort ascending; otherwise descending
+        const allTime = entries.every((e: any) => e._resultType === 'time');
+        if (allTime) {
+          entries.sort((a, b) => a.sort_value - b.sort_value);
+        } else {
+          entries.sort((a, b) => b.sort_value - a.sort_value);
+        }
+
+        setRows(entries);
       } finally {
         setIsLoadingLeaderboard(false);
       }
