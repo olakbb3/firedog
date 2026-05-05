@@ -1,8 +1,7 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Plus, Lock } from 'lucide-react';
-import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAuthGate } from '@/lib/authGate';
 import FreestyleLogModal from './FreestyleLogModal';
 
 interface Props {
@@ -12,16 +11,11 @@ interface Props {
 
 export default function QuickLogButton({ onLogged, isPremium = true }: Props) {
   const { user } = useAuth();
-  const navigate = useNavigate();
+  const { requireAuth } = useAuthGate();
   const [open, setOpen] = useState(false);
 
   const handleClick = () => {
-    if (!user) {
-      toast('Create a free account to log your workout and track your progress');
-      navigate('/onboarding');
-      return;
-    }
-    setOpen(true);
+    requireAuth('log_workout', () => setOpen(true));
   };
 
   return (
