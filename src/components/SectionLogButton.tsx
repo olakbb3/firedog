@@ -14,7 +14,8 @@ import {
 } from '@/components/ui/dialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabaseClient';
-import { createWorkoutLog, type WorkoutLogPayload } from '@/services/workoutLog.service';
+import { createWorkoutLog } from '@/services/workoutLog.service';
+import { buildWorkoutLogPayload } from '@/services/workoutLogFactory';
 import { parseWeightToLbs, useUnitPreference } from '@/lib/units';
 import type { SectionResultType, ExerciseRow } from '@/types/index';
 import { evaluatePRBatch, PR_LOG_COLUMNS, type PRLog } from '@/utils/personalRecords';
@@ -136,16 +137,16 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName, re
     submittingRef.current = true;
     setSubmitting(true);
     const completionDateIso = new Date().toISOString();
-    const payload: WorkoutLogPayload = {
-      user_id: user.id,
-      workout_id: workoutId,
-      workout_section_id: sectionId,
-      movement_id: null,
-      exercise_name: null,
-      result_type: 'completed',
-      is_rx: true,
-      completion_date: completionDateIso,
-    };
+    const payload = buildWorkoutLogPayload({
+      userId: user.id,
+      workoutId,
+      sectionId,
+      movementId: null,
+      exerciseName: null,
+      resultType: 'completed',
+      isRx: true,
+      completionDate: completionDateIso,
+    });
     const newEntry: SectionLogEntry = { result_type: 'completed', is_rx: true, completion_date: completionDateIso };
     try {
       // Check-then-save: avoid duplicate "completed" log for the same day
@@ -271,27 +272,40 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName, re
       return new Date().toISOString();
     })();
 
-    const payload: WorkoutLogPayload = {
-      user_id: user.id,
-      workout_id: workoutId,
-      workout_section_id: sectionId,
-      movement_id: null,
-      exercise_name: null,
-      result_type: resultType,
-      is_rx: rx,
-      completion_date: completionDate,
-    };
+    const time = resultType === 'time' && formData.time ? formData.time.trim() : null;
+    const rounds = resultType === 'rounds_reps'
+      ? (formData.rounds === '' ? 0 : Math.max(0, parseInt(formData.rounds)))
+      : null;
+    const reps = resultType === 'rounds_reps'
+      ? (formData.reps === '' ? 0 : Math.max(0, parseInt(formData.reps)))
+      : null;
+    const calories = resultType === 'calories' && formData.calories !== ''
+      ? Math.max(0, parseInt(formData.calories))
+      : null;
+    const meters = resultType === 'meters' && formData.meters !== ''
+      ? Math.max(0, parseInt(formData.meters))
+      : null;
+    const weight = resultType === 'weight' && formData.weight !== ''
+      ? (parseWeightToLbs(formData.weight, unit) ?? 0)
+      : null;
 
-    if (resultType === 'time' && formData.time) payload.time = formData.time.trim();
-    if (resultType === 'rounds_reps') {
-      payload.rounds = formData.rounds === '' ? 0 : Math.max(0, parseInt(formData.rounds));
-      payload.reps = formData.reps === '' ? 0 : Math.max(0, parseInt(formData.reps));
-      payload.exercise_name = null; // AMRAP is a section-level score
-    }
-    if (resultType === 'calories' && formData.calories !== '') payload.calories = Math.max(0, parseInt(formData.calories));
-    if (resultType === 'meters' && formData.meters !== '') payload.meters = Math.max(0, parseInt(formData.meters));
-    if (resultType === 'weight' && formData.weight !== '') payload.weight = parseWeightToLbs(formData.weight, unit) ?? 0;
-    if (formData.notes) payload.notes = formData.notes;
+    const payload = buildWorkoutLogPayload({
+      userId: user.id,
+      workoutId,
+      sectionId,
+      movementId: null,
+      exerciseName: null,
+      resultType,
+      isRx: rx,
+      completionDate,
+      time,
+      rounds,
+      reps,
+      calories,
+      meters,
+      weight,
+      notes: formData.notes ? formData.notes : null,
+    });
 
     const newEntry: SectionLogEntry = {
       result_type: resultType,
