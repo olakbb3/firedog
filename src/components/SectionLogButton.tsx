@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAuthGate } from '@/lib/authGate';
 import dalmatianReward from '@/assets/dalmatian-reward.jpeg';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -71,7 +71,7 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName, re
   // Total reps required to complete one full round across all movements (AMRAP)
   const totalRoundReps = exercises.reduce((sum, ex) => sum + (ex.reps || 0), 0);
   const { user } = useAuth();
-  const navigate = useNavigate();
+  const { requireAuth } = useAuthGate();
   const unit = useUnitPreference(user?.id);
   const submittingRef = useRef(false);
   const lastSubmitAtRef = useRef(0);
@@ -120,18 +120,14 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName, re
   };
 
   const handleOpen = () => {
-    if (!user) {
-      toast('Create a free account to log your workout and track your progress');
-      navigate('/onboarding');
-      return;
-    }
-    if (!needsInput) {
-      // 'completed' — skip modal, submit immediately with Rx=true
-      handleSubmitCompleted();
-      return;
-    }
-    resetModal();
-    setOpen(true);
+    requireAuth('log_workout', () => {
+      if (!needsInput) {
+        handleSubmitCompleted();
+        return;
+      }
+      resetModal();
+      setOpen(true);
+    });
   };
 
   const handleSubmitCompleted = async () => {

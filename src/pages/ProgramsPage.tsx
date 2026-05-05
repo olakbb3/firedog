@@ -4,7 +4,6 @@ import { Lock, CheckCircle2, ShoppingBag, Flame } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
-import { useAuthGate } from '@/hooks/useAuthGate';
 import { supabase } from '@/lib/supabaseClient';
 import freeWodCover from '@/assets/free-wod-cover.jpg';
 import stationStrengthCover from '@/assets/station-strength-cover.jpg';
@@ -28,7 +27,6 @@ interface ProgramRow {
 
 const ProgramsPage = () => {
   const { user } = useAuth();
-  const { requireAuth } = useAuthGate();
   const navigate = useNavigate();
   const [programs, setPrograms] = useState<ProgramRow[]>([]);
   const [ownedSkus, setOwnedSkus] = useState<Set<string>>(new Set());

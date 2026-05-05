@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAuthGate } from '@/lib/authGate';
 import dalmatianReward from '@/assets/dalmatian-reward.jpeg';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -37,7 +37,7 @@ interface ExerciseLogEntry {
 
 export default function PerExerciseLogButton({ workoutId, sectionId, sectionName, exercises, resultType = 'weight', isFiredogTotal = false }: Props) {
   const { user } = useAuth();
-  const navigate = useNavigate();
+  const { requireAuth } = useAuthGate();
   const unit = useUnitPreference(user?.id);
   const submittingRef = useRef(false);
   const lastSubmitAtRef = useRef(0);
@@ -82,18 +82,14 @@ export default function PerExerciseLogButton({ workoutId, sectionId, sectionName
   }, [user, workoutId, sectionId]);
 
   const handleOpen = () => {
-    if (!user) {
-      toast('Create a free account to log your workout and track your progress');
-      navigate('/onboarding');
-      return;
-    }
-    // Initialize form values keyed by exercise.id
-    const initial: Record<string, string> = {};
-    for (const ex of exercises) {
-      initial[ex.id] = '';
-    }
-    setInputValues(initial);
-    setOpen(true);
+    requireAuth('log_workout', () => {
+      const initial: Record<string, string> = {};
+      for (const ex of exercises) {
+        initial[ex.id] = '';
+      }
+      setInputValues(initial);
+      setOpen(true);
+    });
   };
 
   const getInputLabel = (): string => {
