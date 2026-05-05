@@ -17,6 +17,7 @@ interface WorkoutOption {
 interface LeaderboardRow {
   user_id: string;
   user_name: string;
+  avatar_url?: string | null;
   result: string;
   sort_value: number;
   is_rx: boolean;
