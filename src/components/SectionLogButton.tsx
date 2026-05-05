@@ -136,10 +136,12 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName, re
     submittingRef.current = true;
     setSubmitting(true);
     const completionDateIso = new Date().toISOString();
-    const payload: Record<string, any> = {
+    const payload: WorkoutLogPayload = {
       user_id: user.id,
       workout_id: workoutId,
       workout_section_id: sectionId,
+      movement_id: null,
+      exercise_name: null,
       result_type: 'completed',
       is_rx: true,
       completion_date: completionDateIso,
@@ -265,10 +267,12 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName, re
       return new Date().toISOString();
     })();
 
-    const payload: Record<string, any> = {
+    const payload: WorkoutLogPayload = {
       user_id: user.id,
       workout_id: workoutId,
       workout_section_id: sectionId,
+      movement_id: null,
+      exercise_name: null,
       result_type: resultType,
       is_rx: rx,
       completion_date: completionDate,
