@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { SectionResultType } from '@/types/index';
 import AthleteBadges, { type AthleteAffiliation } from '@/components/AthleteBadges';
+import GlobalMovementLeaderboard from '@/components/GlobalMovementLeaderboard';
 
 interface WorkoutOption {
   id: string;
@@ -240,6 +241,10 @@ const LeaderboardPage = () => {
         <Trophy className="h-6 w-6 text-accent" />
         LEADERBOARD
       </h1>
+
+      <div className="mb-4">
+        <GlobalMovementLeaderboard />
+      </div>
 
       {/* Workout Selector */}
       <div className="mb-3">
