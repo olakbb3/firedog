@@ -17,9 +17,13 @@ export function useAuthGate() {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  const requireAuth = (action: AuthAction, callback: () => void): boolean => {
+  const requireAuth = (action: AuthAction, callback?: () => void): boolean => {
     if (user) {
-      callback();
+      try {
+        callback?.();
+      } catch (e) {
+        console.error('Auth action failed:', e);
+      }
       return true;
     }
     navigate('/onboarding', { state: { action } });
