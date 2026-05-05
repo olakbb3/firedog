@@ -279,6 +279,10 @@ const LeaderboardPage = () => {
                   >
                     <span className="flex items-center gap-2 min-w-0 flex-1">
                       <span className="text-xs text-muted-foreground w-4 text-right shrink-0">{i + 1}</span>
+                      <Avatar className="h-6 w-6 shrink-0">
+                        {entry.avatar_url && <AvatarImage src={entry.avatar_url} alt={entry.user_name} />}
+                        <AvatarFallback className="text-[10px]">{(entry.user_name || 'A').slice(0, 1).toUpperCase()}</AvatarFallback>
+                      </Avatar>
                       <span className={`truncate ${i === 0 ? 'text-accent font-semibold' : 'text-foreground'} ${isCurrentUser ? 'font-semibold' : ''}`}>
                         {entry.user_name}
                         {isCurrentUser && <span className="text-[10px] text-muted-foreground ml-1">(You)</span>}
