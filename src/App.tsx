@@ -8,7 +8,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import SplashScreen from "@/components/SplashScreen";
 import AppLayout from "@/components/AppLayout";
-import ProtectedRoute from "@/components/ProtectedRoute";
+
 import AdminRoute from "@/components/AdminRoute";
 import HomePage from "@/pages/HomePage";
 import LoginPage from "@/pages/LoginPage";
