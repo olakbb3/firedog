@@ -142,7 +142,7 @@ export default function FreestyleLogModal({ open, onOpenChange, onLogged }: Prop
         ? movement!.name
         : movementName.trim();
 
-      const payload: Record<string, any> = {
+      const payload: WorkoutLogPayload = {
         user_id: user.id,
         workout_id: null,
         workout_section_id: null,
@@ -193,8 +193,12 @@ export default function FreestyleLogModal({ open, onOpenChange, onLogged }: Prop
         priorLogs
       );
 
-      const { error: insertErr } = await createWorkoutLog(payload as WorkoutLogPayload);
-      if (insertErr) throw new Error(insertErr);
+      const { data, error: insertErr } = await createWorkoutLog(payload);
+      const logId = data?.id;
+      if (insertErr) {
+        console.error('Workout log insert failed:', insertErr);
+        throw new Error(insertErr);
+      }
 
       if (hasPR) {
         const msg =
