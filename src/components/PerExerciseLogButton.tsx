@@ -170,10 +170,11 @@ export default function PerExerciseLogButton({ workoutId, sectionId, sectionName
 
       for (const ex of entries) {
         const value = (inputValues[ex.id] || '').trim();
-        const payload: Record<string, any> = {
+        const payload: WorkoutLogPayload = {
           user_id: user.id,
           workout_id: workoutId,
           workout_section_id: sectionId,
+          movement_id: null,
           result_type: resultType,
           is_rx: true,
           completion_date: completionDateIso,
@@ -202,8 +203,12 @@ export default function PerExerciseLogButton({ workoutId, sectionId, sectionName
             .eq('user_id', user.id);
           if (updateErr) throw updateErr;
         } else {
-          const { error: insertErr } = await createWorkoutLog(payload as WorkoutLogPayload);
-          if (insertErr) throw new Error(insertErr);
+          const { data, error: insertErr } = await createWorkoutLog(payload);
+          const logId = data?.id;
+          if (insertErr) {
+            console.error('Workout log insert failed:', insertErr);
+            throw new Error(insertErr);
+          }
         }
       }
 

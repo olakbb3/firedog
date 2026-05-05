@@ -173,8 +173,12 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName, re
           .eq('user_id', user.id);
         if (updateErr) throw updateErr;
       } else {
-        const { error: insertErr } = await createWorkoutLog(payload as WorkoutLogPayload);
-        if (insertErr) throw new Error(insertErr);
+        const { data, error: insertErr } = await createWorkoutLog(payload);
+        const logId = data?.id;
+        if (insertErr) {
+          console.error('Workout log insert failed:', insertErr);
+          throw new Error(insertErr);
+        }
       }
 
       // Only update UI AFTER the database confirms a successful save
@@ -356,8 +360,12 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName, re
           .eq('user_id', user.id);
         if (updateErr) throw updateErr;
       } else {
-        const { error: insertErr } = await createWorkoutLog(payload as WorkoutLogPayload);
-        if (insertErr) throw new Error(insertErr);
+        const { data: insData, error: insertErr } = await createWorkoutLog(payload);
+        const logId = insData?.id;
+        if (insertErr) {
+          console.error('Workout log insert failed:', insertErr);
+          throw new Error(insertErr);
+        }
       }
 
       // Only update UI AFTER the database confirms a successful save
