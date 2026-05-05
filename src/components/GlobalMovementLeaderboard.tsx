@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Trophy } from 'lucide-react';
-import { supabase } from '@/lib/supabaseClient';
+import { getGlobalLeaderboard } from '@/services/leaderboard.service';
 import { useAuth } from '@/contexts/AuthContext';
 import MovementSelector, { type Movement } from '@/components/workout/MovementSelector';
 
@@ -40,9 +40,7 @@ export default function GlobalMovementLeaderboard() {
     (async () => {
       setLoading(true);
       try {
-        const { data, error } = await supabase.rpc('get_global_leaderboard', {
-          p_movement_id: movement.id,
-        });
+        const { data, error } = await getGlobalLeaderboard(movement.id);
         if (cancelled) return;
         if (error) {
           console.error('get_global_leaderboard error', error);
