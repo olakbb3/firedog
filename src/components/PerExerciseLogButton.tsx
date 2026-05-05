@@ -13,7 +13,8 @@ import {
 } from '@/components/ui/dialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabaseClient';
-import { createWorkoutLog, type WorkoutLogPayload } from '@/services/workoutLog.service';
+import { createWorkoutLog } from '@/services/workoutLog.service';
+import { buildWorkoutLogPayload } from '@/services/workoutLogFactory';
 import { parseWeightToLbs, useUnitPreference } from '@/lib/units';
 import type { ExerciseRow, SectionResultType } from '@/types/index';
 import { evaluatePRBatch, PR_LOG_COLUMNS, type PRCandidate, type PRLog } from '@/utils/personalRecords';
@@ -170,25 +171,37 @@ export default function PerExerciseLogButton({ workoutId, sectionId, sectionName
 
       for (const ex of entries) {
         const value = (inputValues[ex.id] || '').trim();
-        const payload: WorkoutLogPayload = {
-          user_id: user.id,
-          workout_id: workoutId,
-          workout_section_id: sectionId,
-          movement_id: null,
-          result_type: resultType,
-          is_rx: true,
-          completion_date: completionDateIso,
-          exercise_name: ex.exercise_name ?? null,
-          notes: ex.notes || null,
-        };
-
         const numVal = parseFloat(value);
-        if (resultType === 'weight') payload.weight = parseWeightToLbs(value, unit) ?? 0;
-        else if (resultType === 'time') payload.time = value;
-        else if (resultType === 'calories' && !isNaN(numVal)) payload.calories = Math.round(numVal);
-        else if (resultType === 'meters' && !isNaN(numVal)) payload.meters = Math.round(numVal);
-        else if (resultType === 'rounds_reps' && !isNaN(numVal)) payload.reps = Math.round(numVal);
-        else payload.weight = numVal || 0;
+
+        let weight: number | null = null;
+        let time: string | null = null;
+        let calories: number | null = null;
+        let meters: number | null = null;
+        let reps: number | null = null;
+
+        if (resultType === 'weight') weight = parseWeightToLbs(value, unit) ?? 0;
+        else if (resultType === 'time') time = value;
+        else if (resultType === 'calories' && !isNaN(numVal)) calories = Math.round(numVal);
+        else if (resultType === 'meters' && !isNaN(numVal)) meters = Math.round(numVal);
+        else if (resultType === 'rounds_reps' && !isNaN(numVal)) reps = Math.round(numVal);
+        else weight = numVal || 0;
+
+        const payload = buildWorkoutLogPayload({
+          userId: user.id,
+          workoutId,
+          sectionId,
+          movementId: null,
+          exerciseName: ex.exercise_name ?? null,
+          resultType,
+          isRx: true,
+          completionDate: completionDateIso,
+          weight,
+          time,
+          calories,
+          meters,
+          reps,
+          notes: ex.notes || null,
+        });
 
         // Backward-compat: older logs stored the exercise name in `notes`
         const existing = existingLogs?.find(

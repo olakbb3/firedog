@@ -20,7 +20,8 @@ import {
 import dalmatianReward from '@/assets/dalmatian-reward.jpeg';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabaseClient';
-import { createWorkoutLog, type WorkoutLogPayload } from '@/services/workoutLog.service';
+import { createWorkoutLog } from '@/services/workoutLog.service';
+import { buildWorkoutLogPayload } from '@/services/workoutLogFactory';
 import { parseWeightToLbs, useUnitPreference } from '@/lib/units';
 import {
   evaluatePRBatch,
@@ -142,31 +143,30 @@ export default function FreestyleLogModal({ open, onOpenChange, onLogged }: Prop
         ? (movement?.name ?? movementName.trim())
         : movementName.trim();
 
-      const payload: WorkoutLogPayload = {
-        user_id: user.id,
-        workout_id: null,
-        workout_section_id: null,
-        movement_id: usingMovement ? (movement?.id ?? null) : null,
-        exercise_name: usingMovement ? null : (displayLabel ?? null),
-        result_type: resultType,
-        is_rx: true,
-        completion_date: completionDateIso,
-      };
+      const weight = resultType === 'weight' ? (parseWeightToLbs(valueStr, unit) ?? 0) : null;
+      const time = resultType === 'time' ? valueStr.trim() : null;
+      const rounds = resultType === 'rounds_reps' ? 0 : null;
+      const reps = resultType === 'rounds_reps' ? Math.max(0, parseInt(valueStr, 10)) : null;
+      const calories = resultType === 'calories' ? Math.max(0, parseInt(valueStr, 10)) : null;
+      const meters = resultType === 'meters' ? Math.max(0, parseInt(valueStr, 10)) : null;
 
-      if (resultType === 'weight') {
-        payload.weight = parseWeightToLbs(valueStr, unit) ?? 0;
-      } else if (resultType === 'time') {
-        payload.time = valueStr.trim();
-      } else if (resultType === 'rounds_reps') {
-        payload.rounds = 0;
-        payload.reps = Math.max(0, parseInt(valueStr, 10));
-      } else if (resultType === 'calories') {
-        payload.calories = Math.max(0, parseInt(valueStr, 10));
-      } else if (resultType === 'meters') {
-        payload.meters = Math.max(0, parseInt(valueStr, 10));
-      }
-
-      if (notes.trim()) payload.notes = notes.trim();
+      const payload = buildWorkoutLogPayload({
+        userId: user.id,
+        workoutId: null,
+        sectionId: null,
+        movementId: usingMovement ? (movement?.id ?? null) : null,
+        exerciseName: usingMovement ? null : (displayLabel ?? null),
+        resultType,
+        isRx: true,
+        completionDate: completionDateIso,
+        weight,
+        time,
+        rounds,
+        reps,
+        calories,
+        meters,
+        notes: notes.trim() ? notes.trim() : null,
+      });
 
       // Fetch prior logs for PR evaluation BEFORE insert
       const { data: priorRows } = await supabase
