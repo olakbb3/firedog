@@ -211,6 +211,15 @@ const LeaderboardPage = () => {
         LEADERBOARD
       </h1>
 
+      {!user && (
+        <a
+          href="/onboarding"
+          className="mb-4 block rounded-xl border border-dashed border-border bg-card/50 py-3 text-center text-xs font-display tracking-wider text-muted-foreground hover:border-primary hover:text-primary transition-colors"
+        >
+          Sign up to log your lifts
+        </a>
+      )}
+
       <div className="mb-4">
         <GlobalMovementLeaderboard />
       </div>
