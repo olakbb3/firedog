@@ -30,6 +30,18 @@ import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
 
+const AuthGate = ({ children }: { children: ReactNode }) => {
+  const { sessionChecked } = useAuth();
+  if (!sessionChecked) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    );
+  }
+  return <>{children}</>;
+};
+
 const App = () => {
   const [showSplash, setShowSplash] = useState(true);
 
