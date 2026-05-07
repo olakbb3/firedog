@@ -205,6 +205,10 @@ const ProfilePage = () => {
 
   const displayName = profile?.full_name || user?.user_metadata?.full_name || 'Athlete';
 
+  if (user && error) {
+    return <ErrorState message={error} onRetry={() => { setError(null); setReloadTick((t) => t + 1); }} />;
+  }
+
   if (!user) {
     return (
       <AuthPrompt
