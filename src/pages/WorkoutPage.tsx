@@ -53,8 +53,10 @@ const WorkoutPage = () => {
   const { crew, rawLogs } = useLeaderboard(id, sections, isFiredogTotal);
   const unit = useUnitPreference(user?.id);
 
+  // Public workout data: independent of auth state
   useEffect(() => {
     if (!id) return;
+    let cancelled = false;
     const fetchWorkout = async () => {
       setLoading(true);
       const [workoutRes, sectionsRes, exercisesRes] = await Promise.all([
@@ -62,6 +64,7 @@ const WorkoutPage = () => {
         supabase.from("workout_sections").select("*").eq("workout_id", id).order("order_index"),
         supabase.from("exercises").select("*").eq("workout_id", id).order("order_index"),
       ]);
+      if (cancelled) return;
       if (workoutRes.data) {
         setWorkout(workoutRes.data);
       } else {
@@ -70,7 +73,7 @@ const WorkoutPage = () => {
           .select("id, title, description, start_date, end_date")
           .eq("id", id)
           .maybeSingle();
-
+        if (cancelled) return;
         if (challengeData) {
           setWorkout({
             id: challengeData.id,
@@ -89,11 +92,13 @@ const WorkoutPage = () => {
       setLoading(false);
     };
     fetchWorkout();
+    return () => { cancelled = true; };
   }, [id]);
 
-  // Fetch performance snapshot
+  // User-scoped: performance snapshot
   useEffect(() => {
-    if (!id || !user) return;
+    if (!id || !user) { setSnapshot({ lastDate: null, bestResult: null, completedCount: 0 }); return; }
+    let cancelled = false;
     const fetchPerformance = async () => {
       const { data: logs } = await supabase
         .from("workout_logs")
@@ -102,6 +107,7 @@ const WorkoutPage = () => {
         .eq("user_id", user.id)
         .order("completion_date", { ascending: false });
 
+      if (cancelled) return;
       if (logs && logs.length > 0) {
         const bestTime = logs.filter((l) => l.time).sort((a, b) => (a.time || "").localeCompare(b.time || ""))[0]?.time;
         const bestReps = logs.filter((l) => l.reps).sort((a, b) => (b.reps || 0) - (a.reps || 0))[0]?.reps;
@@ -116,7 +122,8 @@ const WorkoutPage = () => {
       }
     };
     fetchPerformance();
-  }, [id, user]);
+    return () => { cancelled = true; };
+  }, [id, user?.id]);
 
   // isFiredogTotal is declared above (line 43)
 
