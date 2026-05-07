@@ -1,19 +1,19 @@
 // v2 — cache bust
-import { useNavigate } from 'react-router-dom';
-import { useEffect, useState } from 'react';
-import { Flame, Zap, ShoppingBag, Instagram } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/lib/supabaseClient';
-import WeeklyDateStrip from '@/components/WeeklyDateStrip';
-import NewMonthBanner from '@/components/NewMonthBanner';
-import { format, isSameDay } from 'date-fns';
-import firedogLogo from '@/assets/firedog-logo.png';
-import philosophyImage from '@/assets/100-words.jpeg';
-import inferno45Cover from '@/assets/inferno-45-cover.jpg';
-import stationStrengthCover from '@/assets/station-strength-cover.jpg';
-import QuickLogButton from '@/components/QuickLogButton';
-import ErrorState from '@/components/ErrorState';
+import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Flame, Zap, ShoppingBag, Instagram } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/lib/supabaseClient";
+import WeeklyDateStrip from "@/components/WeeklyDateStrip";
+import NewMonthBanner from "@/components/NewMonthBanner";
+import { format, isSameDay } from "date-fns";
+import firedogLogo from "@/assets/firedog-logo.png";
+import philosophyImage from "@/assets/100-words.jpeg";
+import inferno45Cover from "@/assets/inferno-45-cover.jpg";
+import stationStrengthCover from "@/assets/station-strength-cover.jpg";
+import QuickLogButton from "@/components/QuickLogButton";
+import ErrorState from "@/components/ErrorState";
 
 interface WorkoutRow {
   id: string;
@@ -32,9 +32,6 @@ interface ChallengeRow {
   start_date: string;
   end_date: string;
 }
-
-
-
 
 interface ProfileRow {
   full_name: string | null;
@@ -65,17 +62,17 @@ const HomePage = () => {
       setError(null);
       setLoading(true);
       try {
-        const todayLocal = new Date().toLocaleDateString('en-CA');
+        const todayLocal = new Date().toLocaleDateString("en-CA");
         const [workoutsRes, challengeRes] = await Promise.all([
-          supabase.from('workouts').select('*').order('workout_date', { ascending: false }),
+          supabase.from("workouts").select("*").order("workout_date", { ascending: false }),
           supabase
-            .from('challenges')
-            .select('id, title, description, start_date, end_date')
-            .eq('title', 'FIREDOG TOTAL')
-            .eq('is_hidden', false)
-            .lte('start_date', todayLocal)
-            .gte('end_date', todayLocal)
-            .order('start_date', { ascending: true })
+            .from("challenges")
+            .select("id, title, description, start_date, end_date")
+            .eq("title", "FIREDOG TOTAL")
+            .eq("is_hidden", false)
+            .lte("start_date", todayLocal)
+            .gte("end_date", todayLocal)
+            .order("start_date", { ascending: true })
             .limit(1)
             .maybeSingle(),
         ]);
@@ -86,37 +83,40 @@ const HomePage = () => {
         setActiveFiredogChallenge((challengeRes.data as ChallengeRow | null) || null);
       } catch (err: any) {
         if (!cancelled) {
-          console.error('HomePage public fetch error:', err);
-          setError(err?.message || 'Unable to load data.');
+          console.error("HomePage public fetch error:", err);
+          setError(err?.message || "Unable to load data.");
         }
       } finally {
         if (!cancelled) setLoading(false);
       }
     };
     fetchPublic();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [reloadTick]);
 
   // User-scoped data: profile (depends on user)
   useEffect(() => {
-    if (!user) { setProfile(null); return; }
+    if (!user) {
+      setProfile(null);
+      return;
+    }
     let cancelled = false;
     (async () => {
-      const { data } = await supabase
-        .from('profiles')
-        .select('full_name, points')
-        .eq('id', user.id)
-        .maybeSingle();
+      const { data } = await supabase.from("profiles").select("full_name, points").eq("id", user.id).maybeSingle();
       if (cancelled) return;
       if (data) setProfile(data as ProfileRow);
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [user?.id]);
 
   // Filter workout for selected date (exclude Firedog Total from daily WOD)
-  const dateStr = format(selectedDate, 'yyyy-MM-dd');
-  const todayWorkout = allWorkouts.find(w => {
-    if (w.title?.toUpperCase() === 'FIREDOG TOTAL') return false;
+  const dateStr = format(selectedDate, "yyyy-MM-dd");
+  const todayWorkout = allWorkouts.find((w) => {
+    if (w.title?.toUpperCase() === "FIREDOG TOTAL") return false;
     return w.workout_date === dateStr;
   });
 
@@ -124,10 +124,10 @@ const HomePage = () => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const isSelectedToday = isSameDay(selectedDate, today);
-  const latestWod = allWorkouts.find(w => w.title?.toUpperCase() !== 'FIREDOG TOTAL');
+  const latestWod = allWorkouts.find((w) => w.title?.toUpperCase() !== "FIREDOG TOTAL");
   const displayWorkout = todayWorkout || (isSelectedToday ? latestWod || null : null);
 
-  const displayName = profile?.full_name?.split(' ')[0] || user?.user_metadata?.full_name?.split(' ')[0] || 'Athlete';
+  const displayName = profile?.full_name?.split(" ")[0] || user?.user_metadata?.full_name?.split(" ")[0] || "Athlete";
 
   if (loading) {
     return (
@@ -138,11 +138,16 @@ const HomePage = () => {
   }
 
   if (error) {
-    return <ErrorState message={error} onRetry={() => { setError(null); setReloadTick((t) => t + 1); }} />;
+    return (
+      <ErrorState
+        message={error}
+        onRetry={() => {
+          setError(null);
+          setReloadTick((t) => t + 1);
+        }}
+      />
+    );
   }
-
-
-
 
   return (
     <div className="px-4 pt-6 pb-4 max-w-lg mx-auto">
@@ -151,22 +156,20 @@ const HomePage = () => {
         <div className="flex items-center gap-3">
           <img src={firedogLogo} alt="FiredogWorks" className="w-9 h-9 object-contain" />
           <div>
-            <p className="text-sm text-muted-foreground">
-              {isGuest ? 'Welcome to' : 'Welcome back,'}
-            </p>
-            <h1 className="text-xl font-bold">{isGuest ? 'FiredogWorks' : displayName}</h1>
+            <p className="text-sm text-muted-foreground">{isGuest ? "Welcome to" : "Welcome back,"}</p>
+            <h1 className="text-xl font-bold">{isGuest ? "FiredogWorks" : displayName}</h1>
           </div>
         </div>
         <div className="flex items-center gap-2">
           <button
-            onClick={() => window.open('https://www.instagram.com/firedogworks', '_blank')}
+            onClick={() => window.open("https://www.instagram.com/firedogworks", "_blank")}
             className="p-2 rounded-full bg-secondary text-muted-foreground hover:text-foreground transition-colors"
             aria-label="Instagram"
           >
             <Instagram className="h-5 w-5" />
           </button>
           <button
-            onClick={() => window.open('https://firedogworks.store', '_blank')}
+            onClick={() => window.open("https://firedogworks.store", "_blank")}
             className="p-2 rounded-full bg-secondary text-muted-foreground hover:text-foreground transition-colors"
           >
             <ShoppingBag className="h-5 w-5" />
@@ -179,17 +182,6 @@ const HomePage = () => {
           )}
         </div>
       </div>
-
-      {/* Guest CTA Banner */}
-      {isGuest && (
-        <button
-          onClick={() => navigate('/onboarding')}
-          className="w-full mb-6 rounded-xl border border-primary/30 bg-primary/5 p-4 text-left hover:bg-primary/10 transition-colors"
-        >
-          <p className="text-sm font-bold text-primary font-display">CREATE YOUR FREE ACCOUNT</p>
-          <p className="text-xs text-muted-foreground mt-1">Save workouts, track progress, and join challenges.</p>
-        </button>
-      )}
 
       {/* Weekly Date Strip */}
       <NewMonthBanner />
@@ -207,7 +199,7 @@ const HomePage = () => {
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-lg font-bold flex items-center gap-2">
               <Zap className="h-5 w-5 text-primary" />
-              {isSelectedToday ? 'WORKOUT OF THE DAY' : format(selectedDate, 'MMM d') + ' WORKOUT'}
+              {isSelectedToday ? "WORKOUT OF THE DAY" : format(selectedDate, "MMM d") + " WORKOUT"}
             </h2>
           </div>
           <button
@@ -227,8 +219,8 @@ const HomePage = () => {
           <h3 className="text-lg font-bold font-display">No workout scheduled yet</h3>
           <p className="text-sm text-muted-foreground mt-1">
             {isGuest
-              ? 'No workout scheduled for today — check back soon!'
-              : 'No workout scheduled yet — check back soon!'}
+              ? "No workout scheduled for today — check back soon!"
+              : "No workout scheduled yet — check back soon!"}
           </p>
           {!isSelectedToday && (
             <button
@@ -268,13 +260,12 @@ const HomePage = () => {
         </div>
       )}
 
-
       {/* Program Cards */}
       <div className="mb-6">
         <h2 className="text-lg font-bold mb-3">PROGRAMS</h2>
         <div className="grid grid-cols-2 gap-3">
           <button
-            onClick={() => navigate('/programs')}
+            onClick={() => navigate("/programs")}
             className="rounded-xl bg-card border border-border overflow-hidden shadow-card text-left hover:border-primary/50 transition-colors"
           >
             <div className="w-full h-24 overflow-hidden">
@@ -286,7 +277,7 @@ const HomePage = () => {
             </div>
           </button>
           <button
-            onClick={() => navigate('/programs')}
+            onClick={() => navigate("/programs")}
             className="rounded-xl bg-card border border-border overflow-hidden shadow-card text-left hover:border-primary/50 transition-colors"
           >
             <div className="w-full h-24 overflow-hidden">
@@ -304,27 +295,20 @@ const HomePage = () => {
       <div className="mb-6">
         <h2 className="text-lg font-bold mb-3">OUR PHILOSOPHY</h2>
         <div className="rounded-xl overflow-hidden border border-border shadow-card">
-          <img
-            src={philosophyImage}
-            alt="Firefighting in 100 Words"
-            className="w-full h-auto"
-            loading="lazy"
-          />
+          <img src={philosophyImage} alt="Firefighting in 100 Words" className="w-full h-auto" loading="lazy" />
         </div>
       </div>
 
       {/* Footer */}
       <div className="mt-4 flex items-center justify-center gap-4 pb-2">
         <button
-          onClick={() => window.open('https://www.instagram.com/firedogworks', '_blank')}
+          onClick={() => window.open("https://www.instagram.com/firedogworks", "_blank")}
           className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
         >
           <Instagram className="h-4 w-4" />
           @firedogworks
         </button>
       </div>
-
-      
     </div>
   );
 };
