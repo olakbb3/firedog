@@ -60,25 +60,30 @@ const HomePage = () => {
   useEffect(() => {
     let cancelled = false;
     const fetchPublic = async () => {
-      const todayLocal = new Date().toLocaleDateString('en-CA');
-      const [workoutsRes, challengeRes] = await Promise.all([
-        supabase.from('workouts').select('*').order('workout_date', { ascending: false }),
-        supabase
-          .from('challenges')
-          .select('id, title, description, start_date, end_date')
-          .eq('title', 'FIREDOG TOTAL')
-          .eq('is_hidden', false)
-          .lte('start_date', todayLocal)
-          .gte('end_date', todayLocal)
-          .order('start_date', { ascending: true })
-          .limit(1)
-          .maybeSingle(),
-      ]);
+      try {
+        const todayLocal = new Date().toLocaleDateString('en-CA');
+        const [workoutsRes, challengeRes] = await Promise.all([
+          supabase.from('workouts').select('*').order('workout_date', { ascending: false }),
+          supabase
+            .from('challenges')
+            .select('id, title, description, start_date, end_date')
+            .eq('title', 'FIREDOG TOTAL')
+            .eq('is_hidden', false)
+            .lte('start_date', todayLocal)
+            .gte('end_date', todayLocal)
+            .order('start_date', { ascending: true })
+            .limit(1)
+            .maybeSingle(),
+        ]);
 
-      if (cancelled) return;
-      if (workoutsRes.data) setAllWorkouts(workoutsRes.data);
-      setActiveFiredogChallenge((challengeRes.data as ChallengeRow | null) || null);
-      setLoading(false);
+        if (cancelled) return;
+        if (workoutsRes.data) setAllWorkouts(workoutsRes.data);
+        setActiveFiredogChallenge((challengeRes.data as ChallengeRow | null) || null);
+      } catch (err) {
+        if (!cancelled) console.error('HomePage public fetch error:', err);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     };
     fetchPublic();
     return () => { cancelled = true; };
