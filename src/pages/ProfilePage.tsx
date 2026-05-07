@@ -8,6 +8,7 @@ import { toast } from '@/hooks/use-toast';
 import firedogLogo from '@/assets/firedog-logo.png';
 import EditProfileModal, { AthleteProfileFields } from '@/components/EditProfileModal';
 import AuthPrompt from '@/components/AuthPrompt';
+import ErrorState from '@/components/ErrorState';
 import PointsGuideModal from '@/components/PointsGuideModal';
 import { useUnitPreference, convertWeight, convertHeight, type UnitSystem } from '@/lib/units';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -44,53 +45,56 @@ const ProfilePage = () => {
   const [leaderBadgeLoading, setLeaderBadgeLoading] = useState(false);
   const [leaderBadge, setLeaderBadge] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [reloadTick, setReloadTick] = useState(0);
 
   useEffect(() => {
     if (!user) return;
     let cancelled = false;
 
     const fetchProfileData = async () => {
+      setError(null);
       setLeaderBadgeLoading(true);
-      const baseCols = 'full_name, points, completed_workouts, avatar_url, weight_lbs, height_inches, gym_affiliation, fd_affiliation, fd_career_volunteer, fd_rank, rank';
-      const today = new Date();
-      const todayStr = today.toLocaleDateString('en-CA');
-      const monthStart = new Date(today.getFullYear(), today.getMonth(), 1).toLocaleDateString('en-CA');
-      const fetchProfile = async () => {
-        let profileRes = await supabase
-          .from('profiles')
-          .select(`${baseCols}, preferred_unit`)
-          .eq('id', user.id)
-          .maybeSingle();
-        // Fallback if migration hasn't been applied yet.
-        if (profileRes.error && /preferred_unit/i.test(profileRes.error.message || '')) {
-          profileRes = await supabase
+      try {
+        const baseCols = 'full_name, points, completed_workouts, avatar_url, weight_lbs, height_inches, gym_affiliation, fd_affiliation, fd_career_volunteer, fd_rank, rank';
+        const today = new Date();
+        const todayStr = today.toLocaleDateString('en-CA');
+        const monthStart = new Date(today.getFullYear(), today.getMonth(), 1).toLocaleDateString('en-CA');
+        const fetchProfile = async () => {
+          let profileRes = await supabase
             .from('profiles')
-            .select(baseCols)
+            .select(`${baseCols}, preferred_unit`)
             .eq('id', user.id)
             .maybeSingle();
-        }
-        return profileRes;
-      };
+          if (profileRes.error && /preferred_unit/i.test(profileRes.error.message || '')) {
+            profileRes = await supabase
+              .from('profiles')
+              .select(baseCols)
+              .eq('id', user.id)
+              .maybeSingle();
+          }
+          return profileRes;
+        };
 
-      const [profileRes, enrolledRes, freeWodRes, challengeRes] = await Promise.all([
-        fetchProfile(),
-        supabase.from('user_programs').select('program_sku').eq('user_id', user.id),
-        supabase.from('programs').select('id, title').eq('sku', 'FREE_WOD').maybeSingle(),
-        supabase
-          .from('challenges')
-          .select('id, start_date')
-          .eq('title', 'FIREDOG TOTAL')
-          .lte('start_date', monthStart)
-          .gte('end_date', todayStr)
-          .order('start_date', { ascending: false })
-          .limit(1)
-          .maybeSingle(),
-      ]);
+        const [profileRes, enrolledRes, freeWodRes, challengeRes] = await Promise.all([
+          fetchProfile(),
+          supabase.from('user_programs').select('program_sku').eq('user_id', user.id),
+          supabase.from('programs').select('id, title').eq('sku', 'FREE_WOD').maybeSingle(),
+          supabase
+            .from('challenges')
+            .select('id, start_date')
+            .eq('title', 'FIREDOG TOTAL')
+            .lte('start_date', monthStart)
+            .gte('end_date', todayStr)
+            .order('start_date', { ascending: false })
+            .limit(1)
+            .maybeSingle(),
+        ]);
 
-      if (cancelled) return;
-      if (profileRes.data) setProfile(profileRes.data as ProfileData);
+        if (cancelled) return;
+        if (profileRes.error) throw profileRes.error;
+        if (profileRes.data) setProfile(profileRes.data as ProfileData);
 
-      try {
         let activePrograms: ProgramRow[] = [];
         const enrolledSkus = (enrolledRes.data || []).map(r => r.program_sku).filter(Boolean);
         if (enrolledSkus.length > 0) {
@@ -103,50 +107,56 @@ const ProfilePage = () => {
         }
 
         if (!cancelled) setPrograms(activePrograms);
-      } catch {
-        if (!cancelled) setPrograms([]);
-      }
 
-      const challenge = challengeRes.data;
-      if (!challenge) {
-        if (!cancelled) { setLeaderBadge(null); setLeaderBadgeLoading(false); }
-        return;
-      }
-      const [sectionsRes, logsRes] = await Promise.all([
-        supabase.from('workout_sections').select('id, section_name').eq('workout_id', challenge.id),
-        supabase.rpc('get_leaderboard_logs', {
-          _workout_id: challenge.id,
-          _section_id: null,
-          _from: null,
-          _to: null,
-          _weight_only: true,
-        }),
-      ]);
-      const sectionMap = new Map(((sectionsRes.data as any[]) || []).map(s => [s.id, s.section_name]));
-      const groups = new Map<string, any[]>();
-      ((logsRes.data as any[]) || []).forEach(log => {
-        const name = sectionMap.get(log.workout_section_id) || log.workout_section_id;
-        const key = normalizeLift(String(name || ''));
-        if (!key) return;
-        if (!groups.has(key)) groups.set(key, []);
-        groups.get(key)!.push(log);
-      });
-      let badge: string | null = null;
-      groups.forEach((rawLogs, liftName) => {
-        if (badge) return;
-        const userMax = new Map<string, number>();
-        rawLogs.forEach(log => userMax.set(log.user_id, Math.max(userMax.get(log.user_id) || 0, log.weight || 0)));
-        const ranked = Array.from(userMax.entries()).sort((a, b) => b[1] - a[1]);
-        if (ranked[0]?.[0] === user.id) {
-          const label = new Date(`${challenge.start_date}T00:00:00`).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-          badge = `🔥 ${displayLiftName(liftName)} Leader — ${label}`;
+        const challenge = challengeRes.data;
+        if (!challenge) {
+          if (!cancelled) { setLeaderBadge(null); }
+          return;
         }
-      });
-      if (!cancelled) { setLeaderBadge(badge); setLeaderBadgeLoading(false); }
+        const [sectionsRes, logsRes] = await Promise.all([
+          supabase.from('workout_sections').select('id, section_name').eq('workout_id', challenge.id),
+          supabase.rpc('get_leaderboard_logs', {
+            _workout_id: challenge.id,
+            _section_id: null,
+            _from: null,
+            _to: null,
+            _weight_only: true,
+          }),
+        ]);
+        if (cancelled) return;
+        const sectionMap = new Map(((sectionsRes.data as any[]) || []).map(s => [s.id, s.section_name]));
+        const groups = new Map<string, any[]>();
+        ((logsRes.data as any[]) || []).forEach(log => {
+          const name = sectionMap.get(log.workout_section_id) || log.workout_section_id;
+          const key = normalizeLift(String(name || ''));
+          if (!key) return;
+          if (!groups.has(key)) groups.set(key, []);
+          groups.get(key)!.push(log);
+        });
+        let badge: string | null = null;
+        groups.forEach((rawLogs, liftName) => {
+          if (badge) return;
+          const userMax = new Map<string, number>();
+          rawLogs.forEach(log => userMax.set(log.user_id, Math.max(userMax.get(log.user_id) || 0, log.weight || 0)));
+          const ranked = Array.from(userMax.entries()).sort((a, b) => b[1] - a[1]);
+          if (ranked[0]?.[0] === user.id) {
+            const label = new Date(`${challenge.start_date}T00:00:00`).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+            badge = `🔥 ${displayLiftName(liftName)} Leader — ${label}`;
+          }
+        });
+        if (!cancelled) setLeaderBadge(badge);
+      } catch (err: any) {
+        if (!cancelled) {
+          console.error('ProfilePage fetch error:', err);
+          setError(err?.message || 'Unable to load data.');
+        }
+      } finally {
+        if (!cancelled) setLeaderBadgeLoading(false);
+      }
     };
     fetchProfileData();
     return () => { cancelled = true; };
-  }, [user]);
+  }, [user, reloadTick]);
 
   const handleAvatarClick = () => {
     fileInputRef.current?.click();
@@ -194,6 +204,10 @@ const ProfilePage = () => {
   };
 
   const displayName = profile?.full_name || user?.user_metadata?.full_name || 'Athlete';
+
+  if (user && error) {
+    return <ErrorState message={error} onRetry={() => { setError(null); setReloadTick((t) => t + 1); }} />;
+  }
 
   if (!user) {
     return (

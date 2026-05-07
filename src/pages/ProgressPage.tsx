@@ -11,6 +11,7 @@ import LeaderboardContextCard from '@/components/LeaderboardContextCard';
 import WorkoutHistoryDetailModal, { type HistoryDetailLog } from '@/components/WorkoutHistoryDetailModal';
 import QuickLogButton from '@/components/QuickLogButton';
 import AuthPrompt from '@/components/AuthPrompt';
+import ErrorState from '@/components/ErrorState';
 import { useUnitPreference, convertWeight, type UnitSystem } from '@/lib/units';
 
 type ResultType = 'completed' | 'time' | 'rounds_reps' | 'calories' | 'meters' | 'weight';
@@ -104,6 +105,7 @@ const ProgressPage = () => {
   const [workoutHasContent, setWorkoutHasContent] = useState<Record<string, boolean>>({});
   const [points, setPoints] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [detailKey, setDetailKey] = useState<string | null>(null);
   const [refreshTick, setRefreshTick] = useState(0);
 
@@ -114,6 +116,7 @@ const ProgressPage = () => {
     let cancelled = false;
 
     const fetchData = async () => {
+      setError(null);
       setLoading(true);
       try {
         const [logsRes, profileRes, workoutsRes, sectionsRes] = await Promise.all([
@@ -129,6 +132,7 @@ const ProgressPage = () => {
 
         if (cancelled) return;
 
+        if (logsRes.error) throw logsRes.error;
         if (logsRes.data) setLogs(logsRes.data as WorkoutLog[]);
         if (profileRes.data) setPoints(profileRes.data.points ?? 0);
         if (workoutsRes.data) {
@@ -141,8 +145,11 @@ const ProgressPage = () => {
           sectionsRes.data.forEach((s: { workout_id: string }) => { has[s.workout_id] = true; });
           setWorkoutHasContent(has);
         }
-      } catch (err) {
-        if (!cancelled) console.error('ProgressPage fetch error:', err);
+      } catch (err: any) {
+        if (!cancelled) {
+          console.error('ProgressPage fetch error:', err);
+          setError(err?.message || 'Unable to load data.');
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -196,6 +203,10 @@ const ProgressPage = () => {
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
       </div>
     );
+  }
+
+  if (error) {
+    return <ErrorState message={error} onRetry={() => { setError(null); setRefreshTick((t) => t + 1); }} />;
   }
 
   if (!user) {

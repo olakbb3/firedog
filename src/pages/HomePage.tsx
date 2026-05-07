@@ -13,6 +13,7 @@ import philosophyImage from '@/assets/100-words.jpeg';
 import inferno45Cover from '@/assets/inferno-45-cover.jpg';
 import stationStrengthCover from '@/assets/station-strength-cover.jpg';
 import QuickLogButton from '@/components/QuickLogButton';
+import ErrorState from '@/components/ErrorState';
 
 interface WorkoutRow {
   id: string;
@@ -48,8 +49,9 @@ const HomePage = () => {
   const [allWorkouts, setAllWorkouts] = useState<WorkoutRow[]>([]);
   const [activeFiredogChallenge, setActiveFiredogChallenge] = useState<ChallengeRow | null>(null);
   const [loading, setLoading] = useState(true);
-  
-  
+  const [error, setError] = useState<string | null>(null);
+  const [reloadTick, setReloadTick] = useState(0);
+
   const [selectedDate, setSelectedDate] = useState<Date>(() => {
     const d = new Date();
     d.setHours(0, 0, 0, 0);
@@ -60,6 +62,8 @@ const HomePage = () => {
   useEffect(() => {
     let cancelled = false;
     const fetchPublic = async () => {
+      setError(null);
+      setLoading(true);
       try {
         const todayLocal = new Date().toLocaleDateString('en-CA');
         const [workoutsRes, challengeRes] = await Promise.all([
@@ -77,17 +81,21 @@ const HomePage = () => {
         ]);
 
         if (cancelled) return;
+        if (workoutsRes.error) throw workoutsRes.error;
         if (workoutsRes.data) setAllWorkouts(workoutsRes.data);
         setActiveFiredogChallenge((challengeRes.data as ChallengeRow | null) || null);
-      } catch (err) {
-        if (!cancelled) console.error('HomePage public fetch error:', err);
+      } catch (err: any) {
+        if (!cancelled) {
+          console.error('HomePage public fetch error:', err);
+          setError(err?.message || 'Unable to load data.');
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
     };
     fetchPublic();
     return () => { cancelled = true; };
-  }, []);
+  }, [reloadTick]);
 
   // User-scoped data: profile (depends on user)
   useEffect(() => {
@@ -127,6 +135,10 @@ const HomePage = () => {
         <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full" />
       </div>
     );
+  }
+
+  if (error) {
+    return <ErrorState message={error} onRetry={() => { setError(null); setReloadTick((t) => t + 1); }} />;
   }
 
 

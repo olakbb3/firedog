@@ -9,6 +9,7 @@ import type { SectionResultType } from '@/types/index';
 import AthleteBadges, { type AthleteAffiliation } from '@/components/AthleteBadges';
 import GlobalMovementLeaderboard from '@/components/GlobalMovementLeaderboard';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import ErrorState from '@/components/ErrorState';
 
 interface WorkoutOption {
   id: string;
@@ -38,6 +39,8 @@ const LeaderboardPage = () => {
   const [rows, setRows] = useState<LeaderboardRow[]>([]);
   const [isLoadingWorkouts, setIsLoadingWorkouts] = useState(true);
   const [isLoadingLeaderboard, setIsLoadingLeaderboard] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [reloadTick, setReloadTick] = useState(0);
 
   // Today (local timezone) — computed once on mount
   const todayLocal = useMemo(() => new Date().toLocaleDateString('en-CA'), []);
@@ -46,65 +49,74 @@ const LeaderboardPage = () => {
   useEffect(() => {
     let cancelled = false;
     const fetchWorkouts = async () => {
+      setError(null);
       setIsLoadingWorkouts(true);
-      const { data: rawWorkouts } = await supabase
-        .from('workouts')
-        .select('id, title, workout_date')
-        .lte('workout_date', todayLocal)
-        .order('workout_date', { ascending: false })
-        .limit(50);
+      try {
+        const { data: rawWorkouts, error: wErr } = await supabase
+          .from('workouts')
+          .select('id, title, workout_date')
+          .lte('workout_date', todayLocal)
+          .order('workout_date', { ascending: false })
+          .limit(50);
 
-      if (cancelled) return;
-      if (!rawWorkouts || rawWorkouts.length === 0) {
-        setWorkouts([]);
-        setIsLoadingWorkouts(false);
-        return;
+        if (cancelled) return;
+        if (wErr) throw wErr;
+        if (!rawWorkouts || rawWorkouts.length === 0) {
+          setWorkouts([]);
+          return;
+        }
+
+        // Fetch sections + exercises in parallel to filter Rest Days client-side
+        const ids = rawWorkouts.map(w => w.id);
+        const [sectionsRes, exercisesRes] = await Promise.all([
+          supabase.from('workout_sections').select('id, workout_id').in('workout_id', ids),
+          supabase.from('exercises').select('section_id, workout_id').in('workout_id', ids),
+        ]);
+
+        if (cancelled) return;
+
+        const sectionsByWorkout = new Map<string, string[]>();
+        for (const s of sectionsRes.data || []) {
+          const arr = sectionsByWorkout.get(s.workout_id) || [];
+          arr.push(s.id);
+          sectionsByWorkout.set(s.workout_id, arr);
+        }
+        const sectionsWithExercises = new Set<string>();
+        const workoutsWithLooseExercises = new Set<string>();
+        for (const e of exercisesRes.data || []) {
+          if (e.section_id) sectionsWithExercises.add(e.section_id);
+          if (e.workout_id) workoutsWithLooseExercises.add(e.workout_id);
+        }
+
+        const valid = rawWorkouts.filter(w => {
+          const secIds = sectionsByWorkout.get(w.id) || [];
+          const hasSectionWithExercises = secIds.some(id => sectionsWithExercises.has(id));
+          return hasSectionWithExercises || workoutsWithLooseExercises.has(w.id);
+        });
+
+        setWorkouts(valid);
+
+        // Smart default: URL → today → most recent past
+        const urlWid = searchParams.get('workout');
+        if (urlWid && valid.some(w => w.id === urlWid)) {
+          setSelectedWorkoutId(urlWid);
+        } else if (valid.length > 0) {
+          const todayMatch = valid.find(w => w.workout_date === todayLocal);
+          setSelectedWorkoutId(todayMatch?.id || valid[0].id);
+        }
+      } catch (err: any) {
+        if (!cancelled) {
+          console.error('LeaderboardPage workouts fetch error:', err);
+          setError(err?.message || 'Unable to load data.');
+        }
+      } finally {
+        if (!cancelled) setIsLoadingWorkouts(false);
       }
-
-      // Fetch sections + exercises in parallel to filter Rest Days client-side
-      const ids = rawWorkouts.map(w => w.id);
-      const [sectionsRes, exercisesRes] = await Promise.all([
-        supabase.from('workout_sections').select('id, workout_id').in('workout_id', ids),
-        supabase.from('exercises').select('section_id, workout_id').in('workout_id', ids),
-      ]);
-
-      if (cancelled) return;
-
-      const sectionsByWorkout = new Map<string, string[]>();
-      for (const s of sectionsRes.data || []) {
-        const arr = sectionsByWorkout.get(s.workout_id) || [];
-        arr.push(s.id);
-        sectionsByWorkout.set(s.workout_id, arr);
-      }
-      const sectionsWithExercises = new Set<string>();
-      const workoutsWithLooseExercises = new Set<string>();
-      for (const e of exercisesRes.data || []) {
-        if (e.section_id) sectionsWithExercises.add(e.section_id);
-        if (e.workout_id) workoutsWithLooseExercises.add(e.workout_id);
-      }
-
-      const valid = rawWorkouts.filter(w => {
-        const secIds = sectionsByWorkout.get(w.id) || [];
-        const hasSectionWithExercises = secIds.some(id => sectionsWithExercises.has(id));
-        return hasSectionWithExercises || workoutsWithLooseExercises.has(w.id);
-      });
-
-      setWorkouts(valid);
-
-      // Smart default: URL → today → most recent past
-      const urlWid = searchParams.get('workout');
-      if (urlWid && valid.some(w => w.id === urlWid)) {
-        setSelectedWorkoutId(urlWid);
-      } else if (valid.length > 0) {
-        const todayMatch = valid.find(w => w.workout_date === todayLocal);
-        setSelectedWorkoutId(todayMatch?.id || valid[0].id);
-      }
-      setIsLoadingWorkouts(false);
     };
     fetchWorkouts();
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [reloadTick]);
 
   // Safety: if selection becomes invalid after refresh, fall back to first valid
   useEffect(() => {
@@ -203,6 +215,10 @@ const LeaderboardPage = () => {
   }, [rows, rxFilter]);
 
   const selectedWorkout = workouts.find(w => w.id === selectedWorkoutId);
+
+  if (error) {
+    return <ErrorState message={error} onRetry={() => { setError(null); setReloadTick((t) => t + 1); }} />;
+  }
 
   return (
     <div className="px-4 pt-6 pb-4 max-w-lg mx-auto">
