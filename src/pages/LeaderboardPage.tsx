@@ -42,8 +42,9 @@ const LeaderboardPage = () => {
   // Today (local timezone) — computed once on mount
   const todayLocal = useMemo(() => new Date().toLocaleDateString('en-CA'), []);
 
-  // Fetch valid past workouts for dropdown (once on mount)
+  // Public: fetch valid past workouts for dropdown (once on mount)
   useEffect(() => {
+    let cancelled = false;
     const fetchWorkouts = async () => {
       setIsLoadingWorkouts(true);
       const { data: rawWorkouts } = await supabase
@@ -53,6 +54,7 @@ const LeaderboardPage = () => {
         .order('workout_date', { ascending: false })
         .limit(50);
 
+      if (cancelled) return;
       if (!rawWorkouts || rawWorkouts.length === 0) {
         setWorkouts([]);
         setIsLoadingWorkouts(false);
@@ -65,6 +67,8 @@ const LeaderboardPage = () => {
         supabase.from('workout_sections').select('id, workout_id').in('workout_id', ids),
         supabase.from('exercises').select('section_id, workout_id').in('workout_id', ids),
       ]);
+
+      if (cancelled) return;
 
       const sectionsByWorkout = new Map<string, string[]>();
       for (const s of sectionsRes.data || []) {
@@ -98,6 +102,7 @@ const LeaderboardPage = () => {
       setIsLoadingWorkouts(false);
     };
     fetchWorkouts();
+    return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
