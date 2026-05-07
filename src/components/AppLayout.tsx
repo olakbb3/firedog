@@ -19,9 +19,7 @@ const AppLayout = ({ children }: { children: ReactNode }) => {
   // Hide nav on auth/splash/admin/onboarding pages
   const hideNav = ['/login', '/signup', '/onboarding', '/consent'].includes(location.pathname) || location.pathname.startsWith('/admin');
 
-  // For guests, show a simpler nav (Home, Programs only)
-  const guestNavItems = navItems.filter(n => ['/', '/programs'].includes(n.path));
-  const displayNavItems = user ? navItems : guestNavItems;
+  const displayNavItems = navItems;
 
   return (
     <div className="min-h-screen bg-background">
