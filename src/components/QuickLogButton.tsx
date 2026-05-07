@@ -14,6 +14,9 @@ export default function QuickLogButton({ onLogged, isPremium = true }: Props) {
   const { requireAuth } = useAuthGate();
   const [open, setOpen] = useState(false);
 
+  // Phase C: render only for authenticated users.
+  if (!user) return null;
+
   const handleClick = () => {
     requireAuth('log_workout', () => setOpen(true));
   };
@@ -24,7 +27,7 @@ export default function QuickLogButton({ onLogged, isPremium = true }: Props) {
         type="button"
         onClick={handleClick}
         aria-label="Log workout"
-        className="w-full rounded-xl py-4 flex items-center justify-center gap-2 font-bold transition-transform active:scale-95 shadow-md bg-primary text-primary-foreground font-display tracking-wider"
+        className="relative z-[999] w-full rounded-xl py-4 flex items-center justify-center gap-2 font-bold transition-transform active:scale-95 shadow-md bg-primary text-primary-foreground font-display tracking-wider"
       >
         {isPremium ? <Plus className="h-5 w-5" /> : <Lock className="h-5 w-5" />}
         LOG WORKOUT
@@ -34,9 +37,7 @@ export default function QuickLogButton({ onLogged, isPremium = true }: Props) {
           </span>
         )}
       </button>
-      {user && (
-        <FreestyleLogModal open={open} onOpenChange={setOpen} onLogged={onLogged} />
-      )}
+      <FreestyleLogModal open={open} onOpenChange={setOpen} onLogged={onLogged} />
     </>
   );
 }

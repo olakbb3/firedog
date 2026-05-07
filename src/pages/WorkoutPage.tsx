@@ -502,8 +502,17 @@ const WorkoutPage = () => {
                 })}
               </div>
               {/* Per-section Log Result button — route by input_mode.
-                  AMRAP (rounds_reps) ALWAYS uses single-score UI regardless of exercise count. */}
-              {(() => {
+                  AMRAP (rounds_reps) ALWAYS uses single-score UI regardless of exercise count.
+                  Phase C: guests see a sign-up CTA in place of logging buttons. */}
+              {!user ? (
+                <button
+                  type="button"
+                  onClick={() => navigate('/onboarding')}
+                  className="mt-3 w-full rounded-xl border border-dashed border-border bg-card/50 py-3 text-xs font-display tracking-wider text-muted-foreground hover:border-primary hover:text-primary transition-colors"
+                >
+                  Sign up to log your results
+                </button>
+              ) : (() => {
                 const sectionResultType = (section as any).result_type || "completed";
                 const isAmrap = sectionResultType === "rounds_reps";
                 const explicitMode = (section as any).input_mode as SectionInputMode | undefined | null;
