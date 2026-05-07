@@ -114,32 +114,37 @@ const ProgressPage = () => {
 
     const fetchData = async () => {
       setLoading(true);
-      const [logsRes, profileRes, workoutsRes, sectionsRes] = await Promise.all([
-        supabase
-          .from('workout_logs')
-          .select('id, workout_id, workout_section_id, movement_id, movements(id, name, category), exercise_name, result_type, reps, rounds, weight, calories, meters, time, is_rx, notes, completion_date')
-          .eq('user_id', user.id)
-          .order('completion_date', { ascending: false }),
-        supabase.from('profiles').select('points').eq('id', user.id).maybeSingle(),
-        supabase.from('workouts').select('id, title'),
-        supabase.from('workout_sections').select('workout_id'),
-      ]);
+      try {
+        const [logsRes, profileRes, workoutsRes, sectionsRes] = await Promise.all([
+          supabase
+            .from('workout_logs')
+            .select('id, workout_id, workout_section_id, movement_id, movements(id, name, category), exercise_name, result_type, reps, rounds, weight, calories, meters, time, is_rx, notes, completion_date')
+            .eq('user_id', user.id)
+            .order('completion_date', { ascending: false }),
+          supabase.from('profiles').select('points').eq('id', user.id).maybeSingle(),
+          supabase.from('workouts').select('id, title'),
+          supabase.from('workout_sections').select('workout_id'),
+        ]);
 
-      if (cancelled) return;
+        if (cancelled) return;
 
-      if (logsRes.data) setLogs(logsRes.data as WorkoutLog[]);
-      if (profileRes.data) setPoints(profileRes.data.points ?? 0);
-      if (workoutsRes.data) {
-        const map: Record<string, string> = {};
-        workoutsRes.data.forEach((w: WorkoutBasic) => { map[w.id] = w.title; });
-        setWorkouts(map);
+        if (logsRes.data) setLogs(logsRes.data as WorkoutLog[]);
+        if (profileRes.data) setPoints(profileRes.data.points ?? 0);
+        if (workoutsRes.data) {
+          const map: Record<string, string> = {};
+          workoutsRes.data.forEach((w: WorkoutBasic) => { map[w.id] = w.title; });
+          setWorkouts(map);
+        }
+        if (sectionsRes.data) {
+          const has: Record<string, boolean> = {};
+          sectionsRes.data.forEach((s: { workout_id: string }) => { has[s.workout_id] = true; });
+          setWorkoutHasContent(has);
+        }
+      } catch (err) {
+        if (!cancelled) console.error('ProgressPage fetch error:', err);
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-      if (sectionsRes.data) {
-        const has: Record<string, boolean> = {};
-        sectionsRes.data.forEach((s: { workout_id: string }) => { has[s.workout_id] = true; });
-        setWorkoutHasContent(has);
-      }
-      setLoading(false);
     };
     fetchData();
     return () => { cancelled = true; };
