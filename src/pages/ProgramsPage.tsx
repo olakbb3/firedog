@@ -211,10 +211,8 @@ const ProgramsPage = () => {
             </div>
           );
         })}
-        {programs.length === 0 && (
-          <p className="text-center text-muted-foreground text-sm py-8">No programs available yet.</p>
-        )}
       </div>
+      )}
     </div>
   );
 };
