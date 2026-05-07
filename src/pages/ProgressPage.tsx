@@ -361,11 +361,9 @@ const ProgressPage = () => {
         );
       })()}
 
-      {user && (
-        <div className="my-6">
-          <QuickLogButton onLogged={() => setRefreshTick((t) => t + 1)} />
-        </div>
-      )}
+      <div className="my-6">
+        <QuickLogButton onLogged={() => setRefreshTick((t) => t + 1)} />
+      </div>
     </div>
   );
 };
