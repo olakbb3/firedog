@@ -97,9 +97,27 @@ const ProgramsPage = () => {
     window.open(storeLink || 'https://firedogworks.store', '_blank');
   };
 
+  if (loading) {
+    return (
+      <div className="flex min-h-[50vh] items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return <ErrorState message={error} onRetry={() => { setError(null); setReloadTick((t) => t + 1); }} />;
+  }
+
   return (
     <div className="px-4 pt-6 pb-4 max-w-lg mx-auto">
       <h1 className="text-2xl font-bold font-display mb-6">PROGRAMS</h1>
+
+      {programs.length === 0 ? (
+        <div className="text-center p-8 text-muted-foreground border border-dashed border-border rounded-lg">
+          No programs are currently available. Check back soon.
+        </div>
+      ) : (
 
       <div className="space-y-4">
         {programs.map((program) => {
