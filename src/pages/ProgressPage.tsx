@@ -110,6 +110,7 @@ const ProgressPage = () => {
 
   useEffect(() => {
     if (!user) { setLoading(false); return; }
+    let cancelled = false;
 
     const fetchData = async () => {
       setLoading(true);
@@ -123,6 +124,8 @@ const ProgressPage = () => {
         supabase.from('workouts').select('id, title'),
         supabase.from('workout_sections').select('workout_id'),
       ]);
+
+      if (cancelled) return;
 
       if (logsRes.data) setLogs(logsRes.data as WorkoutLog[]);
       if (profileRes.data) setPoints(profileRes.data.points ?? 0);
@@ -139,7 +142,8 @@ const ProgressPage = () => {
       setLoading(false);
     };
     fetchData();
-  }, [user, refreshTick]);
+    return () => { cancelled = true; };
+  }, [user?.id, refreshTick]);
 
   // Calculate streak
   const dayStreak = (() => {

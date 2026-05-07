@@ -1,7 +1,7 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
-import { AuthProvider } from "@/contexts/AuthContext";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { OnboardingProvider } from "@/contexts/OnboardingContext";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
@@ -30,6 +30,18 @@ import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
 
+const AuthGate = ({ children }: { children: ReactNode }) => {
+  const { sessionChecked } = useAuth();
+  if (!sessionChecked) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    );
+  }
+  return <>{children}</>;
+};
+
 const App = () => {
   const [showSplash, setShowSplash] = useState(true);
 
@@ -44,35 +56,37 @@ const App = () => {
         <BrowserRouter>
           <AuthProvider>
             <OnboardingProvider>
-              <AppLayout>
-                <Routes>
-                  {/* Public routes */}
-                  <Route path="/login" element={<LoginPage />} />
-                  <Route path="/signup" element={<SignupPage />} />
-                  <Route path="/onboarding" element={<OnboardingPage />} />
-                  <Route path="/consent" element={<ConsentPage />} />
-                  <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-                  <Route path="/reset-password" element={<ResetPasswordPage />} />
-                  <Route path="/auth/callback" element={<AuthCallbackPage />} />
+              <AuthGate>
+                <AppLayout>
+                  <Routes>
+                    {/* Public routes */}
+                    <Route path="/login" element={<LoginPage />} />
+                    <Route path="/signup" element={<SignupPage />} />
+                    <Route path="/onboarding" element={<OnboardingPage />} />
+                    <Route path="/consent" element={<ConsentPage />} />
+                    <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                    <Route path="/reset-password" element={<ResetPasswordPage />} />
+                    <Route path="/auth/callback" element={<AuthCallbackPage />} />
 
-                  {/* Guest-accessible routes */}
-                  <Route path="/" element={<HomePage />} />
-                  <Route path="/workout/:id" element={<WorkoutPage />} />
-                  <Route path="/programs" element={<ProgramsPage />} />
-                  <Route path="/program/:id" element={<ProgramDetailPage />} />
+                    {/* Guest-accessible routes */}
+                    <Route path="/" element={<HomePage />} />
+                    <Route path="/workout/:id" element={<WorkoutPage />} />
+                    <Route path="/programs" element={<ProgramsPage />} />
+                    <Route path="/program/:id" element={<ProgramDetailPage />} />
 
-                  {/* Frictionless browse — viewable without auth, actions gated */}
-                  <Route path="/progress" element={<ProgressPage />} />
-                  <Route path="/leaderboard" element={<LeaderboardPage />} />
-                  <Route path="/profile" element={<ProfilePage />} />
+                    {/* Frictionless browse — viewable without auth, actions gated */}
+                    <Route path="/progress" element={<ProgressPage />} />
+                    <Route path="/leaderboard" element={<LeaderboardPage />} />
+                    <Route path="/profile" element={<ProfilePage />} />
 
-                  {/* Admin-only routes */}
-                  <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
-                  <Route path="/admin/programs/:programId" element={<AdminRoute><AdminProgramPage /></AdminRoute>} />
+                    {/* Admin-only routes */}
+                    <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+                    <Route path="/admin/programs/:programId" element={<AdminRoute><AdminProgramPage /></AdminRoute>} />
 
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </AppLayout>
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </AppLayout>
+              </AuthGate>
             </OnboardingProvider>
           </AuthProvider>
         </BrowserRouter>

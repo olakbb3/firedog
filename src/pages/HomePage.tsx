@@ -56,11 +56,12 @@ const HomePage = () => {
     return d;
   });
 
+  // Public data: fetched once, independent of auth state
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
+    let cancelled = false;
+    const fetchPublic = async () => {
       const todayLocal = new Date().toLocaleDateString('en-CA');
-      const [workoutsRes, challengeRes, profileRes] = await Promise.all([
+      const [workoutsRes, challengeRes] = await Promise.all([
         supabase.from('workouts').select('*').order('workout_date', { ascending: false }),
         supabase
           .from('challenges')
@@ -72,19 +73,32 @@ const HomePage = () => {
           .order('start_date', { ascending: true })
           .limit(1)
           .maybeSingle(),
-        user
-          ? supabase.from('profiles').select('full_name, points').eq('id', user.id).maybeSingle()
-          : Promise.resolve({ data: null }),
       ]);
 
+      if (cancelled) return;
       if (workoutsRes.data) setAllWorkouts(workoutsRes.data);
       setActiveFiredogChallenge((challengeRes.data as ChallengeRow | null) || null);
-      if (profileRes.data) setProfile(profileRes.data as ProfileRow);
       setLoading(false);
     };
+    fetchPublic();
+    return () => { cancelled = true; };
+  }, []);
 
-    fetchData();
-  }, [user]);
+  // User-scoped data: profile (depends on user)
+  useEffect(() => {
+    if (!user) { setProfile(null); return; }
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from('profiles')
+        .select('full_name, points')
+        .eq('id', user.id)
+        .maybeSingle();
+      if (cancelled) return;
+      if (data) setProfile(data as ProfileRow);
+    })();
+    return () => { cancelled = true; };
+  }, [user?.id]);
 
   // Filter workout for selected date (exclude Firedog Total from daily WOD)
   const dateStr = format(selectedDate, 'yyyy-MM-dd');
