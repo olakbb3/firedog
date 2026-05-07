@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabaseClient';
+import ErrorState from '@/components/ErrorState';
 import freeWodCover from '@/assets/free-wod-cover.jpg';
 import stationStrengthCover from '@/assets/station-strength-cover.jpg';
 import inferno45Cover from '@/assets/inferno-45-cover.jpg';
@@ -31,45 +32,66 @@ const ProgramsPage = () => {
   const [programs, setPrograms] = useState<ProgramRow[]>([]);
   const [ownedSkus, setOwnedSkus] = useState<Set<string>>(new Set());
   const [todayWorkoutId, setTodayWorkoutId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [reloadTick, setReloadTick] = useState(0);
 
   useEffect(() => {
+    let cancelled = false;
     const fetchData = async () => {
-      const { data } = await supabase
-        .from('programs')
-        .select('id, title, description, sku, store_link, image_url, is_free')
-        .order('is_free', { ascending: false });
-      if (data) setPrograms(data);
+      setError(null);
+      setLoading(true);
+      try {
+        const { data, error: pErr } = await supabase
+          .from('programs')
+          .select('id, title, description, sku, store_link, image_url, is_free')
+          .order('is_free', { ascending: false });
+        if (cancelled) return;
+        if (pErr) throw pErr;
+        if (data) setPrograms(data);
 
-      if (user) {
-        const { data: owned } = await supabase
-          .from('user_programs')
-          .select('program_sku')
-          .eq('user_id', user.id);
-        if (owned) setOwnedSkus(new Set(owned.map(r => r.program_sku)));
-      }
+        if (user) {
+          const { data: owned } = await supabase
+            .from('user_programs')
+            .select('program_sku')
+            .eq('user_id', user.id);
+          if (cancelled) return;
+          if (owned) setOwnedSkus(new Set(owned.map(r => r.program_sku)));
+        }
 
-      // Fetch today's workout, fallback to most recent
-      const today = new Date().toISOString().split('T')[0];
-      const { data: todayWod } = await supabase
-        .from('workouts')
-        .select('id')
-        .eq('workout_date', today)
-        .limit(1)
-        .single();
-      if (todayWod) {
-        setTodayWorkoutId(todayWod.id);
-      } else {
-        const { data: latestWod } = await supabase
+        // Fetch today's workout, fallback to most recent
+        const today = new Date().toISOString().split('T')[0];
+        const { data: todayWod } = await supabase
           .from('workouts')
           .select('id')
-          .order('workout_date', { ascending: false })
+          .eq('workout_date', today)
           .limit(1)
-          .single();
-        if (latestWod) setTodayWorkoutId(latestWod.id);
+          .maybeSingle();
+        if (cancelled) return;
+        if (todayWod) {
+          setTodayWorkoutId(todayWod.id);
+        } else {
+          const { data: latestWod } = await supabase
+            .from('workouts')
+            .select('id')
+            .order('workout_date', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          if (cancelled) return;
+          if (latestWod) setTodayWorkoutId(latestWod.id);
+        }
+      } catch (err: any) {
+        if (!cancelled) {
+          console.error('ProgramsPage fetch error:', err);
+          setError(err?.message || 'Unable to load data.');
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
       }
     };
     fetchData();
-  }, [user]);
+    return () => { cancelled = true; };
+  }, [user, reloadTick]);
 
   const handlePurchase = (storeLink: string | null) => {
     window.open(storeLink || 'https://firedogworks.store', '_blank');
