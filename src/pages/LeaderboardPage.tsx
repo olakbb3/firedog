@@ -216,6 +216,10 @@ const LeaderboardPage = () => {
 
   const selectedWorkout = workouts.find(w => w.id === selectedWorkoutId);
 
+  if (error) {
+    return <ErrorState message={error} onRetry={() => { setError(null); setReloadTick((t) => t + 1); }} />;
+  }
+
   return (
     <div className="px-4 pt-6 pb-4 max-w-lg mx-auto">
       <h1 className="text-2xl font-bold mb-4 flex items-center gap-2">
