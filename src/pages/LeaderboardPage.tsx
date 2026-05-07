@@ -124,11 +124,13 @@ const LeaderboardPage = () => {
   // Fetch leaderboard data for selected workout
   useEffect(() => {
     if (!selectedWorkoutId) { setRows([]); return; }
+    let cancelled = false;
 
     const fetchBoard = async () => {
       setIsLoadingLeaderboard(true);
       try {
         const { data, error } = await getWodLeaderboard(selectedWorkoutId);
+        if (cancelled) return;
 
         if (error) {
           console.error('get_wod_leaderboard error:', error);
@@ -177,7 +179,6 @@ const LeaderboardPage = () => {
           } as LeaderboardRow & { _resultType: string };
         });
 
-        // If all entries are time-based, sort ascending; otherwise descending
         const allTime = entries.every((e: any) => e._resultType === 'time');
         if (allTime) {
           entries.sort((a, b) => a.sort_value - b.sort_value);
@@ -185,13 +186,14 @@ const LeaderboardPage = () => {
           entries.sort((a, b) => b.sort_value - a.sort_value);
         }
 
-        setRows(entries);
+        if (!cancelled) setRows(entries);
       } finally {
-        setIsLoadingLeaderboard(false);
+        if (!cancelled) setIsLoadingLeaderboard(false);
       }
     };
 
     fetchBoard();
+    return () => { cancelled = true; };
   }, [selectedWorkoutId]);
 
   // Apply RX filter
