@@ -209,15 +209,6 @@ const ProfilePage = () => {
     return <ErrorState message={error} onRetry={() => { setError(null); setReloadTick((t) => t + 1); }} />;
   }
 
-  if (!user) {
-    return (
-      <AuthPrompt
-        title="PROFILE"
-        description="Create a free account to track your progress and compete on the leaderboard."
-      />
-    );
-  }
-
   return (
     <div className="px-4 pt-6 pb-4 max-w-lg mx-auto">
       {/* Hidden file input */}

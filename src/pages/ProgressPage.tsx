@@ -209,34 +209,6 @@ const ProgressPage = () => {
     return <ErrorState message={error} onRetry={() => { setError(null); setRefreshTick((t) => t + 1); }} />;
   }
 
-  if (!user) {
-    return (
-      <AuthPrompt
-        title="PROGRESS"
-        description="Track your workouts, points, streaks, and PRs. Create a free account to start logging."
-        preview={
-          <div className="grid grid-cols-3 gap-3">
-            <div className="rounded-xl bg-card border border-border p-4 text-center shadow-card">
-              <Dumbbell className="h-5 w-5 mx-auto text-primary mb-1" />
-              <p className="text-2xl font-bold">—</p>
-              <p className="text-[10px] text-muted-foreground uppercase">Workouts</p>
-            </div>
-            <div className="rounded-xl bg-card border border-border p-4 text-center shadow-card">
-              <TrendingUp className="h-5 w-5 mx-auto text-accent mb-1" />
-              <p className="text-2xl font-bold">—</p>
-              <p className="text-[10px] text-muted-foreground uppercase">Points</p>
-            </div>
-            <div className="rounded-xl bg-card border border-border p-4 text-center shadow-card">
-              <Calendar className="h-5 w-5 mx-auto text-fire-yellow mb-1" />
-              <p className="text-2xl font-bold">—</p>
-              <p className="text-[10px] text-muted-foreground uppercase">Day Streak</p>
-            </div>
-          </div>
-        }
-      />
-    );
-  }
-
   return (
     <div className="px-4 pt-6 pb-4 max-w-lg mx-auto">
       <h1 className="text-2xl font-bold mb-6">PROGRESS</h1>
@@ -389,11 +361,9 @@ const ProgressPage = () => {
         );
       })()}
 
-      {user && (
-        <div className="my-6">
-          <QuickLogButton onLogged={() => setRefreshTick((t) => t + 1)} />
-        </div>
-      )}
+      <div className="my-6">
+        <QuickLogButton onLogged={() => setRefreshTick((t) => t + 1)} />
+      </div>
     </div>
   );
 };

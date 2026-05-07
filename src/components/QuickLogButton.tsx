@@ -14,9 +14,6 @@ export default function QuickLogButton({ onLogged, isPremium = true }: Props) {
   const { requireAuth } = useAuthGate();
   const [open, setOpen] = useState(false);
 
-  // Phase C: render only for authenticated users.
-  if (!user) return null;
-
   const handleClick = () => {
     requireAuth('log_workout', () => setOpen(true));
   };
