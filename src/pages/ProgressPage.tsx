@@ -10,6 +10,7 @@ import PRCard from '@/components/PRCard';
 import LeaderboardContextCard from '@/components/LeaderboardContextCard';
 import WorkoutHistoryDetailModal, { type HistoryDetailLog } from '@/components/WorkoutHistoryDetailModal';
 import QuickLogButton from '@/components/QuickLogButton';
+import AuthPrompt from '@/components/AuthPrompt';
 import { useUnitPreference, convertWeight, type UnitSystem } from '@/lib/units';
 
 type ResultType = 'completed' | 'time' | 'rounds_reps' | 'calories' | 'meters' | 'weight';
@@ -199,15 +200,29 @@ const ProgressPage = () => {
 
   if (!user) {
     return (
-      <div className="px-4 pt-6 pb-4 max-w-lg mx-auto">
-        <h1 className="text-2xl font-bold mb-6">PROGRESS</h1>
-        <div className="rounded-xl bg-card border border-border p-8 shadow-card text-center">
-          <Flame className="h-8 w-8 mx-auto text-muted-foreground mb-3" />
-          <p className="text-sm text-muted-foreground">
-            Start logging workouts to track your progress
-          </p>
-        </div>
-      </div>
+      <AuthPrompt
+        title="PROGRESS"
+        description="Track your workouts, points, streaks, and PRs. Create a free account to start logging."
+        preview={
+          <div className="grid grid-cols-3 gap-3">
+            <div className="rounded-xl bg-card border border-border p-4 text-center shadow-card">
+              <Dumbbell className="h-5 w-5 mx-auto text-primary mb-1" />
+              <p className="text-2xl font-bold">—</p>
+              <p className="text-[10px] text-muted-foreground uppercase">Workouts</p>
+            </div>
+            <div className="rounded-xl bg-card border border-border p-4 text-center shadow-card">
+              <TrendingUp className="h-5 w-5 mx-auto text-accent mb-1" />
+              <p className="text-2xl font-bold">—</p>
+              <p className="text-[10px] text-muted-foreground uppercase">Points</p>
+            </div>
+            <div className="rounded-xl bg-card border border-border p-4 text-center shadow-card">
+              <Calendar className="h-5 w-5 mx-auto text-fire-yellow mb-1" />
+              <p className="text-2xl font-bold">—</p>
+              <p className="text-[10px] text-muted-foreground uppercase">Day Streak</p>
+            </div>
+          </div>
+        }
+      />
     );
   }
 

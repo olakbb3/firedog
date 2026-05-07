@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { toast } from '@/hooks/use-toast';
 import firedogLogo from '@/assets/firedog-logo.png';
 import EditProfileModal, { AthleteProfileFields } from '@/components/EditProfileModal';
+import AuthPrompt from '@/components/AuthPrompt';
 import PointsGuideModal from '@/components/PointsGuideModal';
 import { useUnitPreference, convertWeight, convertHeight, type UnitSystem } from '@/lib/units';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -196,24 +197,10 @@ const ProfilePage = () => {
 
   if (!user) {
     return (
-      <div className="px-4 pt-6 pb-4 max-w-lg mx-auto">
-        <div className="flex flex-col items-center text-center mb-6">
-          <img src={firedogLogo} alt="FiredogWorks" className="w-16 h-16 object-contain mb-4 opacity-80" />
-          <h1 className="text-xl font-bold mb-2">PROFILE</h1>
-          <p className="text-sm text-muted-foreground mb-6 max-w-xs">
-            Create a free account to track your progress and compete on the leaderboard
-          </p>
-          <Button className="font-display" onClick={() => navigate('/onboarding')}>
-            CREATE FREE ACCOUNT
-          </Button>
-          <button
-            onClick={() => navigate('/login')}
-            className="mt-3 text-xs text-muted-foreground hover:text-foreground transition-colors"
-          >
-            Already have an account? Sign in
-          </button>
-        </div>
-      </div>
+      <AuthPrompt
+        title="PROFILE"
+        description="Create a free account to track your progress and compete on the leaderboard."
+      />
     );
   }
 

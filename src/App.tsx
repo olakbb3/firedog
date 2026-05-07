@@ -1,6 +1,6 @@
 import { useState, useCallback, ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { OnboardingProvider } from "@/contexts/OnboardingContext";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -78,6 +78,9 @@ const App = () => {
                     <Route path="/progress" element={<ProgressPage />} />
                     <Route path="/leaderboard" element={<LeaderboardPage />} />
                     <Route path="/profile" element={<ProfilePage />} />
+
+                    {/* Legacy alias */}
+                    <Route path="/board" element={<Navigate to="/leaderboard" replace />} />
 
                     {/* Admin-only routes */}
                     <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
