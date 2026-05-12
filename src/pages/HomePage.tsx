@@ -241,7 +241,7 @@ const HomePage = () => {
         </div>
       )}
 
-      <div className="my-6">
+      <div className="pb-8">
         <QuickLogButton />
       </div>
 
