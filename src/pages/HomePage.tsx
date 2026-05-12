@@ -10,7 +10,6 @@ import NewMonthBanner from '@/components/NewMonthBanner';
 import { format, isSameDay } from 'date-fns';
 import firedogLogo from '@/assets/firedog-logo.png';
 import philosophyImage from '@/assets/100-words.jpeg';
-import inferno45Cover from '@/assets/inferno-45-cover.jpg';
 import stationStrengthCover from '@/assets/station-strength-cover.jpg';
 import QuickLogButton from '@/components/QuickLogButton';
 import ErrorState from '@/components/ErrorState';
