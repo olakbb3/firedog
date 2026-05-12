@@ -7,7 +7,6 @@ const navItems = [
   { path: '/', icon: Home, label: 'Home' },
   { path: '/progress', icon: Dumbbell, label: 'Progress' },
   { path: '/leaderboard', icon: Trophy, label: 'Board' },
-  { path: '/programs', icon: BookOpen, label: 'Programs' },
   { path: '/profile', icon: User, label: 'Profile' },
 ];
 
