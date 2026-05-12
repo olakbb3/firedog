@@ -241,7 +241,7 @@ const HomePage = () => {
         </div>
       )}
 
-      <div className="my-6">
+      <div className="pb-8">
         <QuickLogButton />
       </div>
 
@@ -272,19 +272,7 @@ const HomePage = () => {
       {/* Program Cards */}
       <div className="mb-6">
         <h2 className="text-lg font-bold mb-3">PROGRAMS</h2>
-        <div className="grid grid-cols-2 gap-3">
-          <button
-            onClick={() => navigate('/programs')}
-            className="rounded-xl bg-card border border-border overflow-hidden shadow-card text-left hover:border-primary/50 transition-colors"
-          >
-            <div className="w-full h-24 overflow-hidden">
-              <img src={inferno45Cover} alt="Engine" className="w-full h-full object-cover" loading="lazy" />
-            </div>
-            <div className="p-3">
-              <h3 className="font-bold font-display text-sm">ENGINE</h3>
-              <p className="text-xs text-muted-foreground mt-0.5">Aerobic conditioning</p>
-            </div>
-          </button>
+        <div className="grid grid-cols-1 gap-3">
           <button
             onClick={() => navigate('/programs')}
             className="rounded-xl bg-card border border-border overflow-hidden shadow-card text-left hover:border-primary/50 transition-colors"

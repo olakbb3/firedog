@@ -1,13 +1,12 @@
 import { ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Home, Dumbbell, Trophy, BookOpen, User } from 'lucide-react';
+import { Home, Dumbbell, Trophy, User } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
 const navItems = [
   { path: '/', icon: Home, label: 'Home' },
   { path: '/progress', icon: Dumbbell, label: 'Progress' },
   { path: '/leaderboard', icon: Trophy, label: 'Board' },
-  { path: '/programs', icon: BookOpen, label: 'Programs' },
   { path: '/profile', icon: User, label: 'Profile' },
 ];
 
