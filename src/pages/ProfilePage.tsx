@@ -381,6 +381,41 @@ const ProfilePage = () => {
         </div>
       )}
 
+      {/* Legal & Privacy */}
+      <div className="space-y-2 mb-6">
+        <h2 className="text-sm font-bold font-display mb-3">LEGAL & PRIVACY</h2>
+        <a
+          href="https://firedogworks.store/pages/app-terms-and-conditions"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="w-full rounded-xl bg-card border border-border p-4 flex items-center gap-3 shadow-card hover:border-primary/50 transition-colors"
+        >
+          <FileText className="h-4 w-4 text-primary" />
+          <span className="font-semibold text-sm">Terms and Conditions</span>
+          <ExternalLink className="h-3.5 w-3.5 text-muted-foreground ml-auto" />
+        </a>
+        <a
+          href="https://firedogworks.store/pages/app-privacy-policy"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="w-full rounded-xl bg-card border border-border p-4 flex items-center gap-3 shadow-card hover:border-primary/50 transition-colors"
+        >
+          <Shield className="h-4 w-4 text-primary" />
+          <span className="font-semibold text-sm">Privacy Policy</span>
+          <ExternalLink className="h-3.5 w-3.5 text-muted-foreground ml-auto" />
+        </a>
+        <a
+          href="https://firedogworks.store/pages/account-deletion-request"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="w-full rounded-xl bg-card border border-border p-4 flex items-center gap-3 shadow-card hover:border-destructive/30 transition-colors"
+        >
+          <Trash2 className="h-4 w-4 text-destructive/70" />
+          <span className="font-semibold text-sm text-destructive/70">Delete Account Data</span>
+          <ExternalLink className="h-3.5 w-3.5 text-muted-foreground ml-auto" />
+        </a>
+      </div>
+
       <Button variant="outline" className="w-full border-border text-muted-foreground hover:text-foreground font-display" onClick={handleLogout}>
         <LogOut className="h-4 w-4 mr-2" />
         SIGN OUT
