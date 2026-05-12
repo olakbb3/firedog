@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Home, Dumbbell, Trophy, BookOpen, User } from 'lucide-react';
+import { Home, Dumbbell, Trophy, User } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
 const navItems = [
