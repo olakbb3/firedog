@@ -24,7 +24,7 @@ export default function QuickLogButton({ onLogged, isPremium = true }: Props) {
         type="button"
         onClick={handleClick}
         aria-label="Log workout"
-        className="relative z-[999] w-full rounded-xl py-4 flex items-center justify-center gap-2 font-bold transition-transform active:scale-95 shadow-md bg-primary text-primary-foreground font-display tracking-wider"
+        className="w-full rounded-xl py-4 flex items-center justify-center gap-2 font-bold transition-transform active:scale-95 shadow-md bg-primary text-primary-foreground font-display tracking-wider"
       >
         {isPremium ? <Plus className="h-5 w-5" /> : <Lock className="h-5 w-5" />}
         LOG WORKOUT
