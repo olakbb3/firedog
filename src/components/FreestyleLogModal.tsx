@@ -91,6 +91,20 @@ export default function FreestyleLogModal({ open, onOpenChange, onLogged }: Prop
     onOpenChange(next);
   };
 
+  // Safety net for the known Radix Dialog bug where body keeps
+  // `pointer-events: none` after a fast close, leaving the screen
+  // unclickable behind a phantom backdrop.
+  useEffect(() => {
+    if (!open) {
+      const t = setTimeout(() => {
+        if (document.body.style.pointerEvents === 'none') {
+          document.body.style.pointerEvents = '';
+        }
+      }, 300);
+      return () => clearTimeout(t);
+    }
+  }, [open]);
+
   const validate = (): boolean => {
     setError('');
     const displayName = movement?.name?.trim() || movementName.trim();
