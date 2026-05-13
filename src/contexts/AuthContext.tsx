@@ -86,7 +86,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const {
           data: { session: initialSession },
           error,
-        } = await supabase.auth.getSession();
+        } = await AuthService.getSession();
 
         if (error && (error.message?.includes("Refresh Token Not Found") || error.status === 400)) {
           if (mounted) {
