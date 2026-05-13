@@ -45,7 +45,7 @@ const ResetPasswordPage = () => {
         setDone(true);
         toast({ title: 'Password updated!', description: 'Redirecting to login...' });
         setTimeout(async () => {
-          await supabase.auth.signOut();
+          await AuthService.signOut();
           navigate('/login');
         }, 1500);
       }
