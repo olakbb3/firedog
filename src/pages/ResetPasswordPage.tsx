@@ -38,7 +38,7 @@ const ResetPasswordPage = () => {
     if (!passwordsMatch) return;
     setLoading(true);
     try {
-      const { error } = await supabase.auth.updateUser({ password });
+      const { error } = await AuthService.updatePassword(password);
       if (error) {
         toast({ title: 'Could not update password', description: error.message, variant: 'destructive' });
       } else {
