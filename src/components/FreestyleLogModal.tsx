@@ -200,28 +200,34 @@ export default function FreestyleLogModal({ open, onOpenChange, onLogged }: Prop
         throw new Error(insertErr);
       }
 
-      if (hasPR) {
-        const msg =
-          prItems.length === 1
-            ? `New PR on ${prItems[0]} 💪 Saved to your history.`
-            : 'New best 💪 Saved to your history.';
-        toast.success(msg, { duration: 3500 });
-      } else {
-        toast.success(
-          <div className="flex items-center gap-3">
-            <img src={dalmatianReward} alt="Logged" className="w-14 h-14 rounded-lg object-cover" />
-            <div className="flex flex-col">
-              <span className="font-semibold text-sm">Workout logged 🐾</span>
-              <span className="text-xs text-muted-foreground">Saved to your history</span>
-            </div>
-          </div>,
-          { duration: 3000 }
-        );
-      }
-
+      // Close modal FIRST so Radix can fully unmount the overlay
+      // before any toast / state change interrupts its exit animation.
       reset();
       onOpenChange(false);
       onLogged?.();
+
+      // Defer toast slightly so it renders after the dialog has closed,
+      // avoiding the stuck-backdrop / pointer-events:none body bug.
+      setTimeout(() => {
+        if (hasPR) {
+          const msg =
+            prItems.length === 1
+              ? `New PR on ${prItems[0]} 💪 Saved to your history.`
+              : 'New best 💪 Saved to your history.';
+          toast.success(msg, { duration: 3500 });
+        } else {
+          toast.success(
+            <div className="flex items-center gap-3">
+              <img src={dalmatianReward} alt="Logged" className="w-14 h-14 rounded-lg object-cover" />
+              <div className="flex flex-col">
+                <span className="font-semibold text-sm">Workout logged 🐾</span>
+                <span className="text-xs text-muted-foreground">Saved to your history</span>
+              </div>
+            </div>,
+            { duration: 3000 }
+          );
+        }
+      }, 150);
     } catch (err: any) {
       toast.error('Failed to save. Please check your connection and try again.');
     } finally {
