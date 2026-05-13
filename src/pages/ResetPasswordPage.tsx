@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { supabase } from '@/lib/supabaseClient';
+import { AuthService } from '@/services/auth.service';
 import { useToast } from '@/hooks/use-toast';
 import firedogLogo from '@/assets/firedog-logo.png';
 
@@ -18,13 +18,13 @@ const ResetPasswordPage = () => {
   useEffect(() => {
     // Supabase auto-handles the recovery hash and creates a session.
     // Listen for the PASSWORD_RECOVERY event or check for existing session.
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = AuthService.onAuthStateChange((event, session) => {
       if (event === 'PASSWORD_RECOVERY' || session) {
         setHasSession(true);
       }
     });
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    AuthService.getSession().then(({ data: { session } }) => {
       setHasSession(!!session);
     });
 
@@ -38,14 +38,14 @@ const ResetPasswordPage = () => {
     if (!passwordsMatch) return;
     setLoading(true);
     try {
-      const { error } = await supabase.auth.updateUser({ password });
+      const { error } = await AuthService.updatePassword(password);
       if (error) {
         toast({ title: 'Could not update password', description: error.message, variant: 'destructive' });
       } else {
         setDone(true);
         toast({ title: 'Password updated!', description: 'Redirecting to login...' });
         setTimeout(async () => {
-          await supabase.auth.signOut();
+          await AuthService.signOut();
           navigate('/login');
         }, 1500);
       }

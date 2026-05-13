@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabaseClient";
+import { AuthService } from "@/services/auth.service";
 import { getProfile } from "@/services/profile.service";
 import { toast } from "sonner";
 
@@ -85,7 +86,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const {
           data: { session: initialSession },
           error,
-        } = await supabase.auth.getSession();
+        } = await AuthService.getSession();
 
         if (error && (error.message?.includes("Refresh Token Not Found") || error.status === 400)) {
           if (mounted) {
@@ -117,7 +118,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+    } = AuthService.onAuthStateChange((_event, nextSession) => {
       if (!mounted) return;
 
       setSession(nextSession);
@@ -138,7 +139,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    await AuthService.signOut();
     setSession(null);
     setUser(null);
     setRole(null);

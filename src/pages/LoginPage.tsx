@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { supabase } from '@/lib/supabaseClient';
+import { AuthService } from '@/services/auth.service';
 import { useToast } from '@/hooks/use-toast';
 import GoogleSignInButton from '@/components/GoogleSignInButton';
 import AuthDivider from '@/components/AuthDivider';
@@ -19,10 +19,7 @@ const LoginPage = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      const { data, error } = await AuthService.signIn(email, password);
 
       if (error) {
         toast({ title: 'Login failed', description: error.message, variant: 'destructive' });

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/lib/supabaseClient';
+import { AuthService } from '@/services/auth.service';
 import { useToast } from '@/hooks/use-toast';
 import { useOnboarding } from '@/contexts/OnboardingContext';
 import GoogleSignInButton from '@/components/GoogleSignInButton';
@@ -22,14 +23,7 @@ const SignupPage = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: { full_name: name },
-          emailRedirectTo: window.location.origin,
-        },
-      });
+      const { data, error } = await AuthService.signUp(email, password, name);
 
       if (error) {
         toast({ title: 'Signup failed', description: error.message, variant: 'destructive' });

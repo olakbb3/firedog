@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { supabase } from '@/lib/supabaseClient';
+import { AuthService } from '@/services/auth.service';
 import { useToast } from '@/hooks/use-toast';
 import firedogLogo from '@/assets/firedog-logo.png';
 
@@ -17,9 +17,7 @@ const ForgotPasswordPage = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
-      });
+      const { error } = await AuthService.resetPassword(email);
       if (error) {
         toast({ title: 'Could not send reset link', description: error.message, variant: 'destructive' });
       } else {

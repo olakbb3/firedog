@@ -1,5 +1,5 @@
 import { Button } from '@/components/ui/button';
-import { supabase } from '@/lib/supabaseClient';
+import { AuthService } from '@/services/auth.service';
 import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
 
@@ -14,12 +14,7 @@ const GoogleSignInButton = ({ label = 'Continue with Google' }: GoogleSignInButt
   const handleGoogleSignIn = async () => {
     setLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-        },
-      });
+      const { error } = await AuthService.signInWithGoogle();
       if (error) {
         toast({ title: 'Google sign-in failed', description: error.message, variant: 'destructive' });
         setLoading(false);
