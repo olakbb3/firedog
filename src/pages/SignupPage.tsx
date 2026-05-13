@@ -23,14 +23,7 @@ const SignupPage = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: { full_name: name },
-          emailRedirectTo: window.location.origin,
-        },
-      });
+      const { data, error } = await AuthService.signUp(email, password, name);
 
       if (error) {
         toast({ title: 'Signup failed', description: error.message, variant: 'destructive' });
