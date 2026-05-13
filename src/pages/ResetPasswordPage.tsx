@@ -18,13 +18,13 @@ const ResetPasswordPage = () => {
   useEffect(() => {
     // Supabase auto-handles the recovery hash and creates a session.
     // Listen for the PASSWORD_RECOVERY event or check for existing session.
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = AuthService.onAuthStateChange((event, session) => {
       if (event === 'PASSWORD_RECOVERY' || session) {
         setHasSession(true);
       }
     });
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    AuthService.getSession().then(({ data: { session } }) => {
       setHasSession(!!session);
     });
 
