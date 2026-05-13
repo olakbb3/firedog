@@ -1,5 +1,5 @@
 import { Button } from '@/components/ui/button';
-import { supabase } from '@/lib/supabaseClient';
+import { AuthService } from '@/services/auth.service';
 import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
 
