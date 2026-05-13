@@ -19,10 +19,7 @@ const LoginPage = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      const { data, error } = await AuthService.signIn(email, password);
 
       if (error) {
         toast({ title: 'Login failed', description: error.message, variant: 'destructive' });
