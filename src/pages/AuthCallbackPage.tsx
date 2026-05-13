@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/lib/supabaseClient';
+import { AuthService } from '@/services/auth.service';
 
 const AuthCallbackPage = () => {
   const navigate = useNavigate();
@@ -8,19 +8,19 @@ const AuthCallbackPage = () => {
   useEffect(() => {
     // Supabase auto-handles the OAuth callback hash and creates a session.
     // Wait for the session to be established, then redirect home.
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = AuthService.onAuthStateChange((_event, session) => {
       if (session) {
         navigate('/', { replace: true });
       }
     });
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    AuthService.getSession().then(({ data: { session } }) => {
       if (session) {
         navigate('/', { replace: true });
       } else {
         // Give it a moment, then fall back to login if no session shows up
         setTimeout(() => {
-          supabase.auth.getSession().then(({ data: { session: s } }) => {
+          AuthService.getSession().then(({ data: { session: s } }) => {
             navigate(s ? '/' : '/login', { replace: true });
           });
         }, 1500);
