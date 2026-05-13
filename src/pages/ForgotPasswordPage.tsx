@@ -17,9 +17,7 @@ const ForgotPasswordPage = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
-      });
+      const { error } = await AuthService.resetPassword(email);
       if (error) {
         toast({ title: 'Could not send reset link', description: error.message, variant: 'destructive' });
       } else {
