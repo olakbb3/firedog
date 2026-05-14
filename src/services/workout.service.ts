@@ -147,6 +147,18 @@ export const WorkoutService = {
   },
 
   /**
+   * Fetches minimal `workout_id` rows for every section that belongs to
+   * any of the supplied workout UUIDs. Used by ProgramDetailPage to build
+   * a section-count map without hydrating full rows.
+   */
+  async getSectionWorkoutIdsForWorkouts(workoutIds: string[]) {
+    return supabase
+      .from(TABLE_SECTIONS)
+      .select('workout_id')
+      .in('workout_id', workoutIds);
+  },
+
+  /**
    * Fetches `section_id` and `workout_id` pairs from exercises for a set
    * of workout UUIDs. Used by LeaderboardPage to link exercises back to
    * their parent workout during Rest-Day filtering.
