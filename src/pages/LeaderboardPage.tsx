@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Trophy } from 'lucide-react';
-import { supabase } from '@/lib/supabaseClient';
+import { WorkoutService } from '@/services/workout.service';
 import { getWodLeaderboard } from '@/services/leaderboard.service';
 import { useAuth } from '@/contexts/AuthContext';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -52,12 +52,7 @@ const LeaderboardPage = () => {
       setError(null);
       setIsLoadingWorkouts(true);
       try {
-        const { data: rawWorkouts, error: wErr } = await supabase
-          .from('workouts')
-          .select('id, title, workout_date')
-          .lte('workout_date', todayLocal)
-          .order('workout_date', { ascending: false })
-          .limit(50);
+        const { data: rawWorkouts, error: wErr } = await WorkoutService.getPastWorkouts(todayLocal);
 
         if (cancelled) return;
         if (wErr) throw wErr;
@@ -69,8 +64,8 @@ const LeaderboardPage = () => {
         // Fetch sections + exercises in parallel to filter Rest Days client-side
         const ids = rawWorkouts.map(w => w.id);
         const [sectionsRes, exercisesRes] = await Promise.all([
-          supabase.from('workout_sections').select('id, workout_id').in('workout_id', ids),
-          supabase.from('exercises').select('section_id, workout_id').in('workout_id', ids),
+          WorkoutService.getSectionIdsByWorkoutIds(ids),
+          WorkoutService.getExerciseSectionLinksByWorkoutIds(ids),
         ]);
 
         if (cancelled) return;

@@ -10,7 +10,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ExternalLink } from 'lucide-react';
-import { supabase } from '@/lib/supabaseClient';
+import { WorkoutService } from '@/services/workout.service';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUnitPreference, convertWeight, type UnitSystem } from '@/lib/units';
 
@@ -118,10 +118,7 @@ export default function WorkoutHistoryDetailModal({
 
     let cancelled = false;
     (async () => {
-      const { data } = await supabase
-        .from('workout_sections')
-        .select('id, section_name, order_index')
-        .in('id', missing);
+      const { data } = await WorkoutService.getSectionsByIds(missing);
       if (cancelled || !data) return;
       setSectionMap((prev) => {
         const next = { ...prev };
