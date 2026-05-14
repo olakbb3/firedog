@@ -1137,11 +1137,7 @@ const ChallengesTab = () => {
     setDesc(challenge.description || "");
     setStartDate(challenge.start_date ? new Date(`${challenge.start_date}T00:00:00`) : undefined);
     setEndDate(challenge.end_date ? new Date(`${challenge.end_date}T00:00:00`) : undefined);
-    const { data, error } = await supabase
-      .from("workout_sections")
-      .select("id, section_name")
-      .eq("workout_id", challenge.id)
-      .order("order_index");
+    const { data, error } = await WorkoutService.getSectionIdNamesByWorkout(challenge.id);
     if (error) {
       toast({ title: "Operation failed", description: error.message, variant: "destructive" });
       return;

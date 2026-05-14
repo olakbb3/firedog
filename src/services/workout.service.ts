@@ -159,6 +159,15 @@ export const WorkoutService = {
       .order('order_index');
   },
 
+  /** AdminDashboard challenges tab — id+name lift list for editing. */
+  async getSectionIdNamesByWorkout(workoutId: string) {
+    return supabase
+      .from('workout_sections')
+      .select('id, section_name')
+      .eq('workout_id', workoutId)
+      .order('order_index');
+  },
+
   // ─────────────────────────────────────────────────────────────────────────
   // exercises — hydration
   // ─────────────────────────────────────────────────────────────────────────
