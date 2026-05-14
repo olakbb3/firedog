@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabaseClient';
 import { WorkoutService } from '@/services/workout.service';
+import { ProgramService } from '@/services/program.service';
 
 interface ProgramInfo {
   id: string;
@@ -39,11 +40,7 @@ const ProgramDetailPage = () => {
 
     const fetch = async () => {
       // Fetch program
-      const { data: prog } = await supabase
-        .from('programs')
-        .select('id, title, description, sku, is_free')
-        .eq('id', id)
-        .maybeSingle();
+      const { data: prog } = await ProgramService.getProgramDetail(id);
 
       if (!prog) {
         toast.error('You need to unlock this program to view workouts.');
@@ -53,12 +50,7 @@ const ProgramDetailPage = () => {
 
       // Check access for non-free programs
       if (!prog.is_free && user) {
-        const { data: owned } = await supabase
-          .from('user_programs')
-          .select('id')
-          .eq('user_id', user.id)
-          .eq('program_sku', prog.sku)
-          .maybeSingle();
+        const { data: owned } = await ProgramService.checkProgramOwnership(user.id, prog.sku);
         if (!owned) {
           toast.error('You need to unlock this program to view workouts.');
           navigate('/programs', { replace: true });

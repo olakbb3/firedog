@@ -4,8 +4,8 @@ import { Lock, CheckCircle2, ShoppingBag, Flame } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/lib/supabaseClient';
 import { WorkoutService } from '@/services/workout.service';
+import { ProgramService } from '@/services/program.service';
 import ErrorState from '@/components/ErrorState';
 import freeWodCover from '@/assets/free-wod-cover.jpg';
 import stationStrengthCover from '@/assets/station-strength-cover.jpg';
@@ -43,19 +43,13 @@ const ProgramsPage = () => {
       setError(null);
       setLoading(true);
       try {
-        const { data, error: pErr } = await supabase
-          .from('programs')
-          .select('id, title, description, sku, store_link, image_url, is_free')
-          .order('is_free', { ascending: false });
+        const { data, error: pErr } = await ProgramService.getPublicPrograms();
         if (cancelled) return;
         if (pErr) throw pErr;
         if (data) setPrograms(data);
 
         if (user) {
-          const { data: owned } = await supabase
-            .from('user_programs')
-            .select('program_sku')
-            .eq('user_id', user.id);
+          const { data: owned } = await ProgramService.getUserEntitlements(user.id);
           if (cancelled) return;
           if (owned) setOwnedSkus(new Set(owned.map(r => r.program_sku)));
         }
