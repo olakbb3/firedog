@@ -4,6 +4,7 @@ import { ArrowLeft, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabaseClient";
+import { WorkoutService } from "@/services/workout.service";
 import type { WorkoutSection, ExerciseRow, SectionInputMode } from "@/types/index";
 import { parseTextWithLinks, extractLinkButtons, LinkButtons } from "@/lib/urlParser";
 import SectionLogButton from "@/components/SectionLogButton";
@@ -61,9 +62,9 @@ const WorkoutPage = () => {
       setLoading(true);
       try {
         const [workoutRes, sectionsRes, exercisesRes] = await Promise.all([
-          supabase.from("workouts").select("*").eq("id", id).maybeSingle(),
-          supabase.from("workout_sections").select("*").eq("workout_id", id).order("order_index"),
-          supabase.from("exercises").select("*").eq("workout_id", id).order("order_index"),
+          WorkoutService.getWorkoutById(id),
+          WorkoutService.getSectionsByWorkout(id),
+          WorkoutService.getExercisesByWorkout(id),
         ]);
         if (cancelled) return;
         if (workoutRes.data) {
