@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { Session, User } from "@supabase/supabase-js";
-import { supabase } from "@/lib/supabaseClient";
+
 import { AuthService } from "@/services/auth.service";
 import { ProgramService } from "@/services/program.service";
 import { getProfile } from "@/services/profile.service";
