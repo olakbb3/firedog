@@ -1176,7 +1176,7 @@ const ChallengesTab = () => {
           c.end_date >= new Date().toLocaleDateString("en-CA"),
       ) || challenges[0];
     const currentLiftsRes = current
-      ? await supabase.from("workout_sections").select("section_name").eq("workout_id", current.id).order("order_index")
+      ? await WorkoutService.getSectionNamesByWorkout(current.id)
       : { data: [] as any[], error: null };
     if (currentLiftsRes.error) {
       toast({ title: "Operation failed", description: currentLiftsRes.error.message, variant: "destructive" });
@@ -1457,7 +1457,7 @@ const HomeTab = () => {
   useEffect(() => {
     const fetch = async () => {
       const [w, p] = await Promise.all([
-        supabase.from("workouts").select("id, title"),
+        WorkoutService.getWorkoutDefinitions(),
         supabase.from("programs").select("id, title"),
       ]);
       if (w.data) setWorkouts(w.data);

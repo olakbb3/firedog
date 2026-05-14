@@ -150,6 +150,15 @@ export const WorkoutService = {
       .in('id', sectionIds);
   },
 
+  /** AdminDashboard challenges tab — current lift names for a challenge/workout. */
+  async getSectionNamesByWorkout(workoutId: string) {
+    return supabase
+      .from('workout_sections')
+      .select('section_name')
+      .eq('workout_id', workoutId)
+      .order('order_index');
+  },
+
   // ─────────────────────────────────────────────────────────────────────────
   // exercises — hydration
   // ─────────────────────────────────────────────────────────────────────────
