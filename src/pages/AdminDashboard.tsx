@@ -36,6 +36,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabaseClient";
+import { WorkoutService } from "@/services/workout.service";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import type { SectionResultType, SectionInputMode } from "@/types/index";
@@ -200,10 +201,7 @@ const WorkoutsTab = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const fetchWorkouts = async () => {
-    const { data, error } = await supabase
-      .from("workouts")
-      .select("*")
-      .order("workout_date", { ascending: false, nullsFirst: false });
+    const { data, error } = await WorkoutService.getAdminWorkouts();
     if (error) {
       toast({ title: "Operation failed", description: error.message, variant: "destructive" });
       return;
@@ -225,11 +223,7 @@ const WorkoutsTab = () => {
     const workoutDate = format(formDate, "yyyy-MM-dd");
     let cancelled = false;
     (async () => {
-      const { data, error } = await supabase
-        .from("workouts")
-        .select("id, title")
-        .eq("workout_date", workoutDate)
-        .maybeSingle();
+      const { data, error } = await WorkoutService.getWorkoutByDate(workoutDate);
       if (cancelled) return;
       if (error) {
         setExistingWorkoutForDate(null);
@@ -355,8 +349,8 @@ const WorkoutsTab = () => {
 
     // Fetch sections and exercises for this workout
     const [sectionsRes, exercisesRes] = await Promise.all([
-      supabase.from("workout_sections").select("*").eq("workout_id", workoutId).order("order_index"),
-      supabase.from("exercises").select("*").eq("workout_id", workoutId).order("order_index"),
+      WorkoutService.getSectionsByWorkout(workoutId),
+      WorkoutService.getExercisesByWorkout(workoutId),
     ]);
 
     if (sectionsRes.error) {
