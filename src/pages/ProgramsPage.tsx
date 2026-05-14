@@ -43,19 +43,13 @@ const ProgramsPage = () => {
       setError(null);
       setLoading(true);
       try {
-        const { data, error: pErr } = await supabase
-          .from('programs')
-          .select('id, title, description, sku, store_link, image_url, is_free')
-          .order('is_free', { ascending: false });
+        const { data, error: pErr } = await ProgramService.getPublicPrograms();
         if (cancelled) return;
         if (pErr) throw pErr;
         if (data) setPrograms(data);
 
         if (user) {
-          const { data: owned } = await supabase
-            .from('user_programs')
-            .select('program_sku')
-            .eq('user_id', user.id);
+          const { data: owned } = await ProgramService.getUserEntitlements(user.id);
           if (cancelled) return;
           if (owned) setOwnedSkus(new Set(owned.map(r => r.program_sku)));
         }
