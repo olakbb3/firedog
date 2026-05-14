@@ -3,6 +3,7 @@ import { Calendar, Dumbbell, TrendingUp, Flame } from 'lucide-react';
 import { format, isToday, isYesterday, parseISO } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabaseClient';
+import { WorkoutService } from '@/services/workout.service';
 import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
 import { Badge } from '@/components/ui/badge';
 import { usePersonalRecords } from '@/hooks/usePersonalRecords';
@@ -126,8 +127,8 @@ const ProgressPage = () => {
             .eq('user_id', user.id)
             .order('completion_date', { ascending: false }),
           supabase.from('profiles').select('points').eq('id', user.id).maybeSingle(),
-          supabase.from('workouts').select('id, title'),
-          supabase.from('workout_sections').select('workout_id'),
+          WorkoutService.getWorkoutDefinitions(),
+          WorkoutService.getAllSectionWorkoutIds(),
         ]);
 
         if (cancelled) return;

@@ -10,6 +10,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { CalendarIcon } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/lib/supabaseClient';
+import { WorkoutService } from '@/services/workout.service';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
@@ -127,11 +128,7 @@ const AdminProgramPage = () => {
 
   const fetchWorkouts = async () => {
     if (!programId) return;
-    const { data, error } = await supabase
-      .from('workouts')
-      .select('id, title, description, workout_date, date')
-      .eq('program_id', programId)
-      .order('workout_date', { ascending: false, nullsFirst: false });
+    const { data, error } = await WorkoutService.getProgramWorkoutsForAdmin(programId);
     if (error) {
       toast({ title: 'Operation failed', description: error.message, variant: 'destructive' });
       return;
@@ -194,8 +191,8 @@ const AdminProgramPage = () => {
     setEditingId(workoutId);
 
     const [sectionsRes, exercisesRes] = await Promise.all([
-      supabase.from('workout_sections').select('*').eq('workout_id', workoutId).order('order_index'),
-      supabase.from('exercises').select('*').eq('workout_id', workoutId).order('order_index'),
+      WorkoutService.getSectionsByWorkout(workoutId),
+      WorkoutService.getExercisesByWorkout(workoutId),
     ]);
 
     if (sectionsRes.error) {

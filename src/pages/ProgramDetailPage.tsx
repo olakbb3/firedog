@@ -8,6 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabaseClient';
+import { WorkoutService } from '@/services/workout.service';
 
 interface ProgramInfo {
   id: string;
@@ -72,11 +73,7 @@ const ProgramDetailPage = () => {
       setProgram(prog);
 
       // Fetch workouts for this program
-      const { data: wods } = await supabase
-        .from('workouts')
-        .select('id, title, workout_date')
-        .eq('program_id', prog.id)
-        .order('workout_date', { ascending: false });
+      const { data: wods } = await WorkoutService.getProgramWorkouts(prog.id);
 
       if (!wods) {
         setWorkouts([]);
@@ -86,10 +83,7 @@ const ProgramDetailPage = () => {
 
       // Count sections per workout
       const wodIds = wods.map(w => w.id);
-      const { data: sections } = await supabase
-        .from('workout_sections')
-        .select('workout_id')
-        .in('workout_id', wodIds);
+      const { data: sections } = await WorkoutService.getSectionWorkoutIdsForWorkouts(wodIds);
 
       const sectionCounts: Record<string, number> = {};
       sections?.forEach(s => {
