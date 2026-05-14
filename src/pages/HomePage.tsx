@@ -5,6 +5,7 @@ import { Flame, Zap, ShoppingBag, Instagram } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabaseClient';
+import { WorkoutService } from '@/services/workout.service';
 import WeeklyDateStrip from '@/components/WeeklyDateStrip';
 import NewMonthBanner from '@/components/NewMonthBanner';
 import { format, isSameDay } from 'date-fns';
@@ -66,7 +67,7 @@ const HomePage = () => {
       try {
         const todayLocal = new Date().toLocaleDateString('en-CA');
         const [workoutsRes, challengeRes] = await Promise.all([
-          supabase.from('workouts').select('*').order('workout_date', { ascending: false }),
+          WorkoutService.getWorkouts(),
           supabase
             .from('challenges')
             .select('id, title, description, start_date, end_date')
