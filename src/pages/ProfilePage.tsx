@@ -4,6 +4,7 @@ import { Flame, Dumbbell, Trophy, BookOpen, LogOut, Shield, ChevronRight, Camera
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabaseClient';
+import { ProgramService } from '@/services/program.service';
 import { toast } from '@/hooks/use-toast';
 import firedogLogo from '@/assets/firedog-logo.png';
 import EditProfileModal, { AthleteProfileFields } from '@/components/EditProfileModal';
@@ -78,7 +79,7 @@ const ProfilePage = () => {
 
         const [profileRes, enrolledRes, freeWodRes, challengeRes] = await Promise.all([
           fetchProfile(),
-          supabase.from('user_programs').select('program_sku').eq('user_id', user.id),
+          ProgramService.getUserEntitlements(user.id),
           supabase.from('programs').select('id, title').eq('sku', 'FREE_WOD').maybeSingle(),
           supabase
             .from('challenges')
