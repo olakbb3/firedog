@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabaseClient';
+import { WorkoutService } from '@/services/workout.service';
 import ErrorState from '@/components/ErrorState';
 import freeWodCover from '@/assets/free-wod-cover.jpg';
 import stationStrengthCover from '@/assets/station-strength-cover.jpg';
@@ -61,22 +62,12 @@ const ProgramsPage = () => {
 
         // Fetch today's workout, fallback to most recent
         const today = new Date().toISOString().split('T')[0];
-        const { data: todayWod } = await supabase
-          .from('workouts')
-          .select('id')
-          .eq('workout_date', today)
-          .limit(1)
-          .maybeSingle();
+        const { data: todayWod } = await WorkoutService.getWorkoutIdByDate(today);
         if (cancelled) return;
         if (todayWod) {
           setTodayWorkoutId(todayWod.id);
         } else {
-          const { data: latestWod } = await supabase
-            .from('workouts')
-            .select('id')
-            .order('workout_date', { ascending: false })
-            .limit(1)
-            .maybeSingle();
+          const { data: latestWod } = await WorkoutService.getLatestWorkoutId();
           if (cancelled) return;
           if (latestWod) setTodayWorkoutId(latestWod.id);
         }

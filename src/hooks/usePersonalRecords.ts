@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
+import { WorkoutService } from '@/services/workout.service';
 import {
   buildPRIdSet,
   computePersonalRecords,
@@ -44,7 +45,7 @@ export function usePersonalRecords(userId: string | undefined): UsePersonalRecor
           )
           .eq('user_id', userId)
           .order('completion_date', { ascending: false }),
-        supabase.from('workouts').select('id, title'),
+        WorkoutService.getWorkoutDefinitions(),
       ]);
 
       if (cancelled) return;
