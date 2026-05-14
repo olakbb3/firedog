@@ -32,23 +32,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const claimPendingPurchases = async (userId: string, email: string) => {
     try {
-      const { data: pending } = await supabase
-        .from("pending_purchases")
-        .select("id, program_sku")
-        .eq("processed", false)
-        .ilike("email", email.toLowerCase());
+      const { data: pending } = await ProgramService.getPendingPurchasesForEmail(email);
 
       if (!pending || pending.length === 0) return;
 
       for (const row of pending) {
-        await supabase
-          .from("user_programs")
-          .upsert(
-            { user_id: userId, program_sku: row.program_sku, source: "auto_claim" },
-            { onConflict: "user_id,program_sku" },
-          );
-
-        await supabase.from("pending_purchases").update({ processed: true }).eq("id", row.id);
+        await ProgramService.upsertClaimedEntitlement(userId, row.program_sku);
+        await ProgramService.markPendingPurchaseProcessed(row.id);
       }
 
       toast.success("We found your purchase and unlocked your program! 🔥");
