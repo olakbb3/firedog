@@ -70,3 +70,30 @@ export async function getProfilePoints(
 
   return { data: (data?.points ?? null) as number | null, error: null };
 }
+
+/**
+ * Hydrates the profile fields used by ProfilePage with a defensive fallback:
+ * if the `preferred_unit` column is unavailable, retry without it.
+ * Returns the raw PostgREST-shaped result ({ data, error }) so callers can
+ * preserve their existing error/null semantics.
+ */
+export async function getProfileWithUnitFallback(userId: string) {
+  const baseCols =
+    'full_name, points, completed_workouts, avatar_url, weight_lbs, height_inches, gym_affiliation, fd_affiliation, fd_career_volunteer, fd_rank, rank';
+
+  let profileRes = await supabase
+    .from('profiles')
+    .select(`${baseCols}, preferred_unit`)
+    .eq('id', userId)
+    .maybeSingle();
+
+  if (profileRes.error && /preferred_unit/i.test(profileRes.error.message || '')) {
+    profileRes = await supabase
+      .from('profiles')
+      .select(baseCols)
+      .eq('id', userId)
+      .maybeSingle();
+  }
+
+  return profileRes;
+}
