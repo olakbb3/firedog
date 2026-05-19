@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabaseClient';
 import { ProgramService } from '@/services/program.service';
+import { WorkoutService } from '@/services/workout.service';
 import { StorageService } from '@/services/storage.service';
 import * as ProfileService from '@/services/profile.service';
 import { toast } from '@/hooks/use-toast';
@@ -82,7 +83,7 @@ const ProfilePage = () => {
         const [profileRes, enrolledRes, freeWodRes, challengeRes] = await Promise.all([
           fetchProfile(),
           ProgramService.getUserEntitlements(user.id),
-          supabase.from('programs').select('id, title').eq('sku', 'FREE_WOD').maybeSingle(),
+          ProgramService.getProgramBySku('FREE_WOD'),
           supabase
             .from('challenges')
             .select('id, start_date')
@@ -101,7 +102,7 @@ const ProfilePage = () => {
         let activePrograms: ProgramRow[] = [];
         const enrolledSkus = (enrolledRes.data || []).map(r => r.program_sku).filter(Boolean);
         if (enrolledSkus.length > 0) {
-          const { data } = await supabase.from('programs').select('id, title').in('sku', enrolledSkus);
+          const { data } = await ProgramService.getProgramsBySkus(enrolledSkus);
           if (data) activePrograms = data;
         }
 
@@ -117,7 +118,7 @@ const ProfilePage = () => {
           return;
         }
         const [sectionsRes, logsRes] = await Promise.all([
-          supabase.from('workout_sections').select('id, section_name').eq('workout_id', challenge.id),
+          WorkoutService.getSectionIdNamesByWorkout(challenge.id),
           supabase.rpc('get_leaderboard_logs', {
             _workout_id: challenge.id,
             _section_id: null,
