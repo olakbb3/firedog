@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabaseClient';
 import { ProgramService } from '@/services/program.service';
+import { StorageService } from '@/services/storage.service';
+import * as ProfileService from '@/services/profile.service';
 import { toast } from '@/hooks/use-toast';
 import firedogLogo from '@/assets/firedog-logo.png';
 import EditProfileModal, { AthleteProfileFields } from '@/components/EditProfileModal';
