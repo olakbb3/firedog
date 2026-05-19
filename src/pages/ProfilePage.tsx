@@ -117,7 +117,7 @@ const ProfilePage = () => {
           return;
         }
         const [sectionsRes, logsRes] = await Promise.all([
-          supabase.from('workout_sections').select('id, section_name').eq('workout_id', challenge.id),
+          WorkoutService.getSectionIdNamesByWorkout(challenge.id),
           supabase.rpc('get_leaderboard_logs', {
             _workout_id: challenge.id,
             _section_id: null,
