@@ -8,6 +8,7 @@ import { ProgramService } from '@/services/program.service';
 import { WorkoutService } from '@/services/workout.service';
 import { StorageService } from '@/services/storage.service';
 import * as ProfileService from '@/services/profile.service';
+import { ChallengeService } from '@/services/challenge.service';
 import { toast } from '@/hooks/use-toast';
 import firedogLogo from '@/assets/firedog-logo.png';
 import EditProfileModal, { AthleteProfileFields } from '@/components/EditProfileModal';
@@ -60,39 +61,11 @@ const ProfilePage = () => {
       setError(null);
       setLeaderBadgeLoading(true);
       try {
-        const baseCols = 'full_name, points, completed_workouts, avatar_url, weight_lbs, height_inches, gym_affiliation, fd_affiliation, fd_career_volunteer, fd_rank, rank';
-        const today = new Date();
-        const todayStr = today.toLocaleDateString('en-CA');
-        const monthStart = new Date(today.getFullYear(), today.getMonth(), 1).toLocaleDateString('en-CA');
-        const fetchProfile = async () => {
-          let profileRes = await supabase
-            .from('profiles')
-            .select(`${baseCols}, preferred_unit`)
-            .eq('id', user.id)
-            .maybeSingle();
-          if (profileRes.error && /preferred_unit/i.test(profileRes.error.message || '')) {
-            profileRes = await supabase
-              .from('profiles')
-              .select(baseCols)
-              .eq('id', user.id)
-              .maybeSingle();
-          }
-          return profileRes;
-        };
-
         const [profileRes, enrolledRes, freeWodRes, challengeRes] = await Promise.all([
-          fetchProfile(),
+          ProfileService.getProfileWithUnitFallback(user.id),
           ProgramService.getUserEntitlements(user.id),
           ProgramService.getProgramBySku('FREE_WOD'),
-          supabase
-            .from('challenges')
-            .select('id, start_date')
-            .eq('title', 'FIREDOG TOTAL')
-            .lte('start_date', monthStart)
-            .gte('end_date', todayStr)
-            .order('start_date', { ascending: false })
-            .limit(1)
-            .maybeSingle(),
+          ChallengeService.getActiveChallenges(),
         ]);
 
         if (cancelled) return;
