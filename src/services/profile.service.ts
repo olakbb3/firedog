@@ -54,3 +54,19 @@ export async function updateProfile(
 
   return { data: data as UserProfile, error: null };
 }
+
+export async function getProfilePoints(
+  userId: string
+): Promise<ServiceResult<number | null>> {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('points')
+    .eq('id', userId)
+    .single();
+
+  if (error) {
+    return { data: null, error: error.message };
+  }
+
+  return { data: (data?.points ?? null) as number | null, error: null };
+}
