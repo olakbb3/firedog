@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabaseClient';
 import { ProgramService } from '@/services/program.service';
+import { WorkoutService } from '@/services/workout.service';
 import { StorageService } from '@/services/storage.service';
 import * as ProfileService from '@/services/profile.service';
 import { toast } from '@/hooks/use-toast';
