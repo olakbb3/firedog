@@ -169,27 +169,15 @@ const ProfilePage = () => {
 
     setUploading(true);
     try {
-      const fileExt = file.name.split('.').pop();
-      const filePath = `${user.id}/avatar.${fileExt}`;
+      const avatarUrl = await StorageService.uploadAvatar(user.id, file);
 
-      const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(filePath, file, { upsert: true });
+      const { error: updateError } = await ProfileService.updateProfile(user.id, {
+        avatar_url: avatarUrl,
+      });
 
-      if (uploadError) throw uploadError;
+      if (updateError) throw new Error(updateError);
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(filePath);
-
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ avatar_url: publicUrl })
-        .eq('id', user.id);
-
-      if (updateError) throw updateError;
-
-      setProfile(prev => prev ? { ...prev, avatar_url: publicUrl } : prev);
+      setProfile(prev => prev ? { ...prev, avatar_url: avatarUrl } : prev);
       toast({ title: 'Avatar updated!' });
     } catch (err: any) {
       toast({ title: 'Upload failed', description: err.message, variant: 'destructive' });
