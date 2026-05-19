@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Flame, Dumbbell, Trophy, BookOpen, LogOut, Shield, ChevronRight, Camera, Pencil, FileText, ExternalLink, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/lib/supabaseClient';
+import { LeaderboardService } from '@/services/leaderboard.service';
 import { ProgramService } from '@/services/program.service';
 import { WorkoutService } from '@/services/workout.service';
 import { StorageService } from '@/services/storage.service';
