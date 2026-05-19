@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
+import { LeaderboardService } from '@/services/leaderboard.service';
 import type { WorkoutSection } from '@/types/index';
 
 export interface AthleteAffiliationLite {
@@ -82,7 +83,7 @@ export const useLeaderboard = (workoutId: string | undefined, sections: WorkoutS
         return;
       }
 
-      const { data: logs } = await supabase.rpc('get_leaderboard_logs', {
+      const { data: logs } = await LeaderboardService.getLeaderboardLogs({
         _workout_id: firedogChallenge.id,
         _section_id: null,
         _from: null,
@@ -195,7 +196,7 @@ export const useLeaderboard = (workoutId: string | undefined, sections: WorkoutS
       const todayEnd = new Date();
       todayEnd.setHours(23, 59, 59, 999);
 
-      const fetchLogsForSection = (sectionId: string | null) => supabase.rpc('get_leaderboard_logs', {
+      const fetchLogsForSection = (sectionId: string | null) => LeaderboardService.getLeaderboardLogs({
         _workout_id: workoutId,
         _section_id: sectionId,
         _from: todayStart.toISOString(),
