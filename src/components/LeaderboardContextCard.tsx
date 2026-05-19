@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Trophy } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/lib/supabaseClient';
+import { LeaderboardService } from '@/services/leaderboard.service';
 
 interface RankInfo {
   rank: number | null;
@@ -35,7 +35,7 @@ export default function LeaderboardContextCard() {
       const dayEnd = new Date(dayStart);
       dayEnd.setDate(dayEnd.getDate() + 1);
 
-      const { data, error } = await supabase.rpc('get_today_log_counts', {
+      const { data, error } = await LeaderboardService.getTodayLogCounts({
         _from: dayStart.toISOString(),
         _to: dayEnd.toISOString(),
       });

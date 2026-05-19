@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Archive, ChevronRight } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
+import { LeaderboardService } from '@/services/leaderboard.service';
 import { WorkoutService } from '@/services/workout.service';
 import type { CrewEntry } from '@/hooks/useLeaderboard';
 import type { WorkoutSection } from '@/types/index';
@@ -68,7 +69,7 @@ const FiredogTotalArchive = () => {
     (async () => {
       const [sectionsRes, logsRes] = await Promise.all([
         WorkoutService.getSectionsByWorkout(selected.id),
-        supabase.rpc('get_leaderboard_logs', {
+        LeaderboardService.getLeaderboardLogs({
           _workout_id: selected.id,
           _section_id: null,
           _from: null,
