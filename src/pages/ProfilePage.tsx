@@ -82,7 +82,7 @@ const ProfilePage = () => {
         const [profileRes, enrolledRes, freeWodRes, challengeRes] = await Promise.all([
           fetchProfile(),
           ProgramService.getUserEntitlements(user.id),
-          supabase.from('programs').select('id, title').eq('sku', 'FREE_WOD').maybeSingle(),
+          ProgramService.getProgramBySku('FREE_WOD'),
           supabase
             .from('challenges')
             .select('id, start_date')
@@ -101,7 +101,7 @@ const ProfilePage = () => {
         let activePrograms: ProgramRow[] = [];
         const enrolledSkus = (enrolledRes.data || []).map(r => r.program_sku).filter(Boolean);
         if (enrolledSkus.length > 0) {
-          const { data } = await supabase.from('programs').select('id, title').in('sku', enrolledSkus);
+          const { data } = await ProgramService.getProgramsBySkus(enrolledSkus);
           if (data) activePrograms = data;
         }
 
