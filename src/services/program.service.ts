@@ -41,6 +41,29 @@ export const ProgramService = {
       .maybeSingle();
   },
 
+  /**
+   * Fetches a single program by SKU.
+   * Used by: ProfilePage (FREE_WOD lookup).
+   */
+  getProgramBySku(sku: string) {
+    return supabase
+      .from(TABLE_PROGRAMS)
+      .select('id, title')
+      .eq('sku', sku)
+      .maybeSingle();
+  },
+
+  /**
+   * Fetches all programs matching the given SKUs.
+   * Used by: ProfilePage (enrolled programs).
+   */
+  getProgramsBySkus(skus: string[]) {
+    return supabase
+      .from(TABLE_PROGRAMS)
+      .select('id, title')
+      .in('sku', skus);
+  },
+
   // ─── ENTITLEMENT QUERIES ──────────────────────────────────────────────────
 
   /**
