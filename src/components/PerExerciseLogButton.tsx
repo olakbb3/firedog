@@ -12,12 +12,11 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/lib/supabaseClient';
-import { createWorkoutLog } from '@/services/workoutLog.service';
+import { WorkoutLogService } from '@/services/workoutLog.service';
 import { buildWorkoutLogPayload } from '@/services/workoutLogFactory';
 import { parseWeightToLbs, useUnitPreference } from '@/lib/units';
 import type { ExerciseRow, SectionResultType } from '@/types/index';
-import { evaluatePRBatch, PR_LOG_COLUMNS, type PRCandidate, type PRLog } from '@/utils/personalRecords';
+import { evaluatePRBatch, type PRCandidate, type PRLog } from '@/utils/personalRecords';
 
 interface Props {
   workoutId: string;
@@ -60,16 +59,8 @@ export default function PerExerciseLogButton({ workoutId, sectionId, sectionName
   // Load existing logs for today
   useEffect(() => {
     if (!user || !sectionId) return;
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
 
-    supabase
-      .from('workout_logs')
-      .select('exercise_name, notes, weight, reps, time, completion_date')
-      .eq('workout_id', workoutId)
-      .eq('workout_section_id', sectionId)
-      .eq('user_id', user.id)
-      .gte('completion_date', todayStart.toISOString())
+    WorkoutLogService.getTodayLogsForSection(user.id, workoutId, sectionId)
       .then(({ data }) => {
         if (data && data.length > 0) {
           const logged = new Set<string>();
@@ -122,18 +113,10 @@ export default function PerExerciseLogButton({ workoutId, sectionId, sectionName
     setSubmitting(true);
 
     try {
-      // Day window for "already logged today?" check
-      const dayStart = new Date();
-      dayStart.setHours(0, 0, 0, 0);
-      const dayEnd = new Date(dayStart);
-      dayEnd.setDate(dayEnd.getDate() + 1);
       const completionDateIso = new Date().toISOString();
 
       // STEP 1: Fetch ALL prior logs for this user BEFORE insert (no section filter).
-      const { data: allPriorLogs } = await supabase
-        .from('workout_logs')
-        .select(PR_LOG_COLUMNS)
-        .eq('user_id', user.id);
+      const { data: allPriorLogs } = await WorkoutLogService.getPriorLogsForPR(user.id);
 
       const priorLogs: PRLog[] = (allPriorLogs ?? []) as PRLog[];
 
@@ -159,16 +142,7 @@ export default function PerExerciseLogButton({ workoutId, sectionId, sectionName
       // STEP 2: Evaluate PRs against the dataset BEFORE the new logs exist.
       const { hasPR, prItems } = evaluatePRBatch(candidates, priorLogs);
 
-      // STEP 3: Insert/update each exercise log.
-      const { data: existingLogs, error: findErr } = await supabase
-        .from('workout_logs')
-        .select('id, exercise_name, notes')
-        .eq('user_id', user.id)
-        .eq('workout_section_id', sectionId)
-        .gte('completion_date', dayStart.toISOString())
-        .lt('completion_date', dayEnd.toISOString());
-      if (findErr) throw findErr;
-
+      // STEP 3: Upsert each exercise log via the service (idempotency handled centrally).
       for (const ex of entries) {
         const value = (inputValues[ex.id] || '').trim();
         const numVal = parseFloat(value);
@@ -203,27 +177,13 @@ export default function PerExerciseLogButton({ workoutId, sectionId, sectionName
           notes: ex.notes || null,
         });
 
-        // Backward-compat: older logs stored the exercise name in `notes`
-        const existing = existingLogs?.find(
-          (l: any) => (l.exercise_name || l.notes) === ex.exercise_name
-        );
-
-        if (existing?.id && !isFiredogTotal) {
-          const { error: updateErr } = await supabase
-            .from('workout_logs')
-            .update(payload)
-            .eq('id', existing.id)
-            .eq('user_id', user.id);
-          if (updateErr) throw updateErr;
-        } else {
-          const { data, error: insertErr } = await createWorkoutLog(payload);
-          const logId = data?.id;
-          if (insertErr) {
-            console.error('Workout log insert failed:', insertErr);
-            throw new Error(insertErr);
-          }
+        const { error: writeErr } = await WorkoutLogService.upsertLog(payload);
+        if (writeErr) {
+          console.error('Workout log upsert failed:', writeErr);
+          throw new Error(writeErr);
         }
       }
+
 
       // Only mark as logged in the UI AFTER the database confirms success
       setLoggedExercises(prev => {
