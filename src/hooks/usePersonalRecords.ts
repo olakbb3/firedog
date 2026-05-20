@@ -38,13 +38,7 @@ export function usePersonalRecords(userId: string | undefined): UsePersonalRecor
 
     (async () => {
       const [logsRes, workoutsRes] = await Promise.all([
-        supabase
-          .from('workout_logs')
-          .select(
-            'id, workout_id, workout_section_id, movement_id, movements(id, name, category), exercise_name, result_type, weight, time, rounds, reps, calories, meters, is_rx, completion_date'
-          )
-          .eq('user_id', userId)
-          .order('completion_date', { ascending: false }),
+        WorkoutLogService.getHistoryForUser(userId),
         WorkoutService.getWorkoutDefinitions(),
       ]);
 
