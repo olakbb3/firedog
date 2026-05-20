@@ -12,12 +12,11 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/lib/supabaseClient';
-import { createWorkoutLog } from '@/services/workoutLog.service';
+import { WorkoutLogService } from '@/services/workoutLog.service';
 import { buildWorkoutLogPayload } from '@/services/workoutLogFactory';
 import { parseWeightToLbs, useUnitPreference } from '@/lib/units';
 import type { ExerciseRow, SectionResultType } from '@/types/index';
-import { evaluatePRBatch, PR_LOG_COLUMNS, type PRCandidate, type PRLog } from '@/utils/personalRecords';
+import { evaluatePRBatch, type PRCandidate, type PRLog } from '@/utils/personalRecords';
 
 interface Props {
   workoutId: string;
