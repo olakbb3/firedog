@@ -85,11 +85,7 @@ const ProgramDetailPage = () => {
       // Check completed logs for current user
       let completedSet = new Set<string>();
       if (user) {
-        const { data: logs } = await supabase
-          .from('workout_logs')
-          .select('workout_id')
-          .eq('user_id', user.id)
-          .in('workout_id', wodIds);
+        const { data: logs } = await WorkoutLogService.getLogsForProgram(user.id, wodIds);
         logs?.forEach(l => completedSet.add(l.workout_id));
       }
 
