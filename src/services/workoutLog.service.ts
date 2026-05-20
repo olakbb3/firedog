@@ -69,6 +69,21 @@ function getLogsForProgram(userId: string, wodIds: string[]) {
  * Fetch prior logs scoped to PR_LOG_COLUMNS for PR evaluation.
  * Centralized so all write surfaces share the same scan shape.
  */
+/**
+ * Fetch today's logs for a given workout section (used to render completed state).
+ */
+function getTodayLogsForSection(userId: string, workoutId: string, sectionId: string) {
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  return supabase
+    .from('workout_logs')
+    .select('exercise_name, notes, weight, reps, time, completion_date')
+    .eq('workout_id', workoutId)
+    .eq('workout_section_id', sectionId)
+    .eq('user_id', userId)
+    .gte('completion_date', todayStart.toISOString());
+}
+
 async function getPriorLogsForPR(userId: string) {
   return supabase
     .from('workout_logs')
