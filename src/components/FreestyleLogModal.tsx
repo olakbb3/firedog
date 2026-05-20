@@ -19,13 +19,11 @@ import {
 } from '@/components/ui/select';
 import dalmatianReward from '@/assets/dalmatian-reward.jpeg';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/lib/supabaseClient';
-import { createWorkoutLog } from '@/services/workoutLog.service';
+import { WorkoutLogService } from '@/services/workoutLog.service';
 import { buildWorkoutLogPayload } from '@/services/workoutLogFactory';
 import { parseWeightToLbs, useUnitPreference } from '@/lib/units';
 import {
   evaluatePRBatch,
-  PR_LOG_COLUMNS,
   type PRLog,
 } from '@/utils/personalRecords';
 
@@ -183,10 +181,7 @@ export default function FreestyleLogModal({ open, onOpenChange, onLogged }: Prop
       });
 
       // Fetch prior logs for PR evaluation BEFORE insert
-      const { data: priorRows } = await supabase
-        .from('workout_logs')
-        .select(PR_LOG_COLUMNS)
-        .eq('user_id', user.id);
+      const { data: priorRows } = await WorkoutLogService.getPriorLogsForPR(user.id);
       const priorLogs: PRLog[] = (priorRows ?? []) as unknown as PRLog[];
 
       const candidate: PRLog = {
@@ -207,10 +202,10 @@ export default function FreestyleLogModal({ open, onOpenChange, onLogged }: Prop
         priorLogs
       );
 
-      const { data, error: insertErr } = await createWorkoutLog(payload);
+      const { data, error: insertErr } = await WorkoutLogService.upsertLog(payload);
       const logId = data?.id;
       if (insertErr) {
-        console.error('Workout log insert failed:', insertErr);
+        console.error('Workout log upsert failed:', insertErr);
         throw new Error(insertErr);
       }
 
