@@ -7,8 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/lib/supabaseClient';
 import { WorkoutService } from '@/services/workout.service';
+import { WorkoutLogService } from '@/services/workoutLog.service';
 import { ProgramService } from '@/services/program.service';
 
 interface ProgramInfo {
