@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { supabase } from '@/lib/supabaseClient';
+import { WorkoutLogService } from '@/services/workoutLog.service';
 import { WorkoutService } from '@/services/workout.service';
 import {
   buildPRIdSet,
