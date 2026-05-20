@@ -59,16 +59,8 @@ export default function PerExerciseLogButton({ workoutId, sectionId, sectionName
   // Load existing logs for today
   useEffect(() => {
     if (!user || !sectionId) return;
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
 
-    supabase
-      .from('workout_logs')
-      .select('exercise_name, notes, weight, reps, time, completion_date')
-      .eq('workout_id', workoutId)
-      .eq('workout_section_id', sectionId)
-      .eq('user_id', user.id)
-      .gte('completion_date', todayStart.toISOString())
+    WorkoutLogService.getTodayLogsForSection(user.id, workoutId, sectionId)
       .then(({ data }) => {
         if (data && data.length > 0) {
           const logged = new Set<string>();
