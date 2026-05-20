@@ -69,40 +69,56 @@ ALTER TABLE public.exercises ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.challenges ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Authenticated users can read workouts" ON public.workouts;
+DROP POLICY IF EXISTS "Public can read workouts" ON public.workouts;
 DROP POLICY IF EXISTS "Admins can insert workouts" ON public.workouts;
 DROP POLICY IF EXISTS "Admins can update workouts" ON public.workouts;
 DROP POLICY IF EXISTS "Admins can delete workouts" ON public.workouts;
-CREATE POLICY "Authenticated users can read workouts" ON public.workouts FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Public can read workouts" ON public.workouts FOR SELECT TO anon, authenticated USING (true);
 CREATE POLICY "Admins can insert workouts" ON public.workouts FOR INSERT TO authenticated WITH CHECK (public.has_role(auth.uid(), 'admin'));
 CREATE POLICY "Admins can update workouts" ON public.workouts FOR UPDATE TO authenticated USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));
 CREATE POLICY "Admins can delete workouts" ON public.workouts FOR DELETE TO authenticated USING (public.has_role(auth.uid(), 'admin'));
 
 DROP POLICY IF EXISTS "Authenticated users can read workout sections" ON public.workout_sections;
+DROP POLICY IF EXISTS "Public can read workout sections" ON public.workout_sections;
 DROP POLICY IF EXISTS "Admins can insert workout sections" ON public.workout_sections;
 DROP POLICY IF EXISTS "Admins can update workout sections" ON public.workout_sections;
 DROP POLICY IF EXISTS "Admins can delete workout sections" ON public.workout_sections;
-CREATE POLICY "Authenticated users can read workout sections" ON public.workout_sections FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Public can read workout sections" ON public.workout_sections FOR SELECT TO anon, authenticated USING (true);
 CREATE POLICY "Admins can insert workout sections" ON public.workout_sections FOR INSERT TO authenticated WITH CHECK (public.has_role(auth.uid(), 'admin'));
 CREATE POLICY "Admins can update workout sections" ON public.workout_sections FOR UPDATE TO authenticated USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));
 CREATE POLICY "Admins can delete workout sections" ON public.workout_sections FOR DELETE TO authenticated USING (public.has_role(auth.uid(), 'admin'));
 
 DROP POLICY IF EXISTS "Authenticated users can read exercises" ON public.exercises;
+DROP POLICY IF EXISTS "Public can read exercises" ON public.exercises;
 DROP POLICY IF EXISTS "Admins can insert exercises" ON public.exercises;
 DROP POLICY IF EXISTS "Admins can update exercises" ON public.exercises;
 DROP POLICY IF EXISTS "Admins can delete exercises" ON public.exercises;
-CREATE POLICY "Authenticated users can read exercises" ON public.exercises FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Public can read exercises" ON public.exercises FOR SELECT TO anon, authenticated USING (true);
 CREATE POLICY "Admins can insert exercises" ON public.exercises FOR INSERT TO authenticated WITH CHECK (public.has_role(auth.uid(), 'admin'));
 CREATE POLICY "Admins can update exercises" ON public.exercises FOR UPDATE TO authenticated USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));
 CREATE POLICY "Admins can delete exercises" ON public.exercises FOR DELETE TO authenticated USING (public.has_role(auth.uid(), 'admin'));
 
 DROP POLICY IF EXISTS "Authenticated users can read challenges" ON public.challenges;
+DROP POLICY IF EXISTS "Public can read challenges" ON public.challenges;
 DROP POLICY IF EXISTS "Admins can insert challenges" ON public.challenges;
 DROP POLICY IF EXISTS "Admins can update challenges" ON public.challenges;
 DROP POLICY IF EXISTS "Admins can delete challenges" ON public.challenges;
-CREATE POLICY "Authenticated users can read challenges" ON public.challenges FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Public can read challenges" ON public.challenges FOR SELECT TO anon, authenticated USING (true);
 CREATE POLICY "Admins can insert challenges" ON public.challenges FOR INSERT TO authenticated WITH CHECK (public.has_role(auth.uid(), 'admin'));
 CREATE POLICY "Admins can update challenges" ON public.challenges FOR UPDATE TO authenticated USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));
 CREATE POLICY "Admins can delete challenges" ON public.challenges FOR DELETE TO authenticated USING (public.has_role(auth.uid(), 'admin'));
+
+-- Programs catalog: publicly readable (window-shopping). Writes admin-only.
+ALTER TABLE public.programs ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Authenticated users can read programs" ON public.programs;
+DROP POLICY IF EXISTS "Public can read programs" ON public.programs;
+DROP POLICY IF EXISTS "Admins can insert programs" ON public.programs;
+DROP POLICY IF EXISTS "Admins can update programs" ON public.programs;
+DROP POLICY IF EXISTS "Admins can delete programs" ON public.programs;
+CREATE POLICY "Public can read programs" ON public.programs FOR SELECT TO anon, authenticated USING (true);
+CREATE POLICY "Admins can insert programs" ON public.programs FOR INSERT TO authenticated WITH CHECK (public.has_role(auth.uid(), 'admin'));
+CREATE POLICY "Admins can update programs" ON public.programs FOR UPDATE TO authenticated USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));
+CREATE POLICY "Admins can delete programs" ON public.programs FOR DELETE TO authenticated USING (public.has_role(auth.uid(), 'admin'));
 
 -- Workout logs: private by default. Users can manage only their own raw log rows;
 -- leaderboard UIs use the limited SECURITY DEFINER RPCs below instead of broad table reads.
