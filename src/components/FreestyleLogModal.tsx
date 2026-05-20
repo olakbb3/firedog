@@ -24,7 +24,6 @@ import { buildWorkoutLogPayload } from '@/services/workoutLogFactory';
 import { parseWeightToLbs, useUnitPreference } from '@/lib/units';
 import {
   evaluatePRBatch,
-  PR_LOG_COLUMNS,
   type PRLog,
 } from '@/utils/personalRecords';
 
