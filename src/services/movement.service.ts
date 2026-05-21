@@ -131,6 +131,7 @@ export async function createMovementAlias(params: {
 export const MovementService = {
   normalizeMovementKey,
   parseMovementMetadata,
+  getAllMovements,
   getCanonicalMovements,
   findMovementByAlias,
   resolveCanonicalMovement,
