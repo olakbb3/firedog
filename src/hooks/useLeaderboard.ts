@@ -229,10 +229,8 @@ export const useLeaderboard = (workoutId: string | undefined, sections: WorkoutS
         });
 
         const userIds = Array.from(new Set(sorted.map(log => log.user_id))).filter(Boolean);
-        const { data: profiles } = await supabase
-          .from('profiles')
-          .select('id, full_name')
-          .in('id', userIds);
+        const { data: profiles } = await ProfileService.getProfilesByIds(userIds);
+
 
         const nameMap = new Map<string, string>(
           (profiles || []).map(p => [
