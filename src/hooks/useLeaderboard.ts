@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabaseClient';
+import * as ProfileService from '@/services/profile.service';
+import { ChallengeService } from '@/services/challenge.service';
 import { LeaderboardService } from '@/services/leaderboard.service';
+
 import type { WorkoutSection } from '@/types/index';
 
 export interface AthleteAffiliationLite {
