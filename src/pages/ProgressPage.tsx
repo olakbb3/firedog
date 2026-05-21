@@ -2,8 +2,10 @@ import { useState, useEffect, useMemo } from 'react';
 import { Calendar, Dumbbell, TrendingUp, Flame } from 'lucide-react';
 import { format, isToday, isYesterday, parseISO } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/lib/supabaseClient';
+import { WorkoutLogService } from '@/services/workoutLog.service';
+import * as ProfileService from '@/services/profile.service';
 import { WorkoutService } from '@/services/workout.service';
+
 import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
 import { Badge } from '@/components/ui/badge';
 import { usePersonalRecords } from '@/hooks/usePersonalRecords';
@@ -121,12 +123,8 @@ const ProgressPage = () => {
       setLoading(true);
       try {
         const [logsRes, profileRes, workoutsRes, sectionsRes] = await Promise.all([
-          supabase
-            .from('workout_logs')
-            .select('id, workout_id, workout_section_id, movement_id, movements(id, name, category), exercise_name, result_type, reps, rounds, weight, calories, meters, time, is_rx, notes, completion_date')
-            .eq('user_id', user.id)
-            .order('completion_date', { ascending: false }),
-          supabase.from('profiles').select('points').eq('id', user.id).maybeSingle(),
+          WorkoutLogService.getLogsForProgress(user.id),
+          ProfileService.getProfilePoints(user.id),
           WorkoutService.getWorkoutDefinitions(),
           WorkoutService.getAllSectionWorkoutIds(),
         ]);
@@ -135,7 +133,8 @@ const ProgressPage = () => {
 
         if (logsRes.error) throw logsRes.error;
         if (logsRes.data) setLogs(logsRes.data as WorkoutLog[]);
-        if (profileRes.data) setPoints(profileRes.data.points ?? 0);
+        if (!profileRes.error) setPoints(profileRes.data ?? 0);
+
         if (workoutsRes.data) {
           const map: Record<string, string> = {};
           workoutsRes.data.forEach((w: WorkoutBasic) => { map[w.id] = w.title; });

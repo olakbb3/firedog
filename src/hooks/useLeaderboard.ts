@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabaseClient';
+import * as ProfileService from '@/services/profile.service';
+import { ChallengeService } from '@/services/challenge.service';
 import { LeaderboardService } from '@/services/leaderboard.service';
+
 import type { WorkoutSection } from '@/types/index';
 
 export interface AthleteAffiliationLite {
@@ -67,15 +69,8 @@ export const useLeaderboard = (workoutId: string | undefined, sections: WorkoutS
       const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
       const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
 
-      const { data: firedogChallenge } = await supabase
-        .from('challenges')
-        .select('id')
-        .ilike('title', 'FIREDOG TOTAL')
-        .lte('start_date', monthStart.toLocaleDateString('en-CA'))
-        .gte('end_date', new Date(now.getFullYear(), now.getMonth(), now.getDate()).toLocaleDateString('en-CA'))
-        .order('start_date', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+      const { data: firedogChallenge } = await ChallengeService.getCurrentFiredogTotalChallenge();
+
 
       if (!firedogChallenge) {
         setCrew([]);
@@ -234,10 +229,8 @@ export const useLeaderboard = (workoutId: string | undefined, sections: WorkoutS
         });
 
         const userIds = Array.from(new Set(sorted.map(log => log.user_id))).filter(Boolean);
-        const { data: profiles } = await supabase
-          .from('profiles')
-          .select('id, full_name')
-          .in('id', userIds);
+        const { data: profiles } = await ProfileService.getProfilesByIds(userIds);
+
 
         const nameMap = new Map<string, string>(
           (profiles || []).map(p => [

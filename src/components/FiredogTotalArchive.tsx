@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Archive, ChevronRight } from 'lucide-react';
-import { supabase } from '@/lib/supabaseClient';
+import { ChallengeService } from '@/services/challenge.service';
 import { LeaderboardService } from '@/services/leaderboard.service';
+
 import { WorkoutService } from '@/services/workout.service';
 import type { CrewEntry } from '@/hooks/useLeaderboard';
 import type { WorkoutSection } from '@/types/index';
@@ -53,15 +54,10 @@ const FiredogTotalArchive = () => {
   const [details, setDetails] = useState<{ logs: any[]; sections: WorkoutSection[]; crew: CrewEntry[] }>({ logs: [], sections: [], crew: [] });
 
   useEffect(() => {
-    const today = new Date().toLocaleDateString('en-CA');
-    supabase
-      .from('challenges')
-      .select('id, title, description, start_date, end_date')
-      .ilike('title', 'FIREDOG TOTAL')
-      .lt('end_date', today)
-      .order('end_date', { ascending: false })
+    ChallengeService.getPastFiredogTotalChallenges()
       .then(({ data }) => setMonths((data as ChallengeMonth[]) || []));
   }, []);
+
 
   useEffect(() => {
     if (!selected) return;

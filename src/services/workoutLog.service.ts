@@ -167,13 +167,27 @@ async function upsertLog(
   return { data: { id: (data as { id: string }).id }, error: null };
 }
 
+/**
+ * Fetch a user's full workout_logs history for the Progress page.
+ * Shape preserves the exact columns/joins the page expects.
+ */
+function getLogsForProgress(userId: string) {
+  return supabase
+    .from('workout_logs')
+    .select('id, workout_id, workout_section_id, movement_id, movements(id, name, category), exercise_name, result_type, reps, rounds, weight, calories, meters, time, is_rx, notes, completion_date')
+    .eq('user_id', userId)
+    .order('completion_date', { ascending: false });
+}
+
 export const WorkoutLogService = {
   createWorkoutLog,
   getHistoryForUser,
   getLogsForProgram,
+  getLogsForProgress,
   getPriorLogsForPR,
   getSectionHistory,
   getTodayLogsForSection,
   upsertLog,
 };
+
 
