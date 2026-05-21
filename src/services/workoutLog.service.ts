@@ -172,6 +172,7 @@ export const WorkoutLogService = {
   getHistoryForUser,
   getLogsForProgram,
   getPriorLogsForPR,
+  getSectionHistory,
   getTodayLogsForSection,
   upsertLog,
 };
