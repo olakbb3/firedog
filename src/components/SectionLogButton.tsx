@@ -98,18 +98,11 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName, re
 
   useEffect(() => {
     if (!user || !sectionId) return;
-    supabase
-      .from('workout_logs')
-      .select('result_type, is_rx, time, rounds, reps, calories, meters, weight, notes, completion_date')
-      .eq('workout_id', workoutId)
-      .eq('workout_section_id', sectionId)
-      .eq('user_id', user.id)
-      .order('completion_date', { ascending: false })
-      .then(({ data }) => {
-        if (data && data.length > 0) {
-          setLoggedResults(data as SectionLogEntry[]);
-        }
-      });
+    WorkoutLogService.getSectionHistory(user.id, workoutId, sectionId).then(({ data }) => {
+      if (data && data.length > 0) {
+        setLoggedResults(data as SectionLogEntry[]);
+      }
+    });
   }, [user, workoutId, sectionId]);
 
   const resetModal = () => {
