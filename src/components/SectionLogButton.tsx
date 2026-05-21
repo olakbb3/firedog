@@ -286,18 +286,9 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName, re
     };
 
     try {
-      // Check-then-save: find an existing log for this user/section on this date
-      const dayStart = new Date(completionDate);
-      dayStart.setHours(0, 0, 0, 0);
-      const dayEnd = new Date(dayStart);
-      dayEnd.setDate(dayEnd.getDate() + 1);
-
       // STEP 1: Fetch ALL prior logs for this user BEFORE insert.
       // No filtering by section/workout; PR engine handles grouping.
-      const { data: allPriorLogs } = await supabase
-        .from('workout_logs')
-        .select(PR_LOG_COLUMNS)
-        .eq('user_id', user.id);
+      const { data: allPriorLogs } = await WorkoutLogService.getPriorLogsForPR(user.id);
 
       const priorLogs: PRLog[] = (allPriorLogs ?? []) as PRLog[];
 
@@ -319,32 +310,11 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName, re
         priorLogs
       );
 
-      // STEP 3: Insert the new log. Firedog Total logs are never overwritten.
-      const { data: existing, error: findErr } = await supabase
-        .from('workout_logs')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('workout_section_id', sectionId)
-        .gte('completion_date', dayStart.toISOString())
-        .lt('completion_date', dayEnd.toISOString())
-        .limit(1)
-        .maybeSingle();
-      if (findErr) throw findErr;
-
-      if (existing?.id && !isFiredogTotal) {
-        const { error: updateErr } = await supabase
-          .from('workout_logs')
-          .update(payload)
-          .eq('id', existing.id)
-          .eq('user_id', user.id);
-        if (updateErr) throw updateErr;
-      } else {
-        const { data: insData, error: insertErr } = await createWorkoutLog(payload);
-        const logId = insData?.id;
-        if (insertErr) {
-          console.error('Workout log insert failed:', insertErr);
-          throw new Error(insertErr);
-        }
+      // STEP 3: Write the new log through the centralized idempotent upsert.
+      const { error: upsertErr } = await WorkoutLogService.upsertLog(payload);
+      if (upsertErr) {
+        console.error('Workout log upsert failed:', upsertErr);
+        throw new Error(upsertErr);
       }
 
       // Only update UI AFTER the database confirms a successful save
