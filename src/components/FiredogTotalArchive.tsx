@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Archive, ChevronRight } from 'lucide-react';
-import { supabase } from '@/lib/supabaseClient';
+import { ChallengeService } from '@/services/challenge.service';
 import { LeaderboardService } from '@/services/leaderboard.service';
+
 import { WorkoutService } from '@/services/workout.service';
 import type { CrewEntry } from '@/hooks/useLeaderboard';
 import type { WorkoutSection } from '@/types/index';
