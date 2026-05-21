@@ -2,8 +2,10 @@ import { useState, useEffect, useMemo } from 'react';
 import { Calendar, Dumbbell, TrendingUp, Flame } from 'lucide-react';
 import { format, isToday, isYesterday, parseISO } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/lib/supabaseClient';
+import { WorkoutLogService } from '@/services/workoutLog.service';
+import * as ProfileService from '@/services/profile.service';
 import { WorkoutService } from '@/services/workout.service';
+
 import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
 import { Badge } from '@/components/ui/badge';
 import { usePersonalRecords } from '@/hooks/usePersonalRecords';
