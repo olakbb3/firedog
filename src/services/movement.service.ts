@@ -29,6 +29,17 @@ export interface MovementAlias {
 const TABLE_MOVEMENTS = 'movements';
 const TABLE_MOVEMENT_ALIASES = 'movement_aliases';
 
+/**
+ * Fetch all movements for selector UIs.
+ * Preserves the legacy query shape used by MovementSelector.
+ */
+export async function getAllMovements() {
+  return supabase
+    .from(TABLE_MOVEMENTS)
+    .select('*')
+    .order('name', { ascending: true });
+}
+
 /** Lowercase + trim + collapse whitespace. Pure; safe for guest contexts. */
 export function normalizeMovementKey(raw: string): string {
   return (raw ?? '').toLowerCase().trim().replace(/\s+/g, ' ');
