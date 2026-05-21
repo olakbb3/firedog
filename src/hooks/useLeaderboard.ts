@@ -69,15 +69,8 @@ export const useLeaderboard = (workoutId: string | undefined, sections: WorkoutS
       const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
       const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
 
-      const { data: firedogChallenge } = await supabase
-        .from('challenges')
-        .select('id')
-        .ilike('title', 'FIREDOG TOTAL')
-        .lte('start_date', monthStart.toLocaleDateString('en-CA'))
-        .gte('end_date', new Date(now.getFullYear(), now.getMonth(), now.getDate()).toLocaleDateString('en-CA'))
-        .order('start_date', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+      const { data: firedogChallenge } = await ChallengeService.getCurrentFiredogTotalChallenge();
+
 
       if (!firedogChallenge) {
         setCrew([]);
