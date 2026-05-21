@@ -141,37 +141,10 @@ export default function SectionLogButton({ workoutId, sectionId, sectionName, re
     });
     const newEntry: SectionLogEntry = { result_type: 'completed', is_rx: true, completion_date: completionDateIso };
     try {
-      // Check-then-save: avoid duplicate "completed" log for the same day
-      const dayStart = new Date();
-      dayStart.setHours(0, 0, 0, 0);
-      const dayEnd = new Date(dayStart);
-      dayEnd.setDate(dayEnd.getDate() + 1);
-
-      const { data: existing, error: findErr } = await supabase
-        .from('workout_logs')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('workout_section_id', sectionId)
-        .gte('completion_date', dayStart.toISOString())
-        .lt('completion_date', dayEnd.toISOString())
-        .limit(1)
-        .maybeSingle();
-      if (findErr) throw findErr;
-
-      if (existing?.id) {
-        const { error: updateErr } = await supabase
-          .from('workout_logs')
-          .update(payload)
-          .eq('id', existing.id)
-          .eq('user_id', user.id);
-        if (updateErr) throw updateErr;
-      } else {
-        const { data, error: insertErr } = await createWorkoutLog(payload);
-        const logId = data?.id;
-        if (insertErr) {
-          console.error('Workout log insert failed:', insertErr);
-          throw new Error(insertErr);
-        }
+      const { error: upsertErr } = await WorkoutLogService.upsertLog(payload);
+      if (upsertErr) {
+        console.error('Workout log upsert failed:', upsertErr);
+        throw new Error(upsertErr);
       }
 
       // Only update UI AFTER the database confirms a successful save
