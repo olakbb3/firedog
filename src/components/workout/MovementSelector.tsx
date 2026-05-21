@@ -15,7 +15,7 @@ import {
   CommandList,
 } from '@/components/ui/command';
 import { cn } from '@/lib/utils';
-import { supabase } from '@/integrations/supabase/client';
+import { MovementService } from '@/services/movement.service';
 
 export interface Movement {
   id: string;
