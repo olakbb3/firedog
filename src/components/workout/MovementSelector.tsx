@@ -60,10 +60,7 @@ export default function MovementSelector({
     let cancelled = false;
     setLoading(true);
     (async () => {
-      const { data } = await supabase
-        .from('movements')
-        .select('id, name, category, default_result_type')
-        .order('name', { ascending: true });
+      const { data } = await MovementService.getAllMovements();
       if (cancelled) return;
       setMovements((data ?? []) as Movement[]);
       setLoading(false);
