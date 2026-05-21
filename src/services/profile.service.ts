@@ -62,13 +62,24 @@ export async function getProfilePoints(
     .from('profiles')
     .select('points')
     .eq('id', userId)
-    .single();
+    .maybeSingle();
 
   if (error) {
     return { data: null, error: error.message };
   }
 
   return { data: (data?.points ?? null) as number | null, error: null };
+}
+
+/**
+ * Fetch id+full_name for a set of user ids. Used by leaderboard hydration.
+ * Returns the raw PostgREST-shaped result ({ data, error }).
+ */
+export async function getProfilesByIds(userIds: string[]) {
+  return await supabase
+    .from('profiles')
+    .select('id, full_name')
+    .in('id', userIds);
 }
 
 /**
