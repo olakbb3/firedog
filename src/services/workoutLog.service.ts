@@ -84,6 +84,20 @@ function getTodayLogsForSection(userId: string, workoutId: string, sectionId: st
     .gte('completion_date', todayStart.toISOString());
 }
 
+/**
+ * Fetch a user's logs for a specific workout section, ordered by completion_date DESC.
+ * Used by SectionLogButton to hydrate its UI history.
+ */
+function getSectionHistory(userId: string, workoutId: string, sectionId: string) {
+  return supabase
+    .from('workout_logs')
+    .select('result_type, is_rx, time, rounds, reps, calories, meters, weight, notes, completion_date')
+    .eq('workout_id', workoutId)
+    .eq('workout_section_id', sectionId)
+    .eq('user_id', userId)
+    .order('completion_date', { ascending: false });
+}
+
 async function getPriorLogsForPR(userId: string) {
   return supabase
     .from('workout_logs')
@@ -158,6 +172,7 @@ export const WorkoutLogService = {
   getHistoryForUser,
   getLogsForProgram,
   getPriorLogsForPR,
+  getSectionHistory,
   getTodayLogsForSection,
   upsertLog,
 };
