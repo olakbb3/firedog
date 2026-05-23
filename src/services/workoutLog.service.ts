@@ -23,21 +23,6 @@ export interface WorkoutLogPayload {
   notes?: string | null;
 }
 
-export async function createWorkoutLog(
-  payload: WorkoutLogPayload
-): Promise<ServiceResult<{ id: string }>> {
-  const { data, error } = await supabase
-    .from('workout_logs')
-    .insert(payload)
-    .select('id')
-    .single();
-
-  if (error) {
-    return { data: null, error: error.message };
-  }
-
-  return { data: { id: (data as { id: string }).id }, error: null };
-}
 
 /**
  * Fetch a user's full workout_logs history for PR computation.
@@ -180,7 +165,7 @@ function getLogsForProgress(userId: string) {
 }
 
 export const WorkoutLogService = {
-  createWorkoutLog,
+  
   getHistoryForUser,
   getLogsForProgram,
   getLogsForProgress,
