@@ -34,10 +34,11 @@ const TABLE_MOVEMENT_ALIASES = 'movement_aliases';
  * Preserves the legacy query shape used by MovementSelector.
  */
 export async function getAllMovements() {
-  return supabase
+  const { data, error } = await supabase
     .from(TABLE_MOVEMENTS)
     .select('*')
     .order('name', { ascending: true });
+  return { data, error };
 }
 
 /** Lowercase + trim + collapse whitespace. Pure; safe for guest contexts. */
