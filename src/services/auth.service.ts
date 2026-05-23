@@ -30,9 +30,6 @@ export const AuthService = {
     return supabase.auth.signOut();
   },
 
-  getCurrentUser() {
-    return supabase.auth.getUser();
-  },
 
   getSession() {
     return supabase.auth.getSession();
