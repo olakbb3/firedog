@@ -1,15 +1,22 @@
 import { supabase } from '@/lib/supabaseClient';
 
 export const StorageService = {
-  async uploadAvatar(userId: string, file: File): Promise<string> {
-    const path = `${userId}/${Date.now()}-${file.name}`;
-    const { error } = await supabase.storage
-      .from('avatars')
-      .upload(path, file, { upsert: true });
-    if (error) {
-      throw new Error('Avatar upload failed: ' + error.message);
+  async uploadAvatar(
+    userId: string,
+    file: File
+  ): Promise<{ data: string | null; error: any | null }> {
+    try {
+      const path = `${userId}/${Date.now()}-${file.name}`;
+      const { error } = await supabase.storage
+        .from('avatars')
+        .upload(path, file, { upsert: true });
+      if (error) {
+        return { data: null, error };
+      }
+      return { data: StorageService.getPublicUrl('avatars', path), error: null };
+    } catch (err) {
+      return { data: null, error: err };
     }
-    return StorageService.getPublicUrl('avatars', path);
   },
 
   getPublicUrl(bucket: string, path: string): string {
