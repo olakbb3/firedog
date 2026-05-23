@@ -73,20 +73,17 @@ export async function getProfilePoints(
 
 /**
  * Fetch id+full_name for a set of user ids. Used by leaderboard hydration.
- * Returns the raw PostgREST-shaped result ({ data, error }).
  */
 export async function getProfilesByIds(userIds: string[]) {
-  return await supabase
+  const { data, error } = await supabase
     .from('profiles')
     .select('id, full_name')
     .in('id', userIds);
+  return { data, error };
 }
 
 /**
- * Hydrates the profile fields used by ProfilePage with a defensive fallback:
- * if the `preferred_unit` column is unavailable, retry without it.
- * Returns the raw PostgREST-shaped result ({ data, error }) so callers can
- * preserve their existing error/null semantics.
+ * Hydrates the profile fields used by ProfilePage with a defensive fallback.
  */
 export async function getProfileWithUnitFallback(userId: string) {
   const baseCols =
@@ -106,5 +103,5 @@ export async function getProfileWithUnitFallback(userId: string) {
       .maybeSingle();
   }
 
-  return profileRes;
+  return { data: profileRes.data, error: profileRes.error };
 }
