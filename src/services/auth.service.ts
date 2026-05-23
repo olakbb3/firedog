@@ -2,8 +2,8 @@ import { supabase } from '@/lib/supabaseClient';
 import type { Session, User, AuthChangeEvent, Subscription } from '@supabase/supabase-js';
 
 export const AuthService = {
-  signUp(email: string, password: string, fullName: string) {
-    return supabase.auth.signUp({
+  async signUp(email: string, password: string, fullName: string) {
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -11,40 +11,47 @@ export const AuthService = {
         emailRedirectTo: window.location.origin,
       },
     });
+    return { data, error };
   },
 
-  signIn(email: string, password: string) {
-    return supabase.auth.signInWithPassword({ email, password });
+  async signIn(email: string, password: string) {
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    return { data, error };
   },
 
-  signInWithGoogle() {
-    return supabase.auth.signInWithOAuth({
+  async signInWithGoogle() {
+    const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
         redirectTo: `${window.location.origin}/auth/callback`,
       },
     });
+    return { data, error };
   },
 
-  signOut() {
-    return supabase.auth.signOut();
+  async signOut() {
+    const { error } = await supabase.auth.signOut();
+    return { data: null, error };
   },
 
-
-  getSession() {
-    return supabase.auth.getSession();
+  async getSession() {
+    const { data, error } = await supabase.auth.getSession();
+    return { data, error };
   },
 
-  resetPassword(email: string) {
-    return supabase.auth.resetPasswordForEmail(email, {
+  async resetPassword(email: string) {
+    const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/reset-password`,
     });
+    return { data, error };
   },
 
-  updatePassword(newPassword: string) {
-    return supabase.auth.updateUser({ password: newPassword });
+  async updatePassword(newPassword: string) {
+    const { data, error } = await supabase.auth.updateUser({ password: newPassword });
+    return { data, error };
   },
 
+  // Subscription listener — intentionally left untouched (not a data fetch).
   onAuthStateChange(
     callback: (event: AuthChangeEvent, session: Session | null) => void
   ): { data: { subscription: Subscription } } {

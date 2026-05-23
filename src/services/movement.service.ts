@@ -34,10 +34,11 @@ const TABLE_MOVEMENT_ALIASES = 'movement_aliases';
  * Preserves the legacy query shape used by MovementSelector.
  */
 export async function getAllMovements() {
-  return supabase
+  const { data, error } = await supabase
     .from(TABLE_MOVEMENTS)
     .select('*')
     .order('name', { ascending: true });
+  return { data, error };
 }
 
 /** Lowercase + trim + collapse whitespace. Pure; safe for guest contexts. */
@@ -68,20 +69,22 @@ export function parseMovementMetadata(raw: string): {
 }
 
 export async function getCanonicalMovements() {
-  return supabase
+  const { data, error } = await supabase
     .from(TABLE_MOVEMENTS)
     .select('id, canonical_name, normalized_key, category, default_result_type')
     .order('canonical_name', { ascending: true });
+  return { data, error };
 }
 
 export async function findMovementByAlias(alias: string) {
   const normalized = normalizeMovementKey(alias);
   if (!normalized) return { data: null, error: null };
-  return supabase
+  const { data, error } = await supabase
     .from(TABLE_MOVEMENT_ALIASES)
     .select('id, alias, normalized_alias, movement_id')
     .eq('normalized_alias', normalized)
     .maybeSingle();
+  return { data, error };
 }
 
 /**
@@ -117,7 +120,7 @@ export async function createMovementAlias(params: {
   movement_id: string;
 }) {
   const normalized_alias = normalizeMovementKey(params.alias);
-  return supabase
+  const { data, error } = await supabase
     .from(TABLE_MOVEMENT_ALIASES)
     .insert({
       alias: params.alias.trim(),
@@ -126,6 +129,7 @@ export async function createMovementAlias(params: {
     })
     .select('id, alias, normalized_alias, movement_id')
     .single();
+  return { data, error };
 }
 
 export const MovementService = {

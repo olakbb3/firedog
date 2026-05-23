@@ -26,68 +26,66 @@ export interface WorkoutLogPayload {
 
 /**
  * Fetch a user's full workout_logs history for PR computation.
- * Shape must match PR_LOG_COLUMNS — do not alter.
  */
-function getHistoryForUser(userId: string) {
-  return supabase
+async function getHistoryForUser(userId: string) {
+  const { data, error } = await supabase
     .from('workout_logs')
     .select(
       'id, workout_id, workout_section_id, movement_id, movements(id, name, category), exercise_name, result_type, weight, time, rounds, reps, calories, meters, is_rx, completion_date'
     )
     .eq('user_id', userId)
     .order('completion_date', { ascending: false });
+  return { data, error };
 }
 
 /**
  * Fetch a user's workout_logs for a given set of workout ids.
- * Used for per-program completion markers.
  */
-function getLogsForProgram(userId: string, wodIds: string[]) {
-  return supabase
+async function getLogsForProgram(userId: string, wodIds: string[]) {
+  const { data, error } = await supabase
     .from('workout_logs')
     .select('workout_id')
     .eq('user_id', userId)
     .in('workout_id', wodIds);
+  return { data, error };
 }
 
 /**
- * Fetch prior logs scoped to PR_LOG_COLUMNS for PR evaluation.
- * Centralized so all write surfaces share the same scan shape.
+ * Fetch today's logs for a given workout section.
  */
-/**
- * Fetch today's logs for a given workout section (used to render completed state).
- */
-function getTodayLogsForSection(userId: string, workoutId: string, sectionId: string) {
+async function getTodayLogsForSection(userId: string, workoutId: string, sectionId: string) {
   const todayStart = new Date();
   todayStart.setHours(0, 0, 0, 0);
-  return supabase
+  const { data, error } = await supabase
     .from('workout_logs')
     .select('exercise_name, notes, weight, reps, time, completion_date')
     .eq('workout_id', workoutId)
     .eq('workout_section_id', sectionId)
     .eq('user_id', userId)
     .gte('completion_date', todayStart.toISOString());
+  return { data, error };
 }
 
 /**
  * Fetch a user's logs for a specific workout section, ordered by completion_date DESC.
- * Used by SectionLogButton to hydrate its UI history.
  */
-function getSectionHistory(userId: string, workoutId: string, sectionId: string) {
-  return supabase
+async function getSectionHistory(userId: string, workoutId: string, sectionId: string) {
+  const { data, error } = await supabase
     .from('workout_logs')
     .select('result_type, is_rx, time, rounds, reps, calories, meters, weight, notes, completion_date')
     .eq('workout_id', workoutId)
     .eq('workout_section_id', sectionId)
     .eq('user_id', userId)
     .order('completion_date', { ascending: false });
+  return { data, error };
 }
 
 async function getPriorLogsForPR(userId: string) {
-  return supabase
+  const { data, error } = await supabase
     .from('workout_logs')
     .select(PR_LOG_COLUMNS)
     .eq('user_id', userId);
+  return { data, error };
 }
 
 /**

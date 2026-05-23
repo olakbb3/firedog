@@ -145,7 +145,8 @@ const ProfilePage = () => {
 
     setUploading(true);
     try {
-      const avatarUrl = await StorageService.uploadAvatar(user.id, file);
+      const { data: avatarUrl, error: uploadError } = await StorageService.uploadAvatar(user.id, file);
+      if (uploadError || !avatarUrl) throw new Error(uploadError?.message || 'Upload failed');
 
       const { error: updateError } = await ProfileService.updateProfile(user.id, {
         avatar_url: avatarUrl,

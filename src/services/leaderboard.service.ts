@@ -34,19 +34,18 @@ export async function getGlobalLeaderboard(
 
 /**
  * Transport-only wrapper for the `get_leaderboard_logs` RPC.
- * Returns the raw PostgREST result ({ data, error }) so callers can preserve
- * existing destructuring and post-processing semantics.
  */
 export async function getLeaderboardLogs(params: Record<string, any>) {
-  return await supabase.rpc('get_leaderboard_logs', params);
+  const { data, error } = await supabase.rpc('get_leaderboard_logs', params);
+  return { data, error };
 }
 
 /**
  * Transport-only wrapper for the `get_today_log_counts` RPC.
- * Returns the raw PostgREST result ({ data, error }).
  */
 export async function getTodayLogCounts(params: Record<string, any>) {
-  return await supabase.rpc('get_today_log_counts', params);
+  const { data, error } = await supabase.rpc('get_today_log_counts', params);
+  return { data, error };
 }
 
 export const LeaderboardService = {
