@@ -69,20 +69,22 @@ export function parseMovementMetadata(raw: string): {
 }
 
 export async function getCanonicalMovements() {
-  return supabase
+  const { data, error } = await supabase
     .from(TABLE_MOVEMENTS)
     .select('id, canonical_name, normalized_key, category, default_result_type')
     .order('canonical_name', { ascending: true });
+  return { data, error };
 }
 
 export async function findMovementByAlias(alias: string) {
   const normalized = normalizeMovementKey(alias);
   if (!normalized) return { data: null, error: null };
-  return supabase
+  const { data, error } = await supabase
     .from(TABLE_MOVEMENT_ALIASES)
     .select('id, alias, normalized_alias, movement_id')
     .eq('normalized_alias', normalized)
     .maybeSingle();
+  return { data, error };
 }
 
 /**
