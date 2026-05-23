@@ -120,7 +120,7 @@ export async function createMovementAlias(params: {
   movement_id: string;
 }) {
   const normalized_alias = normalizeMovementKey(params.alias);
-  return supabase
+  const { data, error } = await supabase
     .from(TABLE_MOVEMENT_ALIASES)
     .insert({
       alias: params.alias.trim(),
@@ -129,6 +129,7 @@ export async function createMovementAlias(params: {
     })
     .select('id, alias, normalized_alias, movement_id')
     .single();
+  return { data, error };
 }
 
 export const MovementService = {
